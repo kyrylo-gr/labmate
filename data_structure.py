@@ -78,9 +78,10 @@ class AcquisitionManager(object):
     def create_new_acquisition(experiment_name, cell):
         configs = dict()
         for config_file in AcquisitionManager.config_files:
+            name = os.path.split(config_file)[-1]
             with open(config_file, 'r') as f:
                 config_content = f.read()
-            configs[p.name] = config_content
+            configs[name] = config_content
         dic = dict(cell=cell,
                    experiment_name=experiment_name,
                    time_stamp=AcquisitionManager._get_timestamp(),
@@ -225,7 +226,8 @@ class AnalysisLoop(object):
 
     def _load_from_h5(self, h5group):
         self.loop_shape = h5group['__loop_shape__'][()]
-        self.data = {key: h5group[key][()] for key in h5group if key!='__loop_shape__'}
+        self.data = AnalysisData()
+        self.data.update(**{key: h5group[key][()] for key in h5group if key!='__loop_shape__'})
 
     def __iter__(self):
         for index in range(self.loop_shape[0]):
@@ -254,6 +256,9 @@ class AnalysisData(dict):
         self._figure_saved = False
 
     def _load_from_h5(self, fullpath):
+        if os.path.split(fullpath)[0] == '': # only filename (no path provided)
+            experiment_name = fullpath[20:].rstrip('.h5') # strip timestamp
+            fullpath = os.path.join(AcquisitionManager.data_directory, experiment_name, fullpath)
         self._fullpath = fullpath.rstrip('.h5')
         with h5py.File(self._fullpath + '.h5', 'r') as f:
             for key in f.keys():
