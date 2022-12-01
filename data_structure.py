@@ -202,15 +202,19 @@ class AcquisitionLoop(object):
     def data(self):
         data_reshape = {}
         for key in self._data_flatten.keys():
-            data_reshape[key] = np.array(self._data_flatten[key]).reshape(self._reshape_tuple(key))
+            # print(key)
+            data_flatten = np.array(self._data_flatten[key]).flatten()
+            expected_len = np.prod(self._reshape_tuple(key))
+            data_reshape[key] = np.pad(data_flatten, (0, expected_len-len(data_flatten))).reshape(self._reshape_tuple(key))
         return data_reshape
 
-    def append_data(self, **kwds):
+    def append_data(self, level=0, **kwds):
+        current_loop = self.current_loop + level
         for key in kwds.keys():
             if not key in self.data_level:  # if key was never scanned, notice that it is scanned at the current level
-                self.data_level[key] = self.current_loop
+                self.data_level[key] = current_loop
             else:  # otherwise make sure that key was previously scanned at the current loop level
-                assert (self.data_level[key] == self.current_loop)
+                assert (self.data_level[key] == current_loop)
             if not key in self._data_flatten:
                 self._data_flatten[key] = [kwds[key]]
             else:
