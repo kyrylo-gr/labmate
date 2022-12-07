@@ -1,7 +1,10 @@
-./data/*
-__pycache__/*
-data/*
+__pycache__
+.pytest_cache
+tests/tmp_test_data/*
+tests/tmp_data/*
 *.json
 *.pdf
 *_ANALYSIS*
-.ipynb_checkpoints*
+.ipynb_checkpoints
+.DS_Store
+*.pyc
