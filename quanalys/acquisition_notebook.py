@@ -1,7 +1,7 @@
 import logging
 from IPython.core.magic import register_cell_magic
 
-from .data_structure import AcquisitionManager, AnalysisManager
+from .acquisition_utils import AcquisitionManager, AnalysisManager
 
 
 @register_cell_magic

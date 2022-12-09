@@ -1,4 +1,4 @@
-from .data_structure import AcquisitionLoop, AcquisitionManager, AnalysisManager
+from .acquisition_utils import AcquisitionLoop, AcquisitionManager, AnalysisManager
 
 
 def save_acquisition(**kwds):
