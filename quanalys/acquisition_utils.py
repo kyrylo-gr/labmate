@@ -18,6 +18,7 @@ class AcquisitionTmpData(NamedTuple):
     time_stamp: str
     cell: Optional[str] = None
     configs: Dict[str, str] = {}
+    directory: Optional[str] = None
 
 
 class AcquisitionManager():
@@ -46,9 +47,11 @@ class AcquisitionManager():
         cls.config_files = [Path(file) for file in filenames]
 
     @classmethod
-    def _get_exp_directory(cls, experiment_name: str) -> str:
-        assert cls.data_directory is not None, "You should specify data_directory before"
-        directory = os.path.join(cls.data_directory, experiment_name)
+    def _get_exp_directory(cls, experiment_name: str, data_directory: Optional[str] = None) -> str:
+        data_directory = data_directory or cls.data_directory
+        # print(f"data_directory = {data_directory}")
+        assert data_directory is not None, "You should specify data_directory before"
+        directory = os.path.join(data_directory, experiment_name)
         if not os.path.exists(directory):
             os.makedirs(directory)
             logging.info("Directory was created. Path is %s", directory)
@@ -64,7 +67,7 @@ class AcquisitionManager():
     @classmethod
     def _get_fullpath_from_temp_dict(cls, dic: AcquisitionTmpData) -> str:
         filename = f'{dic.time_stamp}_{dic.experiment_name}'
-        directory = cls._get_exp_directory(dic.experiment_name)
+        directory = cls._get_exp_directory(dic.experiment_name, data_directory=dic.directory)
         return os.path.join(directory, filename)
 
     @classmethod
@@ -76,6 +79,12 @@ class AcquisitionManager():
         return AcquisitionData(fullpath, configs, cell)
 
     @classmethod
+    def get_data_directory(cls):
+        if cls.data_directory is not None:
+            return cls.data_directory
+        return cls._get_temp_dict().directory
+    
+    @classmethod
     def create_new_acquisition(cls, experiment_name: str, cell: Optional[str]):
         configs: Dict[str, str] = {}
         for config_file in cls.config_files:
@@ -86,7 +95,8 @@ class AcquisitionManager():
         dic = AcquisitionTmpData(experiment_name=experiment_name,
                                  time_stamp=cls._get_timestamp(),
                                  cell=cell,
-                                 configs=configs)
+                                 configs=configs,
+                                 directory=cls.get_data_directory())
 
         # save timestamp
         with open(cls.temp_file, "w", encoding="utf-8") as file:
@@ -122,7 +132,7 @@ class AcquisitionData():
         for key, value in loop_kwds.items():
             # print("Inside loop")
             kwds.pop(key)
-            print(value.data)
+            # print(value.data)
             for loop_key, loop_data in value.data.items():
                 kwds[f'{key}/{loop_key}'] = loop_data
             kwds[key + '/__loop_shape__'] = value.loop_shape
@@ -160,7 +170,7 @@ class AnalysisManager:
     analysis_cell_end_code = ""
 
     @classmethod
-    def __init__(cls, fullpath, cell):
+    def __init__(cls, fullpath, cell: Optional[str] = None):
         cls.current_analysis = AnalysisData()
         cls.current_analysis._load_from_h5(fullpath)
         cls.current_analysis._cell = cell
@@ -210,8 +220,10 @@ class AcquisitionLoop(object):
         for key, data_flatten in self._data_flatten.items():
             data_flatten = np.array(data_flatten).flatten()
             expected_len = np.prod(self._reshape_tuple(key))
-            print(key, expected_len, len(data_flatten))
-
+            if expected_len < len(data_flatten):
+                # print(key, expected_len, len(data_flatten))
+                data_flatten = data_flatten[-expected_len:]
+                
             data_reshape[key] = np.pad(data_flatten, (0, expected_len-len(data_flatten))).reshape(
                 self._reshape_tuple(key))
         return data_reshape
@@ -228,7 +240,7 @@ class AcquisitionLoop(object):
             if key not in self._data_flatten:
                 self._data_flatten[key] = [value]
             else:
-                print()
+                # print()
                 self._data_flatten[key].append(value)
 
 
@@ -275,7 +287,7 @@ class AnalysisData(dict):
     def __init__(self):
         self._fig_index = 0
         self._figure_saved = False
-        self._cell = ""
+        self._cell: Optional[str] = None
         self._extra_cells: Optional[dict] = None
         self.filepath: Optional[str] = None
 
@@ -343,8 +355,12 @@ class AnalysisData(dict):
             os.remove(filename)
 
     def _save_analysis_cell(self):
+        if self._cell is None:
+            logging.debug("Cell is not set. Nothing to save")
+            return
+        
         assert self.filepath, "You must set self.filepath before saving"
-
+        
         with open(self.filepath + '_ANALYSIS_CELL.py', 'w', encoding="UTF-8") as file:
             file.write(self._cell)
 
@@ -352,4 +368,16 @@ class AnalysisData(dict):
         #     with open(self.filepath + '_ANALYSIS_EXTRA_CELLS.py', 'w', encoding="UTF-8") as file:
         #         for key, val in AnalysisManager.extra_cells.items():
         #             file.write(val)
-        
+
+
+def save_acquisition(**kwds):
+    acq = AcquisitionManager.get_ongoing_acquisition()
+    acq.add_kwds(**kwds)
+    acq.save_config_files()
+    acq.save_cell()
+    acq.save_data()
+    AcquisitionManager.last_acquisition_saved = True
+
+
+def load_acquisition():
+    return AnalysisManager.current_analysis
