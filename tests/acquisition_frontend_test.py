@@ -20,7 +20,8 @@ DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
 class BasicTest(unittest.TestCase):
     """Test of saving simple data."""
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         AcquisitionManager()
         AcquisitionManager.data_directory = DATA_DIR
         AcquisitionManager.create_new_acquisition("BasicTest")
@@ -31,8 +32,8 @@ class BasicTest(unittest.TestCase):
         x = np.linspace(0, 20*np.pi, 101)
         y = np.sin(x)
         AcquisitionManager.save_acquisition(x=x, y=y)
-        
-        fullpath = AcquisitionManager.get_ongoing_acquisition().fullpath
+
+        fullpath = AcquisitionManager.get_ongoing_acquisition().filepath
         AnalysisManager(fullpath, "")
 
         data = AnalysisManager.current_analysis
@@ -162,7 +163,7 @@ class LoopTest(unittest.TestCase):
         self.data_verification_for_simple_loop()
 
     def data_verification_for_simple_loop(self):
-        fullpath = AcquisitionManager.get_ongoing_acquisition().fullpath
+        fullpath = AcquisitionManager.get_ongoing_acquisition().filepath
         AnalysisManager(fullpath)
 
         data = AnalysisManager.current_analysis
@@ -212,7 +213,7 @@ class MultiLoopTest(unittest.TestCase):
             cls.data['tau'].append(tau)
             cls.data['y'].append([])
             cls.data['freq'].append([])
-            
+
             for freq in cls.freqs:
                 x, y = cls.acquire_sine(freq, cls.points, tau)
                 cls.data['y'][-1].append(y)
@@ -242,14 +243,14 @@ class MultiLoopTest(unittest.TestCase):
                 x, y = self.acquire_sine(freq, self.points, tau)
                 loop.append_data(y=y, freq=freq)
             loop.append_data(x=x)  # type: ignore
-            
+
             AcquisitionManager.save_acquisition(loop_tau_freq=loop)
 
         # Verification
         self.data_verification_for_2d_loop()
 
     def data_verification_for_2d_loop(self):
-        fullpath = AcquisitionManager.get_ongoing_acquisition().fullpath
+        fullpath = AcquisitionManager.get_ongoing_acquisition().filepath
         AnalysisManager(fullpath)
 
         data = AnalysisManager.current_analysis

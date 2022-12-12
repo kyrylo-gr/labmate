@@ -2,8 +2,9 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Union
 import logging
-import h5py
 import numpy as np
+
+from .acquisition_data import NotebookAcquisitionData
 
 from ..utils import get_timestamp
 from ..json_utils import json_read, json_write
@@ -18,18 +19,31 @@ class AcquisitionTmpData(NamedTuple):
     directory: Optional[str] = None
 
 
+def check_subdir(parent_dir: Union[str, Path], directory: Union[str, Path]) -> str:
+    """Check whether directory exists in parent directory. Creates if not.
+    Returns final path."""
+    path = os.path.join(parent_dir, directory)
+    if not os.path.exists(path):
+        os.makedirs(path)
+        logging.info("Directory was created. Path is %s", str(path))
+    return path
+
+
 class AcquisitionManager:
     """AcquisitionManager"""
-    acquisition_cell_init_code: str = ""
-    acquisition_cell_end_code: str = ""
+    acquisition_cell_init_code: Optional[str] = None
+    acquisition_cell_end_code: Optional[str] = None
     last_acquisition_saved: bool = False
     temp_file_path = os.path.join(os.path.dirname(__file__), 'temp.json')
 
     data_directory = None
     config_files = []
-        
+
     @classmethod
     def __init__(cls):
+        cls.acquisition_cell_init_code = ""
+        cls.acquisition_cell_end_code = ""
+
         if "ACQUISITION_DIR" in os.environ:
             cls.data_directory = os.environ["ACQUISITION_DIR"]
         if "ACQUISITION_CONFIG_FILES" in os.environ:
@@ -42,13 +56,14 @@ class AcquisitionManager:
     @classmethod
     def get_exp_dir_path(cls, experiment_name: str, data_directory: Optional[str] = None) -> str:
         data_directory = data_directory or cls.data_directory
-        # print(f"data_directory = {data_directory}")
         assert data_directory is not None, "You should specify data_directory before"
-        directory = os.path.join(data_directory, experiment_name)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-            logging.info("Directory was created. Path is %s", directory)
-        return directory
+        return check_subdir(data_directory, experiment_name)
+
+    @classmethod
+    def get_exp_file_path(cls, dic: AcquisitionTmpData) -> str:
+        filename = f'{dic.time_stamp}_{dic.experiment_name}'
+        directory = cls.get_exp_dir_path(dic.experiment_name, data_directory=dic.directory)
+        return os.path.join(directory, filename)
 
     @staticmethod
     def get_temp_data(path) -> Optional[AcquisitionTmpData]:
@@ -57,32 +72,13 @@ class AcquisitionManager:
         return AcquisitionTmpData(**json_read(path))
 
     @classmethod
-    def get_exp_file_path(cls, dic: AcquisitionTmpData) -> str:
-        filename = f'{dic.time_stamp}_{dic.experiment_name}'
-        directory = cls.get_exp_dir_path(dic.experiment_name, data_directory=dic.directory)
-        return os.path.join(directory, filename)
-
-    @classmethod
-    def get_ongoing_acquisition(cls):
-        current_acquisition_param = cls.get_temp_data(cls.temp_file_path)
-        assert current_acquisition_param is not None, \
-            "You should create a new acquisition. It will create temp.json file."
-        fullpath = cls.get_exp_file_path(current_acquisition_param)
-        configs = current_acquisition_param.configs
-        cell = current_acquisition_param.cell
-        return AcquisitionData(
-            fullpath=fullpath,
-            configs=configs,
-            cell=cell)
-
-    @classmethod
     def get_data_directory(cls):
         if cls.data_directory is not None:
             return cls.data_directory
         params_from_last_acquisition = cls.get_temp_data(cls.temp_file_path)
         assert params_from_last_acquisition is not None, "You should set cls.data_directory"
         return params_from_last_acquisition.directory
-    
+
     @classmethod
     def create_new_acquisition(cls, experiment_name: str, cell: Optional[str] = ""):
         configs: Dict[str, str] = {}
@@ -98,67 +94,34 @@ class AcquisitionManager:
                                  directory=cls.get_data_directory())
 
         # save timestamp
-        json_write(cls.temp_file_path, dic._asdict())    
-            
+        json_write(cls.temp_file_path, dic._asdict())
+
+    @classmethod
+    def get_ongoing_acquisition(cls):
+        current_acquisition_param = cls.get_temp_data(cls.temp_file_path)
+        assert current_acquisition_param is not None, \
+            "You should create a new acquisition. It will create temp.json file."
+        filepath = cls.get_exp_file_path(current_acquisition_param)
+        configs = current_acquisition_param.configs
+        cell = current_acquisition_param.cell
+        return NotebookAcquisitionData(
+            filepath=filepath,
+            configs=configs,
+            cell=cell)
+
     @classmethod
     def save_acquisition(cls, **kwds):
         acq = cls.get_ongoing_acquisition()
-        acq.add_kwds(**kwds)
+        acq.update(**kwds)
         acq.save_config_files()
         acq.save_cell()
-        acq.save_data()
+        acq.save()
         cls.last_acquisition_saved = True
-
-
-class AcquisitionData():
-    """TODO"""
-    def __init__(self, fullpath: str, configs: Dict[str, str], cell: Optional[str]):
-        self.fullpath = fullpath.rstrip('.h5')
-        self.configs = configs
-        self.cell = cell
-        self.kwds: Dict[str, Union[List, np.ndarray, dict]] = {}
-        self.last_data_saved = False
-
-    def add_kwds(self, **kwds):
-        self.last_data_saved = False
-        # print(f"Adding keyword {kwds}")
-        # for key, value in kwds.items():
-        #     print(value.__class__.__name__)
-        #     print(value.__class__.__name__ == "AcquisitionLoop")
-        #     return value
-        loop_kwds = {key: value for key, value in kwds.items() if value.__class__.__name__ == "AcquisitionLoop"}
-        # print(f"Adding loop {loop_kwds}")
-        for key, value in loop_kwds.items():
-            # print("Inside loop")
-            kwds.pop(key)
-            # print(value.data)
-            for loop_key, loop_data in value.data.items():
-                kwds[f'{key}/{loop_key}'] = loop_data
-            kwds[key + '/__loop_shape__'] = value.loop_shape
-        self.kwds.update(kwds)
-
-    def save_config_files(self):
-        for name in self.configs.keys():
-            with open(self.fullpath + '_' + name, 'w', encoding="utf-8") as file:
-                file.write(self.configs[name])
-
-    def save_cell(self):
-        if self.cell is None:
-            return
-        with open(self.fullpath + '_CELL.py', 'w', encoding="utf-8") as file:
-            file.write(self.cell)
-
-    def save_data(self):  # TODO: save dict
-        # print(self.kwds)
-        with h5py.File(self.fullpath + '.h5', 'w') as file:
-            logging.info("saving to h5 at %s", self.fullpath + '.h5')
-            for key, value in self.kwds.items():
-                file.create_dataset(key, data=value)
-        self.last_data_saved = True
 
 
 class AcquisitionLoop(object):
     """TODO"""
+
     def __init__(self):
         self.loop_shape: List[int] = []  # length of each loop level
         self.current_loop = 0  # stores the current loop level we are in
@@ -196,7 +159,7 @@ class AcquisitionLoop(object):
             if expected_len < len(data_flatten):
                 # print(key, expected_len, len(data_flatten))
                 data_flatten = data_flatten[-expected_len:]
-                
+
             data_reshape[key] = np.pad(data_flatten, (0, expected_len-len(data_flatten))).reshape(
                 self._reshape_tuple(key))
         return data_reshape
@@ -219,4 +182,3 @@ class AcquisitionLoop(object):
 
 def save_acquisition(**kwds):
     return AcquisitionManager.save_acquisition(**kwds)
-
