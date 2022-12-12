@@ -13,7 +13,7 @@ def acquisition_cell(line, cell):
      2. saves in a temporary file the current content of the CONFIG_FILES to be backed-up
     """
     experiment_name = line
-    AcquisitionManager().create_new_acquisition(experiment_name, cell)
+    AcquisitionManager.create_new_acquisition(experiment_name, cell)
 
     new_cell = AcquisitionManager.acquisition_cell_init_code
     new_cell += cell

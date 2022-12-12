@@ -21,7 +21,8 @@ class BasicTest(unittest.TestCase):
     """Test of saving simple data."""
 
     def setUp(self):
-        AcquisitionManager().data_directory = DATA_DIR
+        AcquisitionManager()
+        AcquisitionManager.data_directory = DATA_DIR
         AcquisitionManager.create_new_acquisition("BasicTest")
         return super().setUpClass()
 
@@ -72,7 +73,8 @@ class LoopTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         """This setUp method runs ones of LoopTest.
         It creates a dictionary to verify with."""
-        AcquisitionManager().data_directory = DATA_DIR
+        AcquisitionManager()
+        AcquisitionManager.data_directory = DATA_DIR
         AcquisitionManager.create_new_acquisition("LoopTest")
 
         cls.points = 101
@@ -197,7 +199,8 @@ class MultiLoopTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         """This setUp method runs ones of LoopTest.
         It creates a dictionary to verify with."""
-        AcquisitionManager().data_directory = DATA_DIR
+        AcquisitionManager()
+        AcquisitionManager.data_directory = DATA_DIR
         AcquisitionManager.create_new_acquisition("MultiLoopTest")
 
         cls.points = 101
