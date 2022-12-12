@@ -58,7 +58,9 @@ class AcquisitionManager():
         return directory
 
     @staticmethod
-    def _get_temp_dict() -> AcquisitionTmpData:
+    def _get_temp_dict() -> Optional[AcquisitionTmpData]:
+        if not os.path.exists(os.path.join(os.path.dirname(__file__), "temp.json")):
+            return None
         with open(
                 os.path.join(os.path.dirname(__file__), "temp.json"),
                 'r', encoding="utf-8") as file:
@@ -73,6 +75,7 @@ class AcquisitionManager():
     @classmethod
     def get_ongoing_acquisition(cls):
         dic = cls._get_temp_dict()
+        assert dic is not None, "You should create a new acquisition. It will create temp.json file."
         fullpath = cls._get_fullpath_from_temp_dict(dic)
         configs = dic.configs
         cell = dic.cell
@@ -82,10 +85,12 @@ class AcquisitionManager():
     def get_data_directory(cls):
         if cls.data_directory is not None:
             return cls.data_directory
-        return cls._get_temp_dict().directory
+        params_from_last_acquisition = cls._get_temp_dict()
+        assert params_from_last_acquisition is not None, "You should set cls.data_directory"
+        return params_from_last_acquisition.directory
     
     @classmethod
-    def create_new_acquisition(cls, experiment_name: str, cell: Optional[str]):
+    def create_new_acquisition(cls, experiment_name: str, cell: Optional[str] = ""):
         configs: Dict[str, str] = {}
         for config_file in cls.config_files:
             assert config_file.is_file(), "Config file should be a file. Cannot save directory."
