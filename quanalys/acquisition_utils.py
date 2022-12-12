@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Union
-import json
-import datetime
 import glob
 import logging
 from collections import OrderedDict
@@ -10,6 +8,9 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+
+from .utils import get_timestamp
+from .json_utils import json_read, json_write
 
 
 class AcquisitionTmpData(NamedTuple):
@@ -23,31 +24,29 @@ class AcquisitionTmpData(NamedTuple):
 
 class AcquisitionManager():
     """AcquisitionManager"""
-    acquisition_cell_init_code = ""
-    acquisition_cell_end_code = ""
-    last_acquisition_saved = False
-    temp_file = os.path.join(os.path.split(__file__)[0], 'temp.json')
+    
+    @classmethod
+    def __init__(cls):
+        cls.acquisition_cell_init_code: str = ""
+        cls.acquisition_cell_end_code: str = ""
+        cls.last_acquisition_saved: bool = False
+        cls.temp_file_path = os.path.join(os.path.dirname(__file__), 'temp.json')
 
-    if "ACQUISITION_DIR" in os.environ:
-        data_directory = os.environ["ACQUISITION_DIR"]
-    else:
-        data_directory = None
-    if "ACQUISITION_CONFIG_FILES" in os.environ:
-        config_files = [Path(file) for file in os.environ["ACQUISITION_CONFIG_FILES"].split(",")]
-    else:
-        config_files = []
-
-    @staticmethod
-    def _get_timestamp() -> str:
-        x = datetime.datetime.now()
-        return x.strftime("%Y-%m-%d_%H-%M-%S")
+        if "ACQUISITION_DIR" in os.environ:
+            cls.data_directory = os.environ["ACQUISITION_DIR"]
+        else:
+            cls.data_directory = None
+        if "ACQUISITION_CONFIG_FILES" in os.environ:
+            cls.config_files = [Path(file) for file in os.environ["ACQUISITION_CONFIG_FILES"].split(",")]
+        else:
+            cls.config_files = []
 
     @classmethod
-    def set_config_files(cls, *filenames: str) -> None:
+    def set_config_file(cls, *filenames: str) -> None:
         cls.config_files = [Path(file) for file in filenames]
 
     @classmethod
-    def _get_exp_directory(cls, experiment_name: str, data_directory: Optional[str] = None) -> str:
+    def get_exp_dir_path(cls, experiment_name: str, data_directory: Optional[str] = None) -> str:
         data_directory = data_directory or cls.data_directory
         # print(f"data_directory = {data_directory}")
         assert data_directory is not None, "You should specify data_directory before"
@@ -58,34 +57,35 @@ class AcquisitionManager():
         return directory
 
     @staticmethod
-    def _get_temp_dict() -> Optional[AcquisitionTmpData]:
+    def get_temp_data(path) -> Optional[AcquisitionTmpData]:
         if not os.path.exists(os.path.join(os.path.dirname(__file__), "temp.json")):
             return None
-        with open(
-                os.path.join(os.path.dirname(__file__), "temp.json"),
-                'r', encoding="utf-8") as file:
-            return AcquisitionTmpData(**json.load(file))
+        return AcquisitionTmpData(**json_read(path))
 
     @classmethod
-    def _get_fullpath_from_temp_dict(cls, dic: AcquisitionTmpData) -> str:
+    def get_exp_file_path(cls, dic: AcquisitionTmpData) -> str:
         filename = f'{dic.time_stamp}_{dic.experiment_name}'
-        directory = cls._get_exp_directory(dic.experiment_name, data_directory=dic.directory)
+        directory = cls.get_exp_dir_path(dic.experiment_name, data_directory=dic.directory)
         return os.path.join(directory, filename)
 
     @classmethod
     def get_ongoing_acquisition(cls):
-        dic = cls._get_temp_dict()
-        assert dic is not None, "You should create a new acquisition. It will create temp.json file."
-        fullpath = cls._get_fullpath_from_temp_dict(dic)
-        configs = dic.configs
-        cell = dic.cell
-        return AcquisitionData(fullpath, configs, cell)
+        current_acquisition_param = cls.get_temp_data(cls.temp_file_path)
+        assert current_acquisition_param is not None, \
+            "You should create a new acquisition. It will create temp.json file."
+        fullpath = cls.get_exp_file_path(current_acquisition_param)
+        configs = current_acquisition_param.configs
+        cell = current_acquisition_param.cell
+        return AcquisitionData(
+            fullpath=fullpath,
+            configs=configs,
+            cell=cell)
 
     @classmethod
     def get_data_directory(cls):
         if cls.data_directory is not None:
             return cls.data_directory
-        params_from_last_acquisition = cls._get_temp_dict()
+        params_from_last_acquisition = cls.get_temp_data(cls.temp_file_path)
         assert params_from_last_acquisition is not None, "You should set cls.data_directory"
         return params_from_last_acquisition.directory
     
@@ -98,14 +98,13 @@ class AcquisitionManager():
                 configs[config_file.name] = file.read()
 
         dic = AcquisitionTmpData(experiment_name=experiment_name,
-                                 time_stamp=cls._get_timestamp(),
+                                 time_stamp=get_timestamp(),
                                  cell=cell,
                                  configs=configs,
                                  directory=cls.get_data_directory())
 
         # save timestamp
-        with open(cls.temp_file, "w", encoding="utf-8") as file:
-            json.dump(dic._asdict(), file)
+        json_write(cls.temp_file_path, dic._asdict())    
             
     @classmethod
     def save_acquisition(cls, **kwds):
@@ -114,6 +113,7 @@ class AcquisitionManager():
         acq.save_config_files()
         acq.save_cell()
         acq.save_data()
+        cls.last_acquisition_saved = True
 
 
 class AcquisitionData():
@@ -170,7 +170,6 @@ class AnalysisManager:
     else:  # if None, then put analysis in the same folder as data (recommended)
         analysis_directory = None
     extra_cells = OrderedDict()  # extra cells to backup with each analysis
-    current_analysis = None
     analysis_cell_init_code = ""
     analysis_cell_end_code = ""
 
@@ -376,12 +375,7 @@ class AnalysisData(dict):
 
 
 def save_acquisition(**kwds):
-    acq = AcquisitionManager.get_ongoing_acquisition()
-    acq.add_kwds(**kwds)
-    acq.save_config_files()
-    acq.save_cell()
-    acq.save_data()
-    AcquisitionManager.last_acquisition_saved = True
+    return AcquisitionManager.save_acquisition(**kwds)
 
 
 def load_acquisition():
