@@ -8,7 +8,7 @@ from typing import List, Optional
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 
-from .acquisition import AcquisitionManager
+from .acquisition_manager import AcquisitionManager
 
 
 class AnalysisManager:
@@ -52,8 +52,11 @@ class AnalysisLoop():
         return loop
 
     def __iter__(self):
-        assert self.data is not None, "Data should be set before iterating over it"
-        assert self.loop_shape is not None, "loop_shape should be set before iterating over it"
+        if self.data is None:
+            raise ValueError("Data should be set before iterating over it")
+        if self.loop_shape is None:
+            raise ValueError("loop_shape should be set before iterating over it")
+
         for index in range(self.loop_shape[0]):
             child_kwds = {}
             for key, value in self.data.items():
@@ -132,7 +135,7 @@ class AnalysisData(dict):
                 os.path.splitext(name)[-1][1] in '0123456789':  # No extension
             name = '_' + name + '.pdf'
         full_fig_name = self.filepath + '_FIG' + name
-        print("saving fig", full_fig_name)
+        # print("saving fig", full_fig_name)
         if fig is not None:
             fig.savefig(full_fig_name)
         else:

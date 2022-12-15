@@ -1,8 +1,7 @@
 import os
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Union
+from typing import Dict, NamedTuple, Optional, Union
 import logging
-import numpy as np
 
 from .acquisition_data import NotebookAcquisitionData
 
@@ -39,10 +38,14 @@ class AcquisitionManager:
     data_directory = None
     config_files = []
 
+    _current_acquisition = None
+    _current_filepath = None
+
     @classmethod
     def __init__(cls):
         cls.acquisition_cell_init_code = ""
         cls.acquisition_cell_end_code = ""
+        cls._current_acquisition = None
 
         if "ACQUISITION_DIR" in os.environ:
             cls.data_directory = os.environ["ACQUISITION_DIR"]
@@ -56,7 +59,8 @@ class AcquisitionManager:
     @classmethod
     def get_exp_dir_path(cls, experiment_name: str, data_directory: Optional[str] = None) -> str:
         data_directory = data_directory or cls.data_directory
-        assert data_directory is not None, "You should specify data_directory before"
+        if data_directory is None:
+            raise ValueError("You should specify data_directory before")
         return check_subdir(data_directory, experiment_name)
 
     @classmethod
@@ -80,7 +84,8 @@ class AcquisitionManager:
         return params_from_last_acquisition.directory
 
     @classmethod
-    def create_new_acquisition(cls, experiment_name: str, cell: Optional[str] = ""):
+    def create_new_acquisition(cls, experiment_name: str, cell: Optional[str] = None):
+        cls._current_acquisition = None
         configs: Dict[str, str] = {}
         for config_file in cls.config_files:
             assert config_file.is_file(), "Config file should be a file. Cannot save directory."
@@ -94,10 +99,20 @@ class AcquisitionManager:
                                  directory=cls.get_data_directory())
 
         # save timestamp
+        # print(dic._asdict())
         json_write(cls.temp_file_path, dic._asdict())
 
+        cls._current_acquisition = cls.get_ongoing_acquisition(replace=True)
+
     @classmethod
-    def get_ongoing_acquisition(cls):
+    @property
+    def current_acquisition(cls):
+        if cls._current_acquisition is None:
+            cls._current_acquisition = cls.get_ongoing_acquisition()
+        return cls._current_acquisition
+
+    @classmethod
+    def get_ongoing_acquisition(cls, replace: Optional[bool] = False):
         current_acquisition_param = cls.get_temp_data(cls.temp_file_path)
         assert current_acquisition_param is not None, \
             "You should create a new acquisition. It will create temp.json file."
@@ -107,77 +122,18 @@ class AcquisitionManager:
         return NotebookAcquisitionData(
             filepath=filepath,
             configs=configs,
-            cell=cell)
+            cell=cell,
+            replace=replace)
 
     @classmethod
     def save_acquisition(cls, **kwds):
-        acq = cls.get_ongoing_acquisition()
+        acq = cls.current_acquisition
         acq.update(**kwds)
+        # logging.warning(kwds.keys())
         acq.save_config_files()
         acq.save_cell()
         acq.save()
         cls.last_acquisition_saved = True
-
-
-class AcquisitionLoop(object):
-    """TODO"""
-
-    def __init__(self):
-        self.loop_shape: List[int] = []  # length of each loop level
-        self.current_loop = 0  # stores the current loop level we are in
-        self.data_level = {}  # for each keyword, indicates at which loop_level it is scanned
-        self._data_flatten = {}
-
-    def __call__(self, iterable):
-        self.current_loop += 1
-        if self.current_loop > len(self.loop_shape):
-            self.loop_shape.append(len(iterable))
-        else:
-            assert len(iterable) == self.loop_shape[self.current_loop - 1]
-        for i in iterable:
-            yield i  # for body executes here
-
-        self.current_loop -= 1
-
-    def atomic_data_shape(self, key):
-        return np.shape(self._data_flatten[key][0])
-
-    def _reshape_tuple(self, key):
-        tuple_shape = [1] * len(self.loop_shape)
-        tuple_shape += self.atomic_data_shape(key)
-        if self.data_level[key] > 0:
-            for loop_index in range(self.data_level[key]):
-                tuple_shape[loop_index] = self.loop_shape[loop_index]
-        return tuple_shape
-
-    @property
-    def data(self) -> Dict[str, Any]:
-        data_reshape = {}
-        for key, data_flatten in self._data_flatten.items():
-            data_flatten = np.array(data_flatten).flatten()
-            expected_len = np.prod(self._reshape_tuple(key))
-            if expected_len < len(data_flatten):
-                # print(key, expected_len, len(data_flatten))
-                data_flatten = data_flatten[-expected_len:]
-
-            data_reshape[key] = np.pad(data_flatten, (0, expected_len-len(data_flatten))).reshape(
-                self._reshape_tuple(key))
-        return data_reshape
-
-    def append_data(self, level=0, **kwds):
-        current_loop = self.current_loop + level
-
-        for key, value in kwds.items():
-            if key not in self.data_level:  # if key was never scanned, notice that it is scanned at the current level
-                self.data_level[key] = current_loop
-            else:  # otherwise make sure that key was previously scanned at the current loop level
-                assert self.data_level[key] == current_loop
-
-            if key not in self._data_flatten:
-                self._data_flatten[key] = [value]
-            else:
-                # print()
-                self._data_flatten[key].append(value)
 
 
 def save_acquisition(**kwds):

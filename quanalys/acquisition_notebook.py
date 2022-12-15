@@ -41,7 +41,7 @@ def analysis_cell(line, cell):
     if len(line):  # getting old
         fullpath = line.strip("'").strip('"')
     else:
-        fullpath = AcquisitionManager.get_ongoing_acquisition().fullpath
+        fullpath = AcquisitionManager.current_acquisition.filepath
 
     AnalysisManager(fullpath, cell)
     new_cell = AnalysisManager.analysis_cell_init_code

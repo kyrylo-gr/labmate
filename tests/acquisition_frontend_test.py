@@ -22,18 +22,24 @@ class BasicTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.name = "BasicTest"
         AcquisitionManager()
         AcquisitionManager.data_directory = DATA_DIR
-        AcquisitionManager.create_new_acquisition("BasicTest")
+        AcquisitionManager.create_new_acquisition(cls.name)
         return super().setUpClass()
 
+    def test_dir_was_created(self):
+        self.assertTrue(os.path.exists(
+            os.path.join(DATA_DIR, self.name)
+        ))
+        
     def test_simple_save(self):
         """Save and load the simplest list."""
         x = np.linspace(0, 20*np.pi, 101)
         y = np.sin(x)
         AcquisitionManager.save_acquisition(x=x, y=y)
 
-        fullpath = AcquisitionManager.get_ongoing_acquisition().filepath
+        fullpath = AcquisitionManager.current_acquisition.filepath
         AnalysisManager(fullpath, "")
 
         data = AnalysisManager.current_analysis
@@ -51,13 +57,30 @@ class BasicTest(unittest.TestCase):
             np.abs(data.get('x') - (x := np.linspace(0, 10*np.pi, 101))).sum(), 0)
         self.assertAlmostEqual(
             np.abs(data.get('y') - np.sin(x)).sum(), 0)
+        
+    def test_manager_die(self):
+        """Save, make reload on AcquisitionManager and verify that it will found current acquisition."""
+        x = np.linspace(0, 20*np.pi, 101)
+        y = np.sin(x)
+        AcquisitionManager.save_acquisition(x=x, y=y)
+        
+        AcquisitionManager()
+
+        fullpath = AcquisitionManager.current_acquisition.filepath
+        AnalysisManager(fullpath, "")
+
+        data = AnalysisManager.current_analysis
+
+        assert data is not None
+
+        self.assertTrue(np.all(x == data.get('x')))
+        self.assertTrue(np.all(y == data.get('y')))
 
     @classmethod
     def tearDownClass(cls):
         """Remove tmp_test_data directory ones all test finished."""
-        data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)
-        if os.path.exists(data_directory):
-            shutil.rmtree(data_directory)
+        # if os.path.exists(DATA_DIR):
+        #     shutil.rmtree(DATA_DIR)
         return super().tearDownClass()
 
 
@@ -74,9 +97,10 @@ class LoopTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         """This setUp method runs ones of LoopTest.
         It creates a dictionary to verify with."""
+        cls.name = "LoopTest"
         AcquisitionManager()
         AcquisitionManager.data_directory = DATA_DIR
-        AcquisitionManager.create_new_acquisition("LoopTest")
+        AcquisitionManager.create_new_acquisition(cls.name)
 
         cls.points = 101
         cls.freqs = np.linspace(0, 0.4, 10)
@@ -89,6 +113,11 @@ class LoopTest(unittest.TestCase):
         cls.data['x'] = x  # type: ignore
 
         return super().setUpClass()
+
+    def test_dir_was_created(self):
+        self.assertTrue(os.path.exists(
+            os.path.join(DATA_DIR, self.name)
+        ))
 
     def test_classical_loop(self):
         """Save and load the simplest list.
@@ -163,7 +192,7 @@ class LoopTest(unittest.TestCase):
         self.data_verification_for_simple_loop()
 
     def data_verification_for_simple_loop(self):
-        fullpath = AcquisitionManager.get_ongoing_acquisition().filepath
+        fullpath = AcquisitionManager.current_acquisition.filepath
         AnalysisManager(fullpath)
 
         data = AnalysisManager.current_analysis
@@ -180,9 +209,9 @@ class LoopTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Remove tmp_test_data directory ones all test finished."""
-        data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)
-        if os.path.exists(data_directory):
-            shutil.rmtree(data_directory)
+        # data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)
+        if os.path.exists(DATA_DIR):
+            shutil.rmtree(DATA_DIR)
         return super().tearDownClass()
 
 
@@ -202,7 +231,7 @@ class MultiLoopTest(unittest.TestCase):
         It creates a dictionary to verify with."""
         AcquisitionManager()
         AcquisitionManager.data_directory = DATA_DIR
-        AcquisitionManager.create_new_acquisition("MultiLoopTest")
+        AcquisitionManager.create_new_acquisition("MultiLoopTest2")
 
         cls.points = 101
         cls.freqs = np.linspace(0, 0.4, 10)
@@ -250,7 +279,7 @@ class MultiLoopTest(unittest.TestCase):
         self.data_verification_for_2d_loop()
 
     def data_verification_for_2d_loop(self):
-        fullpath = AcquisitionManager.get_ongoing_acquisition().filepath
+        fullpath = AcquisitionManager.current_acquisition.filepath
         AnalysisManager(fullpath)
 
         data = AnalysisManager.current_analysis
@@ -269,9 +298,8 @@ class MultiLoopTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Remove tmp_test_data directory ones all test finished."""
-        data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)
-        if os.path.exists(data_directory):
-            shutil.rmtree(data_directory)
+        if os.path.exists(DATA_DIR):
+            shutil.rmtree(DATA_DIR)
         return super().tearDownClass()
 
 
