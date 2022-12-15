@@ -127,12 +127,11 @@ class AcquisitionManager:
 
     @classmethod
     def save_acquisition(cls, **kwds):
-        acq = cls.current_acquisition
-        acq.update(**kwds)
-        # logging.warning(kwds.keys())
-        acq.save_config_files()
-        acq.save_cell()
-        acq.save()
+        acq_data = cls.current_acquisition
+        acq_data.update(**kwds)
+        acq_data.save_config_files()
+        acq_data.save_cell()
+        acq_data.save()
         cls.last_acquisition_saved = True
 
 

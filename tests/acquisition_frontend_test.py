@@ -32,7 +32,7 @@ class BasicTest(unittest.TestCase):
         self.assertTrue(os.path.exists(
             os.path.join(DATA_DIR, self.name)
         ))
-        
+
     def test_simple_save(self):
         """Save and load the simplest list."""
         x = np.linspace(0, 20*np.pi, 101)
@@ -57,13 +57,13 @@ class BasicTest(unittest.TestCase):
             np.abs(data.get('x') - (x := np.linspace(0, 10*np.pi, 101))).sum(), 0)
         self.assertAlmostEqual(
             np.abs(data.get('y') - np.sin(x)).sum(), 0)
-        
+
     def test_manager_die(self):
         """Save, make reload on AcquisitionManager and verify that it will found current acquisition."""
         x = np.linspace(0, 20*np.pi, 101)
         y = np.sin(x)
         AcquisitionManager.save_acquisition(x=x, y=y)
-        
+
         AcquisitionManager()
 
         fullpath = AcquisitionManager.current_acquisition.filepath

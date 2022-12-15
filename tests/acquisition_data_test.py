@@ -27,7 +27,7 @@ class WithoutSavingTest(unittest.TestCase):
     def test_adding(self):
         lst = list(range(100))
         self.adata['a1'] = lst[:50]
-        self.adata.update(a2=lst[50:])
+        self.adata.update(a2=lst[50:])  # type: ignore
 
         self.assertListEqual(lst[:50], self.adata.get('a1'))  # type: ignore
         self.assertListEqual(lst[50:], self.adata['a2'])   # type: ignore
@@ -37,7 +37,7 @@ class WithoutSavingTest(unittest.TestCase):
     def test_deleting(self):
         lst = list(range(100))
         self.adata['a1'] = lst[:50]
-        self.adata.update(a2=lst[50:])
+        self.adata.update(a2=lst[50:])  # type: ignore
 
         self.assertSetEqual(
             self.adata.last_update,

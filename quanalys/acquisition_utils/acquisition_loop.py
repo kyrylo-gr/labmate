@@ -62,3 +62,8 @@ class AcquisitionLoop(object):
             else:
                 # print()
                 self._data_flatten[key].append(value)
+
+    def _asdict(self):
+        data = self.data
+        data['__loop_shape__'] = self.loop_shape
+        return data

@@ -1,9 +1,18 @@
 import logging
 import os
-from typing import Dict, List, Optional, Union, Any
+from typing import Dict, List, Optional, Protocol, Union, Any
 import numpy as np
 
 from . import h5py_utils
+
+
+class ClassWithAsdict(Protocol):
+    """Any class with predefined `_asdict` attribute.
+    `_asdict` class should return a dictionary with only list and dict.
+    It should not be a dict of other classes"""
+
+    def _asdict(self, *args, **kwargs) -> dict:
+        ...
 
 
 def editing(func):
@@ -54,19 +63,12 @@ class AcquisitionData:
         self.__keys.remove(key)
 
     @editing
-    def update(self, **kwds):
-        loop_kwds = {key: value for key, value in kwds.items() if value.__class__.__name__ == "AcquisitionLoop"}
-        # print(f"Adding loop {loop_kwds}")
-        for key, value in loop_kwds.items():
-            # print("Inside loop")
-            kwds.pop(key)
-            # print(value.data)
-            for loop_key, loop_data in value.data.items():
-                kwds[f'{key}/{loop_key}'] = loop_data
-            kwds[key + '/__loop_shape__'] = value.loop_shape
-
-        for key in kwds:
+    def update(self, **kwds: Dict[str, Union[list, np.ndarray, dict, ClassWithAsdict]]):
+        for key, value in kwds.items():
             self.__add_key(key)
+            # print(key, hasattr(value, '_asdict'), "u")
+            if hasattr(value, '_asdict'):
+                kwds[key] = value._asdict()  # type: ignore
 
         self.data.update(kwds)
 
