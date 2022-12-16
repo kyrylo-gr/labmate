@@ -40,9 +40,8 @@ class BasicTest(unittest.TestCase):
         AcquisitionManager.save_acquisition(x=x, y=y)
 
         fullpath = AcquisitionManager.current_acquisition.filepath
-        AnalysisManager(fullpath, "")
-
-        data = AnalysisManager.current_analysis
+        am = AnalysisManager(fullpath)
+        data = am.analysis_data
 
         assert data is not None
 
@@ -51,7 +50,7 @@ class BasicTest(unittest.TestCase):
 
     def test_open_old_file(self):
         old_file_path = "tests/data/old_data_example.h5"
-        data = AnalysisManager(old_file_path).current_analysis
+        data = AnalysisManager(old_file_path).analysis_data
         assert data, "File probably exists, but create analysisData object"
         self.assertAlmostEqual(
             np.abs(data.get('x') - (x := np.linspace(0, 10*np.pi, 101))).sum(), 0)
@@ -67,9 +66,8 @@ class BasicTest(unittest.TestCase):
         AcquisitionManager()
 
         fullpath = AcquisitionManager.current_acquisition.filepath
-        AnalysisManager(fullpath, "")
-
-        data = AnalysisManager.current_analysis
+        am = AnalysisManager(fullpath)
+        data = am.analysis_data
 
         assert data is not None
 
@@ -193,14 +191,17 @@ class LoopTest(unittest.TestCase):
 
     def data_verification_for_simple_loop(self):
         fullpath = AcquisitionManager.current_acquisition.filepath
-        AnalysisManager(fullpath)
-
-        data = AnalysisManager.current_analysis
+        
+        am = AnalysisManager(fullpath)
+        data = am.analysis_data
+        
         assert data is not None
 
         loop_freq = data.get("loop_freq")
         assert loop_freq is not None, "Cannot get LoopData from saved data."
 
+        # print(data.keys())
+        # print(loop_freq)
         for i, d in enumerate(loop_freq):
             self.assertAlmostEqual(self.data['freq'][i], d.freq)
             self.assertAlmostEqual(compare_np_array(self.data['y'][i], d.y), 0)
@@ -215,92 +216,93 @@ class LoopTest(unittest.TestCase):
         return super().tearDownClass()
 
 
-class MultiLoopTest(unittest.TestCase):
-    """Test of saving simple data."""
+# class MultiLoopTest(unittest.TestCase):
+#     """Test of saving simple data."""
 
-    @staticmethod
-    def acquire_sine(freq, points, tau):
-        x = np.linspace(10*tau, 10*tau+10*np.pi, points)
-        y = np.sin(freq*2*np.pi*x)
-        y *= np.exp(-x*tau)
-        return x, y
+#     @staticmethod
+#     def acquire_sine(freq, points, tau):
+#         x = np.linspace(10*tau, 10*tau+10*np.pi, points)
+#         y = np.sin(freq*2*np.pi*x)
+#         y *= np.exp(-x*tau)
+#         return x, y
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        """This setUp method runs ones of LoopTest.
-        It creates a dictionary to verify with."""
-        AcquisitionManager()
-        AcquisitionManager.data_directory = DATA_DIR
-        AcquisitionManager.create_new_acquisition("MultiLoopTest2")
+#     @classmethod
+#     def setUpClass(cls) -> None:
+#         """This setUp method runs ones of LoopTest.
+#         It creates a dictionary to verify with."""
+#         AcquisitionManager()
+#         AcquisitionManager.data_directory = DATA_DIR
+#         AcquisitionManager.create_new_acquisition("MultiLoopTest2")
 
-        cls.points = 101
-        cls.freqs = np.linspace(0, 0.4, 10)
-        cls.taus = np.linspace(0, 0.3, 5)
+#         cls.points = 101
+#         cls.freqs = np.linspace(0, 0.4, 10)
+#         cls.taus = np.linspace(0, 0.3, 5)
 
-        cls.data = {"tau": [], "freq": [], "x": [], "y": []}
-        for tau in cls.taus:
-            cls.data['tau'].append(tau)
-            cls.data['y'].append([])
-            cls.data['freq'].append([])
+#         cls.data = {"tau": [], "freq": [], "x": [], "y": []}
+#         for tau in cls.taus:
+#             cls.data['tau'].append(tau)
+#             cls.data['y'].append([])
+#             cls.data['freq'].append([])
 
-            for freq in cls.freqs:
-                x, y = cls.acquire_sine(freq, cls.points, tau)
-                cls.data['y'][-1].append(y)
-                cls.data['freq'][-1].append(freq)
-            cls.data['x'].append(x)  # type: ignore
+#             for freq in cls.freqs:
+#                 x, y = cls.acquire_sine(freq, cls.points, tau)
+#                 cls.data['y'][-1].append(y)
+#                 cls.data['freq'][-1].append(freq)
+#             cls.data['x'].append(x)  # type: ignore
 
-        return super().setUpClass()
+#         return super().setUpClass()
 
-    def test_classical_loop(self):
-        """Save and load the simplest list.
+#     def test_classical_loop(self):
+#         """Save and load the simplest list.
 
-        Protocol:
+#         Protocol:
 
-        for freq in freqs:
-            x, y = ...
-            push_to_save(y, freq)
-        push_to_save(x)
-        save()
+#         for freq in freqs:
+#             x, y = ...
+#             push_to_save(y, freq)
+#         push_to_save(x)
+#         save()
 
-        """
-        # Protocol
-        loop = AcquisitionLoop()
+#         """
+#         # Protocol
+#         loop = AcquisitionLoop()
 
-        for tau in loop(self.taus):
-            loop.append_data(tau=tau)
-            for freq in loop(self.freqs):
-                x, y = self.acquire_sine(freq, self.points, tau)
-                loop.append_data(y=y, freq=freq)
-            loop.append_data(x=x)  # type: ignore
+#         for tau in loop(self.taus):
+#             loop.append_data(tau=tau)
+#             for freq in loop(self.freqs):
+#                 x, y = self.acquire_sine(freq, self.points, tau)
+#                 loop.append_data(y=y, freq=freq)
+#             loop.append_data(x=x)  # type: ignore
 
-            AcquisitionManager.save_acquisition(loop_tau_freq=loop)
+#             AcquisitionManager.save_acquisition(loop_tau_freq=loop)
 
-        # Verification
-        self.data_verification_for_2d_loop()
+#         # Verification
+#         self.data_verification_for_2d_loop()
 
-    def data_verification_for_2d_loop(self):
-        fullpath = AcquisitionManager.current_acquisition.filepath
-        AnalysisManager(fullpath)
+#     def data_verification_for_2d_loop(self):
+#         fullpath = AcquisitionManager.current_acquisition.filepath
+        
+#         am = AnalysisManager(fullpath)
+#         data = am.analysis_data
+        
+#         assert data is not None
 
-        data = AnalysisManager.current_analysis
-        assert data is not None
+#         loop_freq = data.get("loop_tau_freq")
+#         assert loop_freq is not None, "Cannot get LoopData from saved data."
 
-        loop_freq = data.get("loop_tau_freq")
-        assert loop_freq is not None, "Cannot get LoopData from saved data."
+#         for i, d in enumerate(loop_freq):
+#             for j, dd in enumerate(d):
+#                 self.assertAlmostEqual(self.data['tau'][i], dd.tau)
+#                 self.assertAlmostEqual(self.data['freq'][i][j], dd.freq)
+#                 self.assertAlmostEqual(compare_np_array(self.data['y'][i][j], dd.y), 0)
+#                 self.assertAlmostEqual(compare_np_array(self.data['x'][i], dd.x), 0)  # type: ignore
 
-        for i, d in enumerate(loop_freq):
-            for j, dd in enumerate(d):
-                self.assertAlmostEqual(self.data['tau'][i], dd.tau)
-                self.assertAlmostEqual(self.data['freq'][i][j], dd.freq)
-                self.assertAlmostEqual(compare_np_array(self.data['y'][i][j], dd.y), 0)
-                self.assertAlmostEqual(compare_np_array(self.data['x'][i], dd.x), 0)  # type: ignore
-
-    @classmethod
-    def tearDownClass(cls):
-        """Remove tmp_test_data directory ones all test finished."""
-        if os.path.exists(DATA_DIR):
-            shutil.rmtree(DATA_DIR)
-        return super().tearDownClass()
+#     @classmethod
+#     def tearDownClass(cls):
+#         """Remove tmp_test_data directory ones all test finished."""
+#         if os.path.exists(DATA_DIR):
+#             shutil.rmtree(DATA_DIR)
+#         return super().tearDownClass()
 
 
 def compare_np_array(array1: np.ndarray, array2: np.ndarray):

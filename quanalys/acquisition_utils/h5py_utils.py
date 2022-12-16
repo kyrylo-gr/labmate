@@ -23,12 +23,12 @@ def save_dict(
     data: dict,
 ):
     with h5py.File(filename, 'w') as file:
-        for k, v in data.items():
-            if k in file.keys():
-                file.pop(k)
-            if v is None:
+        for key, value in data.items():
+            if key in file.keys():
+                file.pop(key)
+            if value is None:
                 continue
-            save_sub_dict(file, v, k)
+            save_sub_dict(file, value, key)
     return filename
 
 
