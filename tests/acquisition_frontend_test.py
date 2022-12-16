@@ -191,10 +191,10 @@ class LoopTest(unittest.TestCase):
 
     def data_verification_for_simple_loop(self):
         fullpath = AcquisitionManager.current_acquisition.filepath
-        
+
         am = AnalysisManager(fullpath)
         data = am.analysis_data
-        
+
         assert data is not None
 
         loop_freq = data.get("loop_freq")
@@ -281,10 +281,10 @@ class LoopTest(unittest.TestCase):
 
 #     def data_verification_for_2d_loop(self):
 #         fullpath = AcquisitionManager.current_acquisition.filepath
-        
+
 #         am = AnalysisManager(fullpath)
 #         data = am.analysis_data
-        
+
 #         assert data is not None
 
 #         loop_freq = data.get("loop_tau_freq")
