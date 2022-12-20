@@ -22,7 +22,7 @@ def save_dict(
     filename: str,
     data: dict,
 ):
-    with h5py.File(filename, 'w') as file:
+    with h5py.File(filename, 'a') as file:
         for key, value in data.items():
             if key in file.keys():
                 file.pop(key)
@@ -56,8 +56,12 @@ def open_h5_group(group: Union[h5py.File, h5py.Group]) -> dict:
 
 
 def output_dict_structure(data: dict) -> str:
-    return json.dumps(get_dict_structure(data),
-                      sort_keys=True, indent=4)
+    return dict_to_json_format_str(get_dict_structure(data))
+
+
+def dict_to_json_format_str(data: dict) -> str:
+    """" Outputs a dictionary structure """
+    return json.dumps(data, sort_keys=True, indent=4)
 
 
 def get_dict_structure(data: dict) -> dict:
@@ -66,7 +70,12 @@ def get_dict_structure(data: dict) -> dict:
         if isinstance(v, dict):
             structure[k] = get_dict_structure(v)
         elif isinstance(v, (np.ndarray, list)):
-            structure[k] = str(np.shape(v))
+            structure[k] = f"shape: {np.shape(v)} (type: {type(v).__name__})"
+        elif isinstance(v, (int)):
+            structure[k] = f"{v:.0f} (type : {type(v).__name__})"
+        elif isinstance(v, float):
+            str_value = f"{v:.3f}" if .1 <= v <= 100 else f"{v:.3e}"
+            structure[k] = f"{str_value} (type : {type(v).__name__})"
         else:
-            structure[k] = "variable of type {type(v)}"
+            structure[k] = f"variable of type {type(v).__name__}"
     return structure

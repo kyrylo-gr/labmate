@@ -112,6 +112,14 @@ class AcquisitionManager:
         return cls._current_acquisition
 
     @classmethod
+    @property
+    def current_filepath(cls) -> str:
+        filepath = cls.current_acquisition.filepath
+        if filepath is None:
+            raise ValueError("No filepath specified")
+        return filepath
+
+    @classmethod
     def get_ongoing_acquisition(cls, replace: Optional[bool] = False):
         current_acquisition_param = cls.get_temp_data(cls.temp_file_path)
         assert current_acquisition_param is not None, \

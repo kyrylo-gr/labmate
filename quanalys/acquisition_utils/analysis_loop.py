@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Iterable
 
 from .analysis_data import AnalysisData
 
@@ -11,30 +11,35 @@ class AnalysisLoop(AnalysisData):
         data = data or {}
         if loop_shape is None:
             loop_shape = data.get("__loop_shape__", None)
-        self.loop_shape = loop_shape
+        self._loop_shape = loop_shape
         self.update(**data)
 
     def __iter__(self):
         if self._data is None:
             raise ValueError("Data should be set before iterating over it")
-        if self.loop_shape is None:
+        if self._loop_shape is None:
             raise ValueError("loop_shape should be set before iterating over it")
 
-        for index in range(self.loop_shape[0]):
+        for index in range(self._loop_shape[0]):
             child_kwds = {}
             for key, value in self._data.items():
                 if key[:1] == '_':
                     continue
                 # if not isinstance(value, Iterable) or isinstance(value, (str, bytes)):
-                if not hasattr(value, "__getitem__"):
+                if not hasattr(value, "__getitem__") or isinstance(value, (int, float)):
                     child_kwds[key] = value
                 elif len(value) == 1:
                     child_kwds[key] = value[0]
                 else:
                     child_kwds[key] = value[index]
 
-            if len(self.loop_shape) > 1:
-                yield AnalysisLoop(child_kwds, loop_shape=self.loop_shape[1:])
+                val = child_kwds[key]
+                if isinstance(val, (Iterable)) and \
+                        len(val) == 1 and not isinstance(val[0], (Iterable)):  # type: ignore
+                    child_kwds[key] = val[0]  # type: ignore
+
+            if len(self._loop_shape) > 1:
+                yield AnalysisLoop(child_kwds, loop_shape=self._loop_shape[1:])
             else:
                 child = AnalysisData()
                 child.update(**child_kwds)
