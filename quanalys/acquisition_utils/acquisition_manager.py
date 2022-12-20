@@ -87,6 +87,9 @@ class AcquisitionManager:
 
     def set_config_file(self, *filenames: str) -> None:
         self.config_files = [Path(file) for file in filenames]
+        for config_file in self.config_files:
+            if not config_file.exists():
+                raise ValueError(f"Configuration file at {config_file} does not exist")
 
     def get_exp_dir_path(self, experiment_name: str, data_directory: Optional[str] = None) -> str:
         data_directory = data_directory or self.data_directory
@@ -109,7 +112,8 @@ class AcquisitionManager:
         self._current_acquisition = None
         configs: Dict[str, str] = {}
         for config_file in self.config_files:
-            assert config_file.is_file(), "Config file should be a file. Cannot save directory."
+            if not config_file.is_file():
+                raise ValueError(f"Config file should be a file. Cannot save directory. Path: {config_file.absolute()}")
             with open(config_file, 'r') as file:  # pylint: disable=W1514
                 configs[config_file.name] = file.read()
 

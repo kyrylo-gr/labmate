@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional
 from IPython import get_ipython
 from IPython.core.magic import Magics, magics_class, cell_magic
@@ -8,6 +9,8 @@ from ..acquisition_utils import AcquisitionManager, AnalysisManager
 class AcquisitionNotebookManager(AcquisitionManager):
 
     am: Optional[AnalysisManager] = None
+    analysis_cell = None
+    is_old_data = False
 
     def __init__(self,
                  data_directory: Optional[str] = None, *,
@@ -27,6 +30,13 @@ class AcquisitionNotebookManager(AcquisitionManager):
         if self.am is None:
             raise ValueError('No data set')
         return self.am.save_fig(*arg, **kwds)
+
+    def save_acquisition(self, **kwds):
+        super().save_acquisition(**kwds)
+        self.load_am()
+
+    def load_am(self):
+        self.am = AnalysisManager(self.current_filepath, self.analysis_cell)
 
 
 @magics_class
@@ -50,11 +60,19 @@ class AcquisitionMagic(Magics):
     def analysic_cell(self, line, cell):
         if len(line):  # getting old
             filename = line.strip("'").strip('"')
+            self.aqm.is_old_data = True
         else:
             filename = self.aqm.current_filepath
+            self.aqm.is_old_data = False
         print("analysic_cell")
 
-        self.aqm.am = AnalysisManager(filename, cell)
+        self.aqm.analysis_cell = cell
+
+        if os.path.exists(filename):
+            self.aqm.load_am()
+        else:
+            self.aqm.am = None
+
         self.shell.run_cell(cell)
 
 
