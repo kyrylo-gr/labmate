@@ -4,7 +4,7 @@ tests/tmp_test_data/*
 tests/tmp_data/*
 *.json
 *.pdf
-*_ANALYSIS*
+*_ANALYSIS_CELL*
 .ipynb_checkpoints
 .DS_Store
 *.pyc
