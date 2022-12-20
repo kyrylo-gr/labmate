@@ -24,9 +24,8 @@ class BasicTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.name = "BasicTest"
-        AcquisitionManager()
-        AcquisitionManager.data_directory = DATA_DIR
-        AcquisitionManager.create_new_acquisition(cls.name)
+        cls.aqm = AcquisitionManager(DATA_DIR)
+        cls.aqm.create_new_acquisition(cls.name)
         return super().setUpClass()
 
     def test_dir_was_created(self):
@@ -38,11 +37,10 @@ class BasicTest(unittest.TestCase):
         """Save and load the simplest list."""
         x = np.linspace(0, 20*np.pi, 101)
         y = np.sin(x)
-        AcquisitionManager.save_acquisition(x=x, y=y)
+        self.aqm.save_acquisition(x=x, y=y)
 
-        fullpath = AcquisitionManager.current_acquisition().filepath
-        am = AnalysisManager(fullpath)
-        data = am.analysis_data
+        am = AnalysisManager(self.aqm.current_filepath)
+        data = am.data
 
         assert data is not None
 
@@ -51,7 +49,7 @@ class BasicTest(unittest.TestCase):
 
     def test_open_old_file(self):
         old_file_path = "tests/data/old_data_example.h5"
-        data = AnalysisManager(old_file_path).analysis_data
+        data = AnalysisManager(old_file_path).data
         assert data, "File probably exists, but create analysisData object"
         self.assertAlmostEqual(
             np.abs(data.get('x') - (x := np.linspace(0, 10*np.pi, 101))).sum(), 0)
@@ -62,13 +60,12 @@ class BasicTest(unittest.TestCase):
         """Save, make reload on AcquisitionManager and verify that it will found current acquisition."""
         x = np.linspace(0, 20*np.pi, 101)
         y = np.sin(x)
-        AcquisitionManager.save_acquisition(x=x, y=y)
+        self.aqm.save_acquisition(x=x, y=y)
 
-        AcquisitionManager()
+        self.aqm = AcquisitionManager(DATA_DIR)
 
-        fullpath = AcquisitionManager.current_acquisition().filepath
-        am = AnalysisManager(fullpath)
-        data = am.analysis_data
+        am = AnalysisManager(self.aqm.current_filepath)
+        data = am.data
 
         assert data is not None
 
@@ -97,9 +94,8 @@ class AcquisitionLoopTest(unittest.TestCase):
         """This setUp method runs ones of LoopTest.
         It creates a dictionary to verify with."""
         cls.name = "LoopTest"
-        AcquisitionManager()
-        AcquisitionManager.data_directory = DATA_DIR
-        AcquisitionManager.create_new_acquisition(cls.name)
+        cls.aqm = AcquisitionManager(DATA_DIR)
+        cls.aqm.create_new_acquisition(cls.name)
 
         cls.points = 101
         cls.freqs = np.linspace(0, 0.4, 10)
@@ -136,7 +132,7 @@ class AcquisitionLoopTest(unittest.TestCase):
             x, y = self.acquire_sine(freq, self.points)
             loop.append_data(y=y, freq=freq)
         loop.append_data(x=x)  # type: ignore
-        AcquisitionManager.save_acquisition(loop_freq=loop)
+        self.aqm.save_acquisition(loop_freq=loop)
 
         # Verification
         self.data_verification_for_simple_loop()
@@ -161,7 +157,7 @@ class AcquisitionLoopTest(unittest.TestCase):
             x, y = self.acquire_sine(freq, self.points)
             loop.append_data(y=y, freq=freq)
             loop.append_data(x=x, level=-1)
-        AcquisitionManager.save_acquisition(loop_freq=loop)
+        self.aqm.save_acquisition(loop_freq=loop)
 
         # Verification
         self.data_verification_for_simple_loop()
@@ -185,7 +181,7 @@ class AcquisitionLoopTest(unittest.TestCase):
             x, y = self.acquire_sine(freq, self.points)
             loop.append_data(y=y, freq=freq)
             loop.append_data(x=x, level=-1)
-            AcquisitionManager.save_acquisition(loop_freq=loop)
+            self.aqm.save_acquisition(loop_freq=loop)
 
         # Verification
         self.data_verification_for_simple_loop()
@@ -193,8 +189,8 @@ class AcquisitionLoopTest(unittest.TestCase):
     def data_verification_for_simple_loop(self):
         # fullpath = AcquisitionManager.current_acquisition.filepath
 
-        am = AnalysisManager()
-        data = am.analysis_data
+        am = AnalysisManager(self.aqm.current_filepath)
+        data = am.data
 
         assert data is not None
 
@@ -225,10 +221,8 @@ class AnalysisLoopTest(AcquisitionLoopTest):
     the AcquisitionLoopTest but has different data_verification function."""
 
     def data_verification_for_simple_loop(self):
-        fullpath = AcquisitionManager.current_acquisition().filepath
-
-        am = AnalysisManager(fullpath)
-        data = am.analysis_data
+        am = AnalysisManager(self.aqm.current_filepath)
+        data = am.data
 
         assert data is not None
 
@@ -255,9 +249,8 @@ class MultiAnalysisLoopTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         """This setUp method runs ones of LoopTest.
         It creates a dictionary to verify with."""
-        AcquisitionManager()
-        AcquisitionManager.data_directory = DATA_DIR
-        AcquisitionManager.create_new_acquisition("MultiLoopTest2")
+        cls.aqm = AcquisitionManager(DATA_DIR)
+        cls.aqm.create_new_acquisition("MultiLoopTest2")
 
         cls.points = 101
         cls.freqs = np.linspace(0, 0.4, 10)
@@ -299,16 +292,15 @@ class MultiAnalysisLoopTest(unittest.TestCase):
                 loop.append_data(y=y, freq=freq)
             loop.append_data(x=x)  # type: ignore
 
-            AcquisitionManager.save_acquisition(loop_tau_freq=loop)
+            self.aqm.save_acquisition(loop_tau_freq=loop)
 
         # Verification
         self.data_verification_for_2d_loop()
 
     def data_verification_for_2d_loop(self):
-        fullpath = AcquisitionManager.current_acquisition().filepath
 
-        am = AnalysisManager(fullpath)
-        data = am.analysis_data
+        am = AnalysisManager(self.aqm.current_filepath)
+        data = am.data
 
         assert data is not None
 

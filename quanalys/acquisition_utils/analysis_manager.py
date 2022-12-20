@@ -8,9 +8,6 @@ from typing import Optional
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 
-from .acquisition_manager import AcquisitionManager
-
-# from .acquisition_manager import AcquisitionManager
 
 from .analysis_loop import AnalysisLoop
 
@@ -34,24 +31,21 @@ class AnalysisManager:
     figure_saved = False
 
     def __init__(self,
-                 filepath: Optional[str] = None,
+                 filepath: str,
                  cell: Optional[str] = None):
-        filepath = filepath or self.get_last_filepath()
         if filepath is None:
-            raise ValueError("Cannot find the last filepath from AcquisitionManager. You must specify filepath")
+            raise ValueError("You must specify filepath")
+
         self.filepath = filepath
-        self.analysis_data = AnalysisData(filepath)
+        self.data = AnalysisData(filepath)
         # print(self.analysis_data._data)
-        for key, value in self.analysis_data.items():
+        for key, value in self.data.items():
             if isinstance(value, dict) and value.get("__loop_shape__", None) is not None:
                 # print("setting AnalysisLoop")
-                self.analysis_data[key] = AnalysisLoop(value)
+                self.data[key] = AnalysisLoop(value)
         self.cell = cell
         self.erase_previous_analysis()
         self.save_analysis_cell()
-
-    def get_last_filepath(self) -> Optional[str]:
-        return AcquisitionManager.current_filepath()
 
     def erase_previous_analysis(self):
         assert self.filepath, "You must set self.filepath before saving"

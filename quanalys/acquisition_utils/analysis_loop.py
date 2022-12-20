@@ -44,3 +44,7 @@ class AnalysisLoop(AnalysisData):
                 child = AnalysisData()
                 child.update(**child_kwds)
                 yield child
+
+    def __repr__(self):
+        self._get_repr()
+        return f"AnalysisLoop: \n {self._repr}"
