@@ -40,7 +40,7 @@ class BasicTest(unittest.TestCase):
         y = np.sin(x)
         AcquisitionManager.save_acquisition(x=x, y=y)
 
-        fullpath = AcquisitionManager.current_acquisition.filepath
+        fullpath = AcquisitionManager.current_acquisition().filepath
         am = AnalysisManager(fullpath)
         data = am.analysis_data
 
@@ -66,7 +66,7 @@ class BasicTest(unittest.TestCase):
 
         AcquisitionManager()
 
-        fullpath = AcquisitionManager.current_acquisition.filepath
+        fullpath = AcquisitionManager.current_acquisition().filepath
         am = AnalysisManager(fullpath)
         data = am.analysis_data
 
@@ -225,7 +225,7 @@ class AnalysisLoopTest(AcquisitionLoopTest):
     the AcquisitionLoopTest but has different data_verification function."""
 
     def data_verification_for_simple_loop(self):
-        fullpath = AcquisitionManager.current_acquisition.filepath
+        fullpath = AcquisitionManager.current_acquisition().filepath
 
         am = AnalysisManager(fullpath)
         data = am.analysis_data
@@ -305,7 +305,7 @@ class MultiAnalysisLoopTest(unittest.TestCase):
         self.data_verification_for_2d_loop()
 
     def data_verification_for_2d_loop(self):
-        fullpath = AcquisitionManager.current_acquisition.filepath
+        fullpath = AcquisitionManager.current_acquisition().filepath
 
         am = AnalysisManager(fullpath)
         data = am.analysis_data

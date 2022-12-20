@@ -51,7 +51,7 @@ class AnalysisManager:
         self.save_analysis_cell()
 
     def get_last_filepath(self) -> Optional[str]:
-        return AcquisitionManager.current_acquisition.filepath
+        return AcquisitionManager.current_filepath()
 
     def erase_previous_analysis(self):
         assert self.filepath, "You must set self.filepath before saving"
@@ -64,14 +64,18 @@ class AnalysisManager:
         self.fig_index = 0
         self.figure_saved = False
 
-    def save_analysis_cell(self):
-        if self.cell is None:
+    def save_analysis_cell(self, cell: Optional[str] = None):
+        cell = cell or self.cell
+        if cell is None:
             logging.debug("Cell is not set. Nothing to save")
             return
         assert self.filepath, "You must set self.filepath before saving"
 
+        if cell == "":
+            logging.warning("Cell is set to empty string, probably something is wrong")
+
         with open(self.filepath + '_ANALYSIS_CELL.py', 'w', encoding="UTF-8") as file:
-            file.write(self.cell)
+            file.write(cell)
 
     def save_fig(self, fig: Optional[Figure] = None, name=None):
         """saves the figure with the filename (...)_FIG_name

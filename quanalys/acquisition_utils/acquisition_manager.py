@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, NamedTuple, Optional, Union
+from typing import Dict, List, NamedTuple, Optional, Union
 import logging
 
 from .acquisition_data import NotebookAcquisitionData
@@ -42,15 +42,22 @@ class AcquisitionManager:
     _current_filepath = None
 
     @classmethod
-    def __init__(cls):
+    def __init__(cls,
+                 data_directory: Optional[str] = None, *,
+                 config_files: Optional[List[str]] = None):
         cls.acquisition_cell_init_code = ""
         cls.acquisition_cell_end_code = ""
         cls._current_acquisition = None
 
-        if "ACQUISITION_DIR" in os.environ:
+        if data_directory is not None:
+            cls.data_directory = data_directory
+        elif "ACQUISITION_DIR" in os.environ:
             cls.data_directory = os.environ["ACQUISITION_DIR"]
-        if "ACQUISITION_CONFIG_FILES" in os.environ:
-            cls.config_files = [Path(file) for file in os.environ["ACQUISITION_CONFIG_FILES"].split(",")]
+
+        if config_files is not None:
+            cls.set_config_file(*config_files)
+        elif "ACQUISITION_CONFIG_FILES" in os.environ:
+            cls.set_config_file(*os.environ["ACQUISITION_CONFIG_FILES"].split(","))
 
     @classmethod
     def set_config_file(cls, *filenames: str) -> None:
@@ -102,19 +109,23 @@ class AcquisitionManager:
         # print(dic._asdict())
         json_write(cls.temp_file_path, dic._asdict())
 
+        # print("before _")
         cls._current_acquisition = cls.get_ongoing_acquisition(replace=True)
 
+        # print(1, cls._current_acquisition)
+        return cls.current_acquisition()
+
     @classmethod
-    @property
     def current_acquisition(cls):
+        # print(2, cls._current_acquisition)
         if cls._current_acquisition is None:
             cls._current_acquisition = cls.get_ongoing_acquisition()
+            # print(3, cls._current_acquisition)
         return cls._current_acquisition
 
     @classmethod
-    @property
     def current_filepath(cls) -> str:
-        filepath = cls.current_acquisition.filepath
+        filepath = cls.current_acquisition().filepath
         if filepath is None:
             raise ValueError("No filepath specified")
         return filepath
@@ -135,11 +146,13 @@ class AcquisitionManager:
 
     @classmethod
     def save_acquisition(cls, **kwds):
-        acq_data = cls.current_acquisition
+        acq_data = cls.current_acquisition()
         acq_data.update(**kwds)
+        acq_data.save()
+
         acq_data.save_config_files()
         acq_data.save_cell()
-        acq_data.save()
+
         cls.last_acquisition_saved = True
 
 
