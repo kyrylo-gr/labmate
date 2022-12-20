@@ -35,8 +35,9 @@ class AcquisitionNotebookManager(AcquisitionManager):
         super().save_acquisition(**kwds)
         self.load_am()
 
-    def load_am(self):
-        self.am = AnalysisManager(self.current_filepath, self.analysis_cell)
+    def load_am(self, filename: Optional[str] = None):
+        filename = filename or self.current_filepath
+        self.am = AnalysisManager(filename, self.analysis_cell)
 
 
 @magics_class
@@ -57,20 +58,23 @@ class AcquisitionMagic(Magics):
         self.shell.run_cell(cell)
 
     @cell_magic
-    def analysic_cell(self, line, cell):
+    def analysis_cell(self, line, cell):
         if len(line):  # getting old
             filename = line.strip("'").strip('"')
             self.aqm.is_old_data = True
         else:
             filename = self.aqm.current_filepath
             self.aqm.is_old_data = False
-        print("analysic_cell")
+        print("analysis_cell")
 
         self.aqm.analysis_cell = cell
 
+        filename = filename.rstrip('.h5') + '.h5'
         if os.path.exists(filename):
-            self.aqm.load_am()
+            self.aqm.load_am(filename)
         else:
+            if self.aqm.is_old_data:
+                raise ValueError(f"Cannot load data from {filename}")
             self.aqm.am = None
 
         self.shell.run_cell(cell)
