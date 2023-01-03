@@ -1,7 +1,7 @@
 import os
 from typing import List, Optional
 from IPython import get_ipython
-from IPython.core.magic import Magics, magics_class, cell_magic, line_cell_magic
+from IPython.core.magic import Magics, magics_class, cell_magic
 
 from ..acquisition_utils import AcquisitionManager, AnalysisManager
 

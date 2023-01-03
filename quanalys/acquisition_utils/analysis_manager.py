@@ -42,7 +42,7 @@ class AnalysisManager:
         for key, value in self.data.items():
             if isinstance(value, dict) and value.get("__loop_shape__", None) is not None:
                 # print("setting AnalysisLoop")
-                self.data[key] = AnalysisLoop(value)
+                self.data._update(**{key: AnalysisLoop(value)})
         self.cell = cell
         self.erase_previous_analysis()
         self.save_analysis_cell()

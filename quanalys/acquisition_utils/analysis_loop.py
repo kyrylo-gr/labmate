@@ -12,7 +12,7 @@ class AnalysisLoop(AnalysisData):
         if loop_shape is None:
             loop_shape = data.get("__loop_shape__", None)
         self._loop_shape = loop_shape
-        self.update(**data)
+        self._update(**data)
 
     def __iter__(self):
         if self._data is None:
@@ -42,7 +42,7 @@ class AnalysisLoop(AnalysisData):
                 yield AnalysisLoop(child_kwds, loop_shape=self._loop_shape[1:])
             else:
                 child = AnalysisData()
-                child.update(**child_kwds)
+                child._update(**child_kwds)
                 yield child
 
     def __repr__(self):

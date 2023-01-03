@@ -1,15 +1,27 @@
 import json
+import os
 import h5py
-from typing import Union
+from typing import Protocol, Union
 
 import numpy as np
 
 
+class ClassWithAsdict(Protocol):
+    """Any class with predefined `_asdict` attribute.
+    `_asdict` class should return a dictionary with only list and dict.
+    It should not be a dict of other classes"""
+
+    def _asdict(self, *args, **kwargs) -> dict:
+        ...
+
+
 def save_sub_dict(
     group: Union[h5py.File, h5py.Group],
-    data: Union[dict, list, np.ndarray],
+    data: Union[dict, list, np.ndarray, ClassWithAsdict],
     key: str
 ):
+    if hasattr(data, '_asdict'):
+        data = data._asdict()  # type: ignore
     if isinstance(data, dict):
         g = group.create_group(key)
         for k, v in data.items():
@@ -22,7 +34,11 @@ def save_dict(
     filename: str,
     data: dict,
 ):
-    with h5py.File(filename, 'a') as file:
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
+
+    mode = 'a' if os.path.exists(filename) else 'w'
+    with h5py.File(filename, mode) as file:
         for key, value in data.items():
             if key in file.keys():
                 file.pop(key)
@@ -36,6 +52,7 @@ def del_dict(
     filename: str,
     key: str
 ):
+
     with h5py.File(filename, 'a') as file:
         file.pop(key)
 
@@ -71,9 +88,9 @@ def get_dict_structure(data: dict) -> dict:
             structure[k] = get_dict_structure(v)
         elif isinstance(v, (np.ndarray, list)):
             structure[k] = f"shape: {np.shape(v)} (type: {type(v).__name__})"
-        elif isinstance(v, (int)):
+        elif isinstance(v, (int, np.int_)):  # type: ignore
             structure[k] = f"{v:.0f} (type : {type(v).__name__})"
-        elif isinstance(v, float):
+        elif isinstance(v, (float, np.float_)):  # type: ignore
             str_value = f"{v:.3f}" if .1 <= v <= 100 else f"{v:.3e}"
             structure[k] = f"{str_value} (type : {type(v).__name__})"
         else:

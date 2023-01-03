@@ -155,7 +155,7 @@ class AcquisitionManager:
             filepath=filepath,
             configs=configs,
             cell=cell,
-            replace=replace)
+            overwrite=replace)
 
     def save_acquisition(self, **kwds):
         acq_data = self.current_acquisition
