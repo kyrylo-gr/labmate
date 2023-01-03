@@ -104,7 +104,7 @@ class AcquisitionManager:
 
     @staticmethod
     def get_temp_data(path) -> Optional[AcquisitionTmpData]:
-        if not os.path.exists(os.path.join(os.path.dirname(__file__), "temp.json")):
+        if not os.path.exists(path):
             return None
         return AcquisitionTmpData(**json_read(path))
 

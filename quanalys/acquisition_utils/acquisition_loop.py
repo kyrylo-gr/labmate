@@ -13,15 +13,19 @@ class AcquisitionLoop(object):
         self._data_flatten = {}
 
     def __call__(self, iterable):
-        self.current_loop += 1
-        if self.current_loop > len(self.loop_shape):
-            self.loop_shape.append(len(iterable))
-        else:
-            assert len(iterable) == self.loop_shape[self.current_loop - 1]
-        for i in iterable:
-            yield i  # for body executes here
+        length = len(iterable)
 
-        self.current_loop -= 1
+        def loop_iter():
+            self.current_loop += 1
+            if self.current_loop > len(self.loop_shape):
+                self.loop_shape.append(length)
+            else:
+                assert length == self.loop_shape[self.current_loop - 1]
+            for i in iterable:
+                yield i  # for body executes here
+            self.current_loop -= 1
+
+        return GenerToIter(loop_iter(), length)
 
     def atomic_data_shape(self, key):
         return np.shape(self._data_flatten[key][0])
@@ -67,3 +71,18 @@ class AcquisitionLoop(object):
         data = self.data
         data['__loop_shape__'] = self.loop_shape
         return data
+
+
+class GenerToIter:
+    def __init__(self, gen, length=None):
+        self.gen = gen
+        self.length = length
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.gen)
+
+    def __len__(self):
+        return self.length
