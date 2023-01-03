@@ -1,7 +1,7 @@
 import os
 from typing import List, Optional
 from IPython import get_ipython
-from IPython.core.magic import Magics, magics_class, cell_magic
+from IPython.core.magic import Magics, magics_class, cell_magic, line_cell_magic
 
 from ..acquisition_utils import AcquisitionManager, AnalysisManager
 
@@ -53,8 +53,13 @@ class AcquisitionMagic(Magics):
 
     @cell_magic
     def acquisition_cell(self, line, cell):
-        experiment_name = line
-        self.aqm.create_new_acquisition(experiment_name, cell)
+        experiment_name = line.strip()
+        acquisition = self.aqm.create_new_acquisition(experiment_name, cell)
+        print(id(self.aqm), self.aqm.current_filepath, acquisition.filepath)
+        if os.path.exists("init_acquisition_cell.py"):
+            with open("init_acquisition_cell.py", 'r') as f:
+                init_code = f.read()
+            cell = init_code + cell
         self.shell.run_cell(cell)
 
     @cell_magic
