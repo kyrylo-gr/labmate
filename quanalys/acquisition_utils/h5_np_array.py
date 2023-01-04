@@ -11,7 +11,10 @@ class H5NpArray:
     def __init__(self, *arg, **kwargs):
         self.data = np.array(*arg, **kwargs)
 
-    def __init__filepath__(self, filepath: str, filekey: str):
+    def __init__filepath__(self, *, filepath: str, filekey: str, save_on_edit: bool = False, **_):
+        if not save_on_edit:
+            raise ValueError("Cannot use H5NpArray is save_on_edit=False")
+
         self._filename = filepath
         self._filekey = filekey
 

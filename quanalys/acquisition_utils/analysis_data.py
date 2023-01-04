@@ -164,14 +164,12 @@ class AnalysisData:
         self.__add_key(__key)
         __value = h5py_utils.transform_to_possible_formats(__value)
 
-        if isinstance(__value, H5NpArray):
+        if hasattr(__value, "__init__filepath__"):
             if self._filepath is None:
-                raise ValueError("Cannot create a H5NpArray object without specifying a file")
-            if not self._save_on_edit:
-                raise ValueError("Cannot use H5NpArray is save_on_edit=False")
+                raise ValueError("Cannot run __init__filepath__ with file unspecified")
 
-            __value.__init__filepath__(
-                filepath=self._filepath, filekey=__key)
+            __value.__init__filepath__(  # type: ignore
+                filepath=self._filepath, filekey=__key, save_on_edit=self._save_on_edit)
 
         self._data.__setitem__(__key, __value)
 
