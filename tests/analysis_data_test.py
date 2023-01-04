@@ -40,7 +40,11 @@ class WithoutSavingTest(unittest.TestCase):
         self.compare_dict(self.data_smart._asdict(), self.data_dict)  # noqa
 
     def compare_dict(self, d1, d2):
-        self.assertDictEqual(d1, d2)  # noqa
+        self.assertSetEqual(
+            set(d1.keys()), set(d2.keys()))
+
+        for key in d1.keys():
+            self.assertTrue(np.all(d1[key] == d2[key]))
 
     def apply_func(self, func, *args, **kwds):
         getattr(self.data_dict, func)(*args, **kwds)
@@ -94,6 +98,10 @@ class WithoutSavingTest(unittest.TestCase):
         self.data_smart['a3'] = data
 
         self.assertNpListEqual(self.data_smart.a3, data)
+
+    def test_attributeError(self):
+        with self.assertRaises(AttributeError):
+            self.data_smart.no_exists
 
     def test_setattr(self):
         data = self.create_random_data()
@@ -279,6 +287,42 @@ class ReadModeTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             d.t = 2
 
+    def test_lock_data_without_args(self):
+        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        self.assertEqual(d['t'], 3)
+        d['t2'] = 4
+        d.lock_data()
+        self.assertEqual(d['t'], 3)
+        with self.assertRaises(TypeError):
+            d['t'] = 2
+        with self.assertRaises(TypeError):
+            d['t2'] = 2
+
+    def test_lock_data_with_str(self):
+        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d['t1'], d['t2'] = 3, 4
+
+        d.lock_data('t2')
+
+        self.assertEqual(d['t1'], 3)
+        d['t1'] = 5
+        self.assertEqual(d['t1'], 5)
+
+        self.assertEqual(d['t2'], 4)
+        with self.assertRaises(TypeError):
+            d['t2'] = 2
+
+    def test_lock_data_with_list(self):
+        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d['t1'], d['t2'] = 3, 4
+
+        d.lock_data(['t1', 't2'])
+
+        with self.assertRaises(TypeError):
+            d['t1'] = 2
+        with self.assertRaises(TypeError):
+            d['t2'] = 2
+
     @classmethod
     def tearDownClass(cls):
         """Remove tmp_test_data directory ones all test finished."""
@@ -292,11 +336,81 @@ class SavingDifferentFormatTest(unittest.TestCase):
     """Saving different type of variables inside h5"""
 
     def setUp(self):
-        self.data_smart = AnalysisData(
-            filepath=DATA_FILE_PATH, overwrite=True, save_on_edit=True)
+        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
+        d['t'] = 3
+
+    def compare_dict(self, d1, d2):
+        self.assertSetEqual(
+            set(d1.keys()), set(d2.keys()))
+
+        for key in d1.keys():
+            self.assertTrue(np.all(d1[key] == d2[key]))
+
+    def test_np_array(self):
+        data = np.linspace(0, 10, 100).reshape(10, 10)
+        d = AnalysisData(
+            DATA_FILE_PATH, save_on_edit=True, overwrite=False).update(test=data)
+        self.assertTrue(np.all(data == d['test']))
+        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        self.assertTrue(np.all(data == d['test']))
 
     def test_dict_save(self):
-        pass
+        data = {'a': 5,
+                'b': np.linspace(0, 10, 100),
+                'c': list(range(100)),
+                'd': np.linspace(0, 10, 100).reshape(10, 10)}
+
+        d = AnalysisData(
+            DATA_FILE_PATH, save_on_edit=True, overwrite=False).update(t=data)
+        self.compare_dict(d['t'], data)  # type: ignore
+
+        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        self.compare_dict(d['t'], data)  # type: ignore
+
+    def test_save_random_class(self):
+        class Test:
+            """Random class that cannot be saved"""
+
+        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+
+        with self.assertRaises(TypeError):
+            d.update(**{'a': 5, 'b': Test()})
+
+        self.assertEqual(d['t'], 3)
+        self.assertEqual(d['a'], 5)
+
+    def test_save_asdict_class(self):
+        class Test:
+            def _asdict(self):
+                return {'a': 5, 'b': 4}
+
+        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d['t'] = Test()
+
+        self.assertEqual(d['t', 'a'], 5)
+        self.assertEqual(d['t', 'b'], 4)
+
+        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+
+        self.assertEqual(d['t', 'a'], 5)
+        self.assertEqual(d['t', 'b'], 4)
+
+    def test_save_not_converting_class(self):
+        class Test:
+            should_not_be_converted = True
+            a = 7
+
+            def _asdict(self):
+                return {'a': 5}
+
+        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d['t'] = Test()
+
+        self.assertEqual(d['t'].a, 7)  # type: ignore
+
+        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+
+        self.assertEqual(d['t', 'a'], 5)
 
     @classmethod
     def tearDownClass(cls):

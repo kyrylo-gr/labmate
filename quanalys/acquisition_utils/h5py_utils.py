@@ -11,8 +11,29 @@ class ClassWithAsdict(Protocol):
     `_asdict` class should return a dictionary with only list and dict.
     It should not be a dict of other classes"""
 
-    def _asdict(self, *args, **kwargs) -> dict:
+    def _asdict(self) -> dict:
         ...
+
+
+DICT_OR_LIST_LIKE = Union[dict, list, np.ndarray, ClassWithAsdict, np.int_, np.float_, float, int]
+RIGHT_DATA_TYPE = Union[dict, np.ndarray, np.int_, np.float_, float, int]
+
+
+def transform_to_possible_formats(data: DICT_OR_LIST_LIKE) -> DICT_OR_LIST_LIKE:
+    if hasattr(data, 'should_not_be_converted'):
+        if data.should_not_be_converted is True:  # type: ignore
+            return data
+    if hasattr(data, '_asdict'):
+        data = data._asdict()  # type: ignore
+    if isinstance(data, dict):
+        for key, value in data.items():
+            data[key] = transform_to_possible_formats(value)
+        return data
+    if isinstance(data, (tuple, set)):
+        data = list(data)
+    if isinstance(data, list):
+        return np.array(data)
+    return data
 
 
 def save_sub_dict(
