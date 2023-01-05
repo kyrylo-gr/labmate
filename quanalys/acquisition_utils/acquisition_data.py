@@ -1,9 +1,9 @@
 from typing import Dict, Optional
 
-from .analysis_data import AnalysisData
+from ..syncdata import SyncData
 
 
-class AcquisitionData(AnalysisData):
+class AcquisitionData(SyncData):
     """TODO"""
 
     def __init__(self,
@@ -23,12 +23,12 @@ class NotebookAcquisitionData(AcquisitionData):
                  overwrite: Optional[bool] = True):
         super().__init__(filepath=filepath, overwrite=overwrite)
 
-        self.configs = configs
-        self.cell = cell
+        self['configs'] = configs
+        self['cell'] = cell
 
     def save_config_files(self, configs: Optional[Dict[str, str]] = None, filepath: Optional[str] = None):
         filepath = self._check_if_filepath_was_set(filepath, self._filepath)
-        configs = configs or self.configs
+        configs = configs or self['configs']
         if configs is None:
             return
         for name, value in configs.items():
@@ -38,7 +38,7 @@ class NotebookAcquisitionData(AcquisitionData):
     def save_cell(self, cell: Optional[str] = None, filepath: Optional[str] = None):
         filepath = self._check_if_filepath_was_set(filepath, self._filepath)
 
-        cell = cell or self.cell
+        cell = cell or self['cell']
         if cell is None:
             return
 

@@ -1,10 +1,16 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, List, Optional, Union, overload
 
 import numpy as np
+
+from ..syncdata import h5py_utils
 
 
 class AcquisitionLoop(object):
     """TODO"""
+    __filename__: Optional[str] = None
+    __filekey__: Optional[str] = None
+    __should_not_be_converted__ = True
+    __save_on_edit__: bool = False
 
     def __init__(self):
         self.loop_shape: List[int] = []  # length of each loop level
@@ -12,8 +18,39 @@ class AcquisitionLoop(object):
         self.data_level = {}  # for each keyword, indicates at which loop_level it is scanned
         self._data_flatten = {}
 
-    def __call__(self, iterable):
-        length = len(iterable)
+    @overload
+    def __call__(self, iterable: Iterable, **kwds: None) -> Iterable:
+        ...
+
+    @overload
+    def __call__(self, stop: Union[int, float], **kwds: None) -> Iterable:
+        ...
+
+    @overload
+    def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], **kwds: None
+                 ) -> Iterable:
+        ...
+
+    @overload
+    def __call__(self, *args: None, **kwds) -> None:
+        ...
+
+    def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Union[Iterable, None]:
+        if iterable is None and len(args) == 0:
+            return self.append_data(**kwds)
+
+        if iterable is None:
+            if isinstance(args[0], (int, float)):
+                iterable = np.arange(*args)
+            else:
+                iterable = args[0]
+
+        assert iterable is not None, "iterable must be not None"
+
+        if not hasattr(iterable, "__len__"):
+            iterable = list(iterable)
+
+        length = len(iterable)  # type: ignore
 
         def loop_iter():
             self.current_loop += 1
@@ -67,10 +104,28 @@ class AcquisitionLoop(object):
                 # print()
                 self._data_flatten[key].append(value)
 
+        if self.__save_on_edit__:
+            self.save(just_update=True)
+
     def _asdict(self):
         data = self.data
         data['__loop_shape__'] = self.loop_shape
         return data
+
+    def __init__filepath__(self, *, filepath: str, filekey: str, save_on_edit: bool = False, **_):
+        self.__filename__ = filepath
+        self.__filekey__ = filekey
+        self.__save_on_edit__ = save_on_edit
+
+    def save(self, just_update=False):
+        del just_update
+
+        if not self.__filename__ or not self.__filekey__:
+            raise ValueError("Cannot save changes without filename and filekey provided")
+
+        h5py_utils.save_dict(
+            filename=self.__filename__,
+            data={self.__filekey__: self._asdict()})
 
 
 class GenerToIter:

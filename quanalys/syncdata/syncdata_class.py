@@ -16,7 +16,7 @@ def editing(func):
     return run_func_and_clean_precalculated_results
 
 
-class AnalysisData:
+class SyncData:
     """
     This object is obtained by loading a dataset contained in a .h5 file.
     Datasets can be obtained as in a dictionary: e.g.
@@ -29,17 +29,28 @@ class AnalysisData:
     _read_only: Union[bool, Set[str]]
 
     def __init__(self,
+                 filepath_or_data: Optional[Union[str, dict]] = None, /, *,
                  filepath: Optional[str] = None,
                  save_on_edit: bool = False,
                  read_only: Optional[Union[bool, Set[str]]] = None,
-                 overwrite: Optional[bool] = None):
+                 overwrite: Optional[bool] = None,
+                 data: Optional[dict] = None):
         """This class should not contain any not local attributes.
         Look in __setattr__() to see why it would not work."""
 
-        self._data = {}
+        if isinstance(filepath_or_data, dict):
+            # print("Data given")
+            data = data or filepath_or_data
+
+        if isinstance(filepath_or_data, str):
+            # print("Filepath given")
+            filepath = filepath or filepath_or_data
+
+        self._data = data or {}
         self._attrs = set()
         self._last_update = set()
         self._save_on_edit = save_on_edit
+        self._classes_should_be_saved_internally = set()
 
         if read_only is None:
             read_only = (save_on_edit is False and not overwrite) and filepath is not None
@@ -148,21 +159,27 @@ class AnalysisData:
     def get(self, key: str, default: Optional[Any] = None) -> Optional[Any]:
         return self._data.get(key, default)
 
-    def __getitem__(self, __key: Union[str, tuple]) -> h5py_utils.DICT_OR_LIST_LIKE:
+    def __getitem__(self, __key: Union[str, tuple]) -> Any:
         if isinstance(__key, tuple):
-            data = self._data
-            for key in __key:
-                data = data[key]
-            return data
-
+            return self.__getitem__(__key[0]).__getitem__(
+                __key[1:] if len(__key) > 2 else __key[1])
         return self._data.__getitem__(__key)
 
     @editing
-    def __setitem__(self, __key: str, __value: h5py_utils.DICT_OR_LIST_LIKE) -> None:
+    def __setitem__(self, __key: Union[str, tuple], __value: h5py_utils.DICT_OR_LIST_LIKE) -> None:
+        if isinstance(__key, tuple):
+            self.__add_key(__key[0])
+            return self.__getitem__(__key[0]).__setitem__(
+                __key[1:] if len(__key) > 2 else __key[1], __value)
+
         if self.__check_read_only_true(__key):
             raise TypeError(f"Cannot set a read-only '{__key}' attribute")
+
         self.__add_key(__key)
         __value = h5py_utils.transform_to_possible_formats(__value)
+
+        if hasattr(__value, "save"):
+            self._classes_should_be_saved_internally.add(__key)
 
         if hasattr(__value, "__init__filepath__"):
             if self._filepath is None:
@@ -178,10 +195,12 @@ class AnalysisData:
 
     def __getattr__(self, __name: str) -> Any:
         """Will be called if __getattribute__ does not work"""
-        # print(f"custom getting attribute {__name}")
         if __name in self._data:
-            return self.get(__name)
-        raise AttributeError(f"No attribute {__name} found in AnalysisData")
+            data = self.get(__name)
+            if isinstance(data, dict):
+                return SyncData(data)
+            return data
+        raise AttributeError(f"No attribute {__name} found in SyncDatas")
 
     def __setattr__(self, __name: str, __value: h5py_utils.DICT_OR_LIST_LIKE) -> None:
         """Call every time you set an attribute."""
@@ -211,9 +230,10 @@ class AnalysisData:
         self._get_repr()
 
         not_saved = '' if self._last_data_saved or self._read_only is True else " (not saved)"
-        mode = 'r' if self._read_only is True else 'w' if self._read_only is True else 'rw'
+        mode = 'r' if self._read_only is True else 'w' if self._read_only else 'rw'
+        mode = 'l' if self._filepath is None else mode
 
-        return f"AnalysisData ({mode}){not_saved}: \n {self._repr}"
+        return f"{type(self).__name__} ({mode}){not_saved}: \n {self._repr}"
 
     def __contains__(self, item):
         return item in self._data
@@ -222,6 +242,7 @@ class AnalysisData:
         return list(self._attrs) + self._default_attr
 
     def save(self, just_update: bool = False, filepath: Optional[str] = None):
+        # print(f"saving globally with {just_update=}")
         if self._read_only is True:
             raise ValueError("Cannot save opened in a read-only mode. Should reopen the file")
 
@@ -236,9 +257,19 @@ class AnalysisData:
                 data=self._data)
             return self
 
+        for key in last_update:
+            if key in self._classes_should_be_saved_internally:
+                obj = self._data[key]
+                if hasattr(obj, 'save'):
+                    self._data[key].save(just_update=just_update)
+                else:
+                    self._classes_should_be_saved_internally.remove(key)
+
         h5py_utils.save_dict(
             filename=filepath + '.h5',
-            data={key: self._data.get(key, None) for key in last_update})
+            data={key: self._data.get(key, None) for key in last_update
+                  if key not in self._classes_should_be_saved_internally})
+
         return self
 
     @staticmethod
@@ -258,5 +289,8 @@ class AnalysisData:
     def _asdict(self):
         return self._data
 
-    def h5nparray(self, data):
-        return H5NpArray(data)
+    def h5nparray(self, data) -> H5NpArray:
+        return data.view(H5NpArray)
+
+    def create_item_as_instance(self, cls, key, *args, **kwds):
+        self[key] = cls(*args, **kwds)

@@ -13,8 +13,8 @@ import unittest
 
 import numpy as np
 
-from quanalys.acquisition_utils import AnalysisData
-from quanalys.acquisition_utils import h5py_utils
+from quanalys.syncdata import SyncData
+from quanalys.syncdata import h5py_utils
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
@@ -25,7 +25,7 @@ class WithoutSavingTest(unittest.TestCase):
     """Test that AcquisitionData should perform as dictionary"""
 
     def setUp(self):
-        self.data_smart = AnalysisData()
+        self.data_smart = SyncData()
         self.data_dict = {}
 
     @staticmethod
@@ -49,6 +49,16 @@ class WithoutSavingTest(unittest.TestCase):
     def apply_func(self, func, *args, **kwds):
         getattr(self.data_dict, func)(*args, **kwds)
         getattr(self.data_smart, func)(*args, **kwds)
+
+    def test_init_empty(self):
+        data_dict = {}
+        data_smart = SyncData({})
+        self.compare_dict(data_smart._asdict(), data_dict)  # noqa
+
+    def test_init_dict(self):
+        data_dict = {'a': [1, 2, 3]}
+        data_smart = SyncData(data_dict)
+        self.compare_dict(data_smart._asdict(), data_dict)  # noqa
 
     def test_update(self):
         self.apply_func("update", a=self.create_random_data())
@@ -101,7 +111,7 @@ class WithoutSavingTest(unittest.TestCase):
 
     def test_attributeError(self):
         with self.assertRaises(AttributeError):
-            self.data_smart.no_exists
+            _ = self.data_smart.no_exists
 
     def test_setattr(self):
         data = self.create_random_data()
@@ -147,11 +157,11 @@ class WithoutSavingTest(unittest.TestCase):
 
 
 class SavingOnEditTest(WithoutSavingTest):
-    """Testing that AnalysisData saves the data on edit.
+    """Testing that SyncData saves the data on edit.
     Testing with simple data"""
 
     def setUp(self):
-        self.data_smart = AnalysisData(
+        self.data_smart = SyncData(
             filepath=DATA_FILE_PATH, overwrite=True, save_on_edit=True)
         # self.data_dict = {}
 
@@ -182,62 +192,62 @@ class InitSetupTest(unittest.TestCase):
     """Tests mode and internal variable depending on different init setup"""
 
     def setUp(self):
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
+        d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
         d['t'] = 3
 
     def test_with_nothing(self):
-        d = AnalysisData()
+        d = SyncData()
         self.assertEqual(d._read_only, False)  # pylint: disable=W0212
 
     def test_classical_read(self):
-        d = AnalysisData(DATA_FILE_PATH)
+        d = SyncData(DATA_FILE_PATH)
         self.assertEqual(d._read_only, True)  # pylint: disable=W0212
         self.assertEqual(d['t'], 3)
 
     def test_explicit_read(self):
-        d = AnalysisData(DATA_FILE_PATH, read_only=True)
+        d = SyncData(DATA_FILE_PATH, read_only=True)
         self.assertEqual(d._read_only, True)  # pylint: disable=W0212
         self.assertEqual(d['t'], 3)
 
     def test_impossible_read_save(self):
         with self.assertRaises(ValueError):
-            AnalysisData(DATA_FILE_PATH, read_only=True, save_on_edit=True)
+            SyncData(DATA_FILE_PATH, read_only=True, save_on_edit=True)
 
         with self.assertRaises(ValueError):
-            AnalysisData(DATA_FILE_PATH, read_only=True, overwrite=True)
+            SyncData(DATA_FILE_PATH, read_only=True, overwrite=True)
 
     def test_overwrite(self):
-        d = AnalysisData(DATA_FILE_PATH, overwrite=True)
+        d = SyncData(DATA_FILE_PATH, overwrite=True)
         self.assertEqual(d._read_only, False)  # pylint: disable=W0212
         self.assertEqual(d._save_on_edit, False)  # pylint: disable=W0212
         with self.assertRaises(KeyError):
-            d['t']
+            _ = d['t']
 
     def test_overwrite_write_mode(self):
-        d = AnalysisData(DATA_FILE_PATH, overwrite=True, read_only=False)
+        d = SyncData(DATA_FILE_PATH, overwrite=True, read_only=False)
         self.assertEqual(d._read_only, False)  # pylint: disable=W0212
         self.assertEqual(d._save_on_edit, False)  # pylint: disable=W0212
         with self.assertRaises(KeyError):
-            d['t']
+            _ = d['t']
 
     def test_open_to_save(self):
-        d = AnalysisData(DATA_FILE_PATH, overwrite=False, read_only=False)
+        d = SyncData(DATA_FILE_PATH, overwrite=False, read_only=False)
         self.assertEqual(d._read_only, False)  # pylint: disable=W0212
         self.assertEqual(d._save_on_edit, False)  # pylint: disable=W0212
         self.assertEqual(d['t'], 3)
 
     def test_raise_file_exist(self):
         with self.assertRaises(ValueError):
-            AnalysisData(DATA_FILE_PATH, read_only=False)
+            SyncData(DATA_FILE_PATH, read_only=False)
 
         with self.assertRaises(ValueError):
-            AnalysisData(DATA_FILE_PATH, read_only=False, save_on_edit=True)
+            SyncData(DATA_FILE_PATH, read_only=False, save_on_edit=True)
 
         with self.assertRaises(ValueError):
-            AnalysisData(DATA_FILE_PATH, save_on_edit=True)
+            SyncData(DATA_FILE_PATH, save_on_edit=True)
 
     def test_open_to_save_with_save_on_edit(self):
-        d = AnalysisData(DATA_FILE_PATH, overwrite=False, save_on_edit=True)
+        d = SyncData(DATA_FILE_PATH, overwrite=False, save_on_edit=True)
         self.assertEqual(d._read_only, False)  # pylint: disable=W0212
         self.assertEqual(d._save_on_edit, True)  # pylint: disable=W0212
         self.assertEqual(d['t'], 3)
@@ -245,11 +255,11 @@ class InitSetupTest(unittest.TestCase):
     def test_no_file_exist_read_mode(self):
         os.remove(DATA_FILE_PATH)
         with self.assertRaises(ValueError):
-            AnalysisData(DATA_FILE_PATH)
+            SyncData(DATA_FILE_PATH)
 
     def test_no_file_exist_save_mode(self):
         os.remove(DATA_FILE_PATH)
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True)
+        d = SyncData(DATA_FILE_PATH, save_on_edit=True)
         self.assertEqual(d._read_only, False)  # pylint: disable=W0212
         self.assertEqual(d._save_on_edit, True)  # pylint: disable=W0212
 
@@ -266,11 +276,11 @@ class ReadModeTest(unittest.TestCase):
     """Test that no pos"""
 
     def setUp(self):
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
+        d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
         d['t'] = 3
 
     def test_cannot_change_in_read_mode(self):
-        d = AnalysisData(DATA_FILE_PATH)
+        d = SyncData(DATA_FILE_PATH)
 
         with self.assertRaises(TypeError):
             d['t'] = 2
@@ -288,7 +298,7 @@ class ReadModeTest(unittest.TestCase):
             d.t = 2
 
     def test_lock_data_without_args(self):
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
         self.assertEqual(d['t'], 3)
         d['t2'] = 4
         d.lock_data()
@@ -299,7 +309,7 @@ class ReadModeTest(unittest.TestCase):
             d['t2'] = 2
 
     def test_lock_data_with_str(self):
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
         d['t1'], d['t2'] = 3, 4
 
         d.lock_data('t2')
@@ -313,7 +323,7 @@ class ReadModeTest(unittest.TestCase):
             d['t2'] = 2
 
     def test_lock_data_with_list(self):
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
         d['t1'], d['t2'] = 3, 4
 
         d.lock_data(['t1', 't2'])
@@ -332,11 +342,11 @@ class ReadModeTest(unittest.TestCase):
         return super().tearDownClass()
 
 
-class SavingDifferentFormatTest(unittest.TestCase):
+class SavingOnEditDifferentFormatTest(unittest.TestCase):
     """Saving different type of variables inside h5"""
 
     def setUp(self):
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
+        d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
         d['t'] = 3
 
     def compare_dict(self, d1, d2):
@@ -346,12 +356,18 @@ class SavingDifferentFormatTest(unittest.TestCase):
         for key in d1.keys():
             self.assertTrue(np.all(d1[key] == d2[key]))
 
-    def test_np_array(self):
+    def create_file(self):
+        return SyncData(
+            DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+
+    def read_file(self, _):
+        return SyncData(DATA_FILE_PATH)
+
+    def test_np_array_save(self):
         data = np.linspace(0, 10, 100).reshape(10, 10)
-        d = AnalysisData(
-            DATA_FILE_PATH, save_on_edit=True, overwrite=False).update(test=data)
+        d = self.create_file().update(test=data)
         self.assertTrue(np.all(data == d['test']))
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d = self.read_file(d)
         self.assertTrue(np.all(data == d['test']))
 
     def test_dict_save(self):
@@ -360,21 +376,21 @@ class SavingDifferentFormatTest(unittest.TestCase):
                 'c': list(range(100)),
                 'd': np.linspace(0, 10, 100).reshape(10, 10)}
 
-        d = AnalysisData(
-            DATA_FILE_PATH, save_on_edit=True, overwrite=False).update(t=data)
+        d = self.create_file().update(t=data)
         self.compare_dict(d['t'], data)  # type: ignore
 
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d = self.read_file(d)
         self.compare_dict(d['t'], data)  # type: ignore
 
     def test_save_random_class(self):
         class Test:
             """Random class that cannot be saved"""
 
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d = self.create_file()
 
         with self.assertRaises(TypeError):
             d.update(**{'a': 5, 'b': Test()})
+            d.save()
 
         self.assertEqual(d['t'], 3)
         self.assertEqual(d['a'], 5)
@@ -384,31 +400,31 @@ class SavingDifferentFormatTest(unittest.TestCase):
             def _asdict(self):
                 return {'a': 5, 'b': 4}
 
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d = self.create_file()
         d['t'] = Test()
 
         self.assertEqual(d['t', 'a'], 5)
         self.assertEqual(d['t', 'b'], 4)
 
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d = self.read_file(d)
 
         self.assertEqual(d['t', 'a'], 5)
         self.assertEqual(d['t', 'b'], 4)
 
     def test_save_not_converting_class(self):
         class Test:
-            should_not_be_converted = True
+            __should_not_be_converted__ = True
             a = 7
 
             def _asdict(self):
                 return {'a': 5}
 
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d = self.create_file()
         d['t'] = Test()
 
-        self.assertEqual(d['t'].a, 7)  # type: ignore
+        self.assertEqual(d['t'].a, 7)  # type: ignore  # pylint: disable=E1101
 
-        d = AnalysisData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d = self.read_file(d)
 
         self.assertEqual(d['t', 'a'], 5)
 
@@ -419,6 +435,16 @@ class SavingDifferentFormatTest(unittest.TestCase):
         if os.path.exists(DATA_DIR):
             shutil.rmtree(DATA_DIR)
         return super().tearDownClass()
+
+
+class SavingDifferentFormatTest(SavingOnEditDifferentFormatTest):
+    def create_file(self):
+        return SyncData(
+            DATA_FILE_PATH, save_on_edit=False, overwrite=False, read_only=False)
+
+    def read_file(self, d):
+        d.save()
+        return SyncData(DATA_FILE_PATH)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 import json
 import os
 import h5py
-from typing import Protocol, Union
+from typing import Optional, Protocol, Union
 
 import numpy as np
 
@@ -15,16 +15,29 @@ class ClassWithAsdict(Protocol):
         ...
 
 
-DICT_OR_LIST_LIKE = Union[dict, list, np.ndarray, ClassWithAsdict, np.int_, np.float_, float, int]
+class ClassWithAsarray(Protocol):
+    """Any class with predefined `asarray` attribute.
+    `asarray` class should return a np.ndarray."""
+
+    def asarray(self) -> np.ndarray:
+        ...
+
+
+DICT_OR_LIST_LIKE = Optional[Union[dict, list, np.ndarray, ClassWithAsdict, ClassWithAsarray,
+                                   np.int_, np.float_, float, int, str]]
 RIGHT_DATA_TYPE = Union[dict, np.ndarray, np.int_, np.float_, float, int]
 
 
 def transform_to_possible_formats(data: DICT_OR_LIST_LIKE) -> DICT_OR_LIST_LIKE:
-    if hasattr(data, 'should_not_be_converted'):
-        if data.should_not_be_converted is True:  # type: ignore
+    if hasattr(data, '__should_not_be_converted__'):
+        if data.__should_not_be_converted__ is True:  # type: ignore
             return data
     if hasattr(data, '_asdict'):
         data = data._asdict()  # type: ignore
+
+    if hasattr(data, 'asarray'):
+        data = data.asarray()  # type: ignore
+
     if isinstance(data, dict):
         for key, value in data.items():
             data[key] = transform_to_possible_formats(value)
@@ -43,6 +56,8 @@ def save_sub_dict(
 ):
     if hasattr(data, '_asdict'):
         data = data._asdict()  # type: ignore
+    if hasattr(data, 'asarray'):
+        data = data.asarray()  # type: ignore
     if isinstance(data, dict):
         g = group.create_group(key)
         for k, v in data.items():

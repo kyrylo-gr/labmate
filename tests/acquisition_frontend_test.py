@@ -50,7 +50,7 @@ class BasicTest(unittest.TestCase):
     def test_open_old_file(self):
         old_file_path = "tests/data/old_data_example.h5"
         data = AnalysisManager(old_file_path).data
-        assert data, "File probably exists, but create analysisData object"
+        assert data, "File probably exists, but create SyncData object"
         self.assertAlmostEqual(
             np.abs(data.get('x') - (x := np.linspace(0, 10*np.pi, 101))).sum(), 0)
         self.assertAlmostEqual(

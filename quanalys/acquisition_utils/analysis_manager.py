@@ -14,7 +14,7 @@ from .analysis_loop import AnalysisLoop
 # def load_acquisition():
 #     return AnalysisManager.current_analysis
 
-from .analysis_data import AnalysisData
+from ..syncdata import SyncData
 
 
 class AnalysisManager:
@@ -37,7 +37,7 @@ class AnalysisManager:
             raise ValueError("You must specify filepath")
 
         self.filepath = filepath
-        self.data = AnalysisData(filepath)
+        self.data = SyncData(filepath)
         # print(self.analysis_data._data)
         for key, value in self.data.items():
             if isinstance(value, dict) and value.get("__loop_shape__", None) is not None:

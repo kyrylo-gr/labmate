@@ -6,7 +6,7 @@ In `H5PY` `np.ndarray` can be saved as soon as modified. To do that there exists
 1. Open file in write mode.
 
 ```python
-fd = AnalysisData('tmp_data/test.h5', overwrite=True, save_on_edit=False)
+fd = SyncData('tmp_data/test.h5', overwrite=True, save_on_edit=False)
 ```
 2. Define new item as a h5nparray
 ~~~python
@@ -24,13 +24,13 @@ for i in range(100):
 
 4. Check that data was saved
 ```python
-fd = AnalysisData('tmp_data/test.h5')
+fd = SyncData('tmp_data/test.h5')
 fd['test_array']
 ```
 
 
 ## Implementation
 
-- `H5NpArray` has `should_not_be_converted=True`, which prevents `AnalysisData` from converting it to an array and continuous using as a class
+- `H5NpArray` has `__should_not_be_converted__=True`, which prevents `SyncData` from converting it to an array and continuous using as a class
 
 - as soon as you run `fd[key]` it will run method `__init__filepath__` to provide the filepath and the key to the class `H5NpArray` 
