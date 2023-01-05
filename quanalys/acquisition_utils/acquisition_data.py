@@ -13,15 +13,21 @@ class NotebookAcquisitionData(SyncData):
                  configs: Optional[Dict[str, str]] = None,
                  cell: Optional[str] = None,
                  overwrite: Optional[bool] = True,
-                 save_on_edit: bool = True):
+                 save_on_edit: bool = True,
+                 save_files: bool = True):
 
         super().__init__(filepath=filepath, save_on_edit=save_on_edit, read_only=False, overwrite=overwrite)
 
         self['configs'] = configs
-        self['cell'] = cell
+        self['acquisition_cell'] = cell
+        self._save_files = save_files
 
     def save_config_files(self, configs: Optional[Dict[str, str]] = None, filepath: Optional[str] = None):
+        if not self._save_files:
+            return
+
         filepath = self._check_if_filepath_was_set(filepath, self._filepath)
+
         configs = configs or self['configs']
         if configs is None:
             return
@@ -30,9 +36,12 @@ class NotebookAcquisitionData(SyncData):
                 file.write(value)
 
     def save_cell(self, cell: Optional[str] = None, filepath: Optional[str] = None):
+        if not self._save_files:
+            return
+
         filepath = self._check_if_filepath_was_set(filepath, self._filepath)
 
-        cell = cell or self['cell']
+        cell = cell or self['acquisition_cell']
         if cell is None:
             return
 
@@ -40,5 +49,7 @@ class NotebookAcquisitionData(SyncData):
             file.write(cell)
 
     def save_additional_info(self):
+        if not self._save_files:
+            return
         self.save_cell()
         self.save_config_files()

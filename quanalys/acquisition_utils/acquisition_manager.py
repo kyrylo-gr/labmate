@@ -41,6 +41,8 @@ class AcquisitionManager:
     _current_acquisition = None
     _current_filepath = None
 
+    _save_files = False
+
     cell: Optional[str] = None
 
     def __init__(self,
@@ -164,7 +166,8 @@ class AcquisitionManager:
             configs=configs,
             cell=cell,
             overwrite=replace,
-            save_on_edit=True)
+            save_on_edit=True,
+            save_files=self._save_files)
 
     def save_acquisition(self, **kwds):
         acq_data = self.current_acquisition

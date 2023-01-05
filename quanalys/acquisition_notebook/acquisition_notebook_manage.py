@@ -1,7 +1,6 @@
 import os
 from typing import List, Optional
 from IPython import get_ipython
-from IPython.core.magic import Magics, magics_class, cell_magic
 
 from ..acquisition_utils import AcquisitionManager, AnalysisManager
 
@@ -9,13 +8,22 @@ from ..acquisition_utils import AcquisitionManager, AnalysisManager
 class AcquisitionNotebookManager(AcquisitionManager):
 
     am: Optional[AnalysisManager] = None
-    analysis_cell = None
+    analysis_cell_str = None
     is_old_data = False
 
     def __init__(self,
                  data_directory: Optional[str] = None, *,
-                 config_files: Optional[List[str]] = None):
-        load_ipython_extension(aqm=self, shell=get_ipython())
+                 config_files: Optional[List[str]] = None,
+                 save_files: bool = False,
+                 use_magic: bool = True):
+
+        self.shell = get_ipython()
+        self._save_files = save_files
+
+        if use_magic:
+            from .acquisition_magic_class import load_ipython_extension
+            load_ipython_extension(aqm=self, shell=self.shell)
+
         super().__init__(
             data_directory=data_directory,
             config_files=config_files)
@@ -43,59 +51,35 @@ class AcquisitionNotebookManager(AcquisitionManager):
         filename = filename or self.current_filepath
         if not os.path.exists(filename.rstrip('.h5') + '.h5'):
             raise ValueError(f"Cannot load data from {filename}")
-        self.am = AnalysisManager(filename, self.analysis_cell)
+        self.am = AnalysisManager(filename, self.analysis_cell_str, save_files=self._save_files)
 
+    def acquisition_cell(self, name: str, cell: Optional[str] = None):
+        self.analysis_cell_str = None
+        self.am = None
 
-@magics_class
-class AcquisitionMagic(Magics):
+        if cell is None and self.shell is not None:
+            cell = self.shell.get_parent()['content']['code']
 
-    def __init__(self, aqm: AcquisitionNotebookManager, shell=None, **kwargs):
-        shell = shell or get_ipython()
-        if shell is None:
-            raise ValueError("Not shell specified")
-        self.shell = shell
-        self.aqm = aqm
-        super().__init__(shell, **kwargs)
+        self.new_acquisition(name=name, cell=cell)
 
-    @cell_magic
-    def acquisition_cell(self, line, cell):
-        experiment_name = line.strip()
+    def analysis_cell(self, filename: Optional[str] = None, cell: Optional[str] = None):
+        if cell is None and self.shell is not None:
+            cell = self.shell.get_parent()['content']['code']
+            # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
 
-        self.aqm.new_acquisition(
-            name=experiment_name, cell=cell)
-
-        # print(id(self.aqm), self.aqm.current_filepath, acquisition.filepath)
-
-        # if os.path.exists("init_acquisition_cell.py",):
-        #     with open("init_acquisition_cell.py", 'r') as f:
-        #         init_code = f.read()
-        #     cell = init_code + cell
-
-        self.shell.run_cell(cell)
-
-    @cell_magic
-    def analysis_cell(self, line, cell):
-        if len(line):  # getting old data
-            filename = line.strip("'").strip('"')
-            self.aqm.is_old_data = True
+        if filename:  # getting old data
+            self.is_old_data = True
+            self.analysis_cell_str = None
         else:
-            filename = self.aqm.current_filepath
-            self.aqm.is_old_data = False
-        print("analysis_cell")
-
-        self.aqm.analysis_cell = cell
+            filename = self.current_filepath
+            self.is_old_data = False
+            self.analysis_cell_str = cell
 
         filename = filename.rstrip('.h5') + '.h5'
+
         if os.path.exists(filename):
-            self.aqm.load_am(filename)
+            self.load_am(filename)
         else:
-            if self.aqm.is_old_data:
+            if self.is_old_data:
                 raise ValueError(f"Cannot load data from {filename}")
-            self.aqm.am = None
-
-        self.shell.run_cell(cell)
-
-
-def load_ipython_extension(*, aqm, shell):
-    magic = AcquisitionMagic(aqm, shell=shell)
-    shell.register_magics(magic)
+            self.am = None

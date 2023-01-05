@@ -37,13 +37,16 @@ class AnalysisManager(SyncData):
 
     def __init__(self,
                  filepath: str,
-                 cell: Optional[str] = None):
+                 cell: Optional[str] = None,
+                 save_files: bool = False):
 
         if filepath is None:
             raise ValueError("You must specify filepath")
 
         super().__init__(filepath=filepath, overwrite=False, read_only=False, save_on_edit=True)
         self.lock_data()
+
+        self._save_files = save_files
 
         self._fig_index = 0
         self._figure_saved = False
@@ -52,14 +55,17 @@ class AnalysisManager(SyncData):
             if isinstance(value, dict) and value.get("__loop_shape__", None) is not None:
                 self._update(**{key: AnalysisLoop(value)})
 
-        self.unlock_data('cell')
-        self['cell'] = cell
-        self.lock_data('cell')
+        self.unlock_data('analysis_cell')
+        self['analysis_cell'] = cell
+        self.lock_data('analysis_cell')
 
         self.save_analysis_cell()
 
     def save_analysis_cell(self, cell: Optional[str] = None):
-        cell = cell or self['cell']
+        if not self._save_files:
+            return
+
+        cell = cell or self['analysis_cell']
 
         if cell is None or cell == "":
             logging.debug("Cell is not set. Nothing to save")
