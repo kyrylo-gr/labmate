@@ -108,8 +108,12 @@ def open_h5_group(group: Union[h5py.File, h5py.Group]) -> dict:
     return data
 
 
-def output_dict_structure(data: dict) -> str:
-    return dict_to_json_format_str(get_dict_structure(data))
+def output_dict_structure(data: dict, additional_info: Optional[dict[str, str]] = None) -> str:
+    dict_str = dict_to_json_format_str(get_dict_structure(data))
+    if additional_info:
+        for key, value in additional_info.items():
+            dict_str = dict_str.replace(f'"{key}":', f'"{key}"{value}:')
+    return dict_str
 
 
 def dict_to_json_format_str(data: dict) -> str:
@@ -117,11 +121,17 @@ def dict_to_json_format_str(data: dict) -> str:
     return json.dumps(data, sort_keys=True, indent=4)
 
 
-def get_dict_structure(data: dict) -> dict:
+def get_dict_structure(data: dict, level: int = 3) -> dict:
     structure = {}
+
     for k, v in data.items():
         if isinstance(v, dict):
-            structure[k] = get_dict_structure(v)
+            if level:
+                internal_structure = get_dict_structure(v, level=level-1) if len(v) else "empty dict"
+                structure[k] = "variable of type dict" if len(internal_structure) > 5 else internal_structure
+            else:
+                structure[k] = "variable of type dict"
+
         elif isinstance(v, (np.ndarray, list)):
             structure[k] = f"shape: {np.shape(v)} (type: {type(v).__name__})"
         elif isinstance(v, (int, np.int_)):  # type: ignore
@@ -131,4 +141,5 @@ def get_dict_structure(data: dict) -> dict:
             structure[k] = f"{str_value} (type : {type(v).__name__})"
         else:
             structure[k] = f"variable of type {type(v).__name__}"
+
     return structure

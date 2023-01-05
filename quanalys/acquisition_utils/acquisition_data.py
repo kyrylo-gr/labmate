@@ -3,25 +3,19 @@ from typing import Dict, Optional
 from ..syncdata import SyncData
 
 
-class AcquisitionData(SyncData):
-    """TODO"""
-
-    def __init__(self,
-                 filepath: Optional[str] = None,
-                 overwrite: Optional[bool] = None):
-        super().__init__(
-            filepath=filepath, save_on_edit=True, read_only=False, overwrite=overwrite)
-
-
-class NotebookAcquisitionData(AcquisitionData):
-    """TODO"""
+class NotebookAcquisitionData(SyncData):
+    """It's a SyncData that has information about the configs file and the cell.
+    `configs` is a list of the paths to the files that saved by `save_config_files` function.
+    `cell` is a str. It saves using `save_cell` function that will save it to `..._CELL.py` file"""
 
     def __init__(self,
                  filepath: str,
                  configs: Optional[Dict[str, str]] = None,
                  cell: Optional[str] = None,
-                 overwrite: Optional[bool] = True):
-        super().__init__(filepath=filepath, overwrite=overwrite)
+                 overwrite: Optional[bool] = True,
+                 save_on_edit: bool = True):
+
+        super().__init__(filepath=filepath, save_on_edit=save_on_edit, read_only=False, overwrite=overwrite)
 
         self['configs'] = configs
         self['cell'] = cell
@@ -44,3 +38,7 @@ class NotebookAcquisitionData(AcquisitionData):
 
         with open(filepath + '_CELL.py', 'w', encoding="utf-8") as file:
             file.write(cell)
+
+    def save_additional_info(self):
+        self.save_cell()
+        self.save_config_files()

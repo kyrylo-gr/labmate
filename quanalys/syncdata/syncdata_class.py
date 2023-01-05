@@ -100,9 +100,10 @@ class SyncData:
         for key in keys:
             self._read_only.add(key)
 
+        self._clean_precalculated_results()
         return self
 
-    def clean_lock(self, remove_keys: Optional[Iterable[str]] = None):
+    def unlock_data(self, remove_keys: Optional[Iterable[str]] = None):
         if self._read_only is True:
             raise ValueError("Cannot unlock is global read_only mode was set to True")
         if isinstance(self._read_only, set):
@@ -112,8 +113,10 @@ class SyncData:
                 if isinstance(remove_keys, str):
                     remove_keys = (remove_keys,)
                 for key in remove_keys:
-                    self._read_only.remove(key)
+                    if key in self._read_only:
+                        self._read_only.remove(key)
 
+        self._clean_precalculated_results()
         return self
 
     def _clean_precalculated_results(self):
@@ -156,10 +159,10 @@ class SyncData:
         self._data.pop(key)
         return self
 
-    def get(self, key: str, default: Optional[Any] = None) -> Optional[Any]:
+    def get(self, key: str, default: Optional[Any] = None):
         return self._data.get(key, default)
 
-    def __getitem__(self, __key: Union[str, tuple]) -> Any:
+    def __getitem__(self, __key: Union[str, tuple]):
         if isinstance(__key, tuple):
             return self.__getitem__(__key[0]).__getitem__(
                 __key[1:] if len(__key) > 2 else __key[1])
@@ -193,11 +196,11 @@ class SyncData:
     def __delitem__(self, key: str):
         self.pop(key)
 
-    def __getattr__(self, __name: str) -> Any:
+    def __getattr__(self, __name: str):
         """Will be called if __getattribute__ does not work"""
         if __name in self._data:
             data = self.get(__name)
-            if isinstance(data, dict):
+            if isinstance(data, dict) and data:
                 return SyncData(data)
             return data
         raise AttributeError(f"No attribute {__name} found in SyncDatas")
@@ -224,14 +227,15 @@ class SyncData:
 
     def _get_repr(self):
         if self._repr is None:
-            self._repr = h5py_utils.output_dict_structure(self._data)
+            additional_info = {key: " (r)" for key in self._read_only} if isinstance(self._read_only, set) else None
+            self._repr = h5py_utils.output_dict_structure(self._data, additional_info=additional_info)
 
     def __repr__(self):
         self._get_repr()
 
         not_saved = '' if self._last_data_saved or self._read_only is True else " (not saved)"
-        mode = 'r' if self._read_only is True else 'w' if self._read_only else 'rw'
-        mode = 'l' if self._filepath is None else mode
+        mode = 'r' if self._read_only is True else 'w' if self._read_only is False else 'rw'
+        mode = 'l' if self._filepath is None and self._read_only is not True else mode
 
         return f"{type(self).__name__} ({mode}){not_saved}: \n {self._repr}"
 
@@ -284,7 +288,7 @@ class SyncData:
 
     @property
     def filepath(self):
-        return self._filepath
+        return None if self._filepath is None else self._filepath.rstrip('.h5')
 
     def _asdict(self):
         return self._data

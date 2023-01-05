@@ -1,10 +1,40 @@
+"""Contains only AnalysisLoop which is subclass of SyncData.
+It has mainly __iter__ method and __getitem__ method for slicing.
+"""
+
 from typing import Any, List, Optional, Iterable, Tuple, Union
 
 from ..syncdata import SyncData
 
 
 class AnalysisLoop(SyncData):
-    """TODO"""
+    """Analysis loop is a class for reading dict that was created by AcquisitionLoop.
+    Normally AnalysisLoop is created by AnalysisManager or it can be created from any
+    dict that has __loop_shape__ item.
+
+    Example 1 how to use it:
+    ```
+    for data_level1 in loop:
+        print(data_level1.x)
+        for data_level2 in data_level1:
+            print(data_level2.x)
+            print(data_level2.y)
+    ```
+
+    Example 2 with slicing:
+    ```
+    for d in loop[:5]:
+        print(d.x)
+    ```
+
+    Example 3. Slicing return not generator but an object of same class, so
+    it's possible to analyze the data directly:
+    ```
+    data = loop[2:10:2]
+    print(data.x)
+    ```
+
+    """
 
     def __init__(self, data: Optional[dict] = None, loop_shape: Optional[List[int]] = None):
         super().__init__()
@@ -74,9 +104,9 @@ class AnalysisLoop(SyncData):
         new_shape.extend(self._loop_shape[1:])
         return child_data, new_shape
 
-    def __repr__(self):
-        self._get_repr()
-        return f"AnalysisLoop: \n {self._repr}"
+    # def __repr__(self):
+    #     self._get_repr()
+    #     return f"AnalysisLoop: \n {self._repr}"
 
     def __len__(self) -> int:
         if self._loop_shape is None:

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Union, overload
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Union, overload
 
 import numpy as np
 
@@ -6,7 +6,24 @@ from ..syncdata import h5py_utils
 
 
 class AcquisitionLoop(object):
-    """TODO"""
+    """Acquisition loop alow to save data during for loops.
+
+    - Example 1 that saves list of squares till 10:
+    ```
+    sd.test_loop = loop = AcquisitionLoop()
+    for i in loop(10):
+        loop.append_data(x=i**2)
+    ```
+
+    - Example 2 with not direct manipulation:
+    ```
+    loop = AcquisitionLoop()
+    for i in loop(10):
+        loop.append_data(x=i**2)
+    sd.update(test_loop = loop)
+    ```
+
+    """
     __filename__: Optional[str] = None
     __filekey__: Optional[str] = None
     __should_not_be_converted__ = True
@@ -19,25 +36,30 @@ class AcquisitionLoop(object):
         self._data_flatten = {}
 
     @overload
-    def __call__(self, iterable: Iterable, **kwds: None) -> Iterable:
+    def __call__(self, *arg) -> Iterator:
         ...
 
     @overload
-    def __call__(self, stop: Union[int, float], **kwds: None) -> Iterable:
+    def __call__(self, **kwds) -> None:
         ...
 
     @overload
-    def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], **kwds: None
-                 ) -> Iterable:
+    def __call__(self, iterable: Iterable) -> Iterator:
         ...
 
     @overload
-    def __call__(self, *args: None, **kwds) -> None:
+    def __call__(self, stop: Union[int, float], /) -> Iterator:
         ...
 
-    def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Union[Iterable, None]:
+    @overload
+    def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /
+                 ) -> Iterator:
+        ...
+
+    def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Optional[Iterator]:
         if iterable is None and len(args) == 0:
-            return self.append_data(**kwds)
+            self.append_data(**kwds)
+            return None
 
         if iterable is None:
             if isinstance(args[0], (int, float)):
@@ -45,7 +67,8 @@ class AcquisitionLoop(object):
             else:
                 iterable = args[0]
 
-        assert iterable is not None, "iterable must be not None"
+        if iterable is None:
+            raise ValueError("You should provide iterable as an arg")
 
         if not hasattr(iterable, "__len__"):
             iterable = list(iterable)

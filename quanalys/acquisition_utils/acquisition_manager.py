@@ -13,7 +13,6 @@ class AcquisitionTmpData(NamedTuple):
     """Temporary data that stores inside temp.json"""
     experiment_name: str
     time_stamp: str
-    cell: Optional[str] = None
     configs: Dict[str, str] = {}
     directory: Optional[str] = None
 
@@ -28,16 +27,13 @@ def check_subdir(parent_dir: Union[str, Path], directory: Union[str, Path]) -> s
     return path
 
 
-def check_directory(path: Union[str, Path]) -> None:
+def create_directory(path: Union[str, Path]) -> None:
     if not os.path.exists(path):
         os.makedirs(path)
 
 
 class AcquisitionManager:
     """AcquisitionManager"""
-    acquisition_cell_init_code: Optional[str] = None
-    acquisition_cell_end_code: Optional[str] = None
-    last_acquisition_saved: bool = False
 
     _data_directory = None
     config_files = []
@@ -45,21 +41,22 @@ class AcquisitionManager:
     _current_acquisition = None
     _current_filepath = None
 
+    cell: Optional[str] = None
+
     def __init__(self,
                  data_directory: Optional[str] = None, *,
                  config_files: Optional[List[str]] = None):
 
-        self.acquisition_cell_init_code = ""
-        self.acquisition_cell_end_code = ""
         self._current_acquisition = None
 
         if data_directory is not None:
             self.data_directory = data_directory
         elif "ACQUISITION_DIR" in os.environ:
             self.data_directory = os.environ["ACQUISITION_DIR"]
-        if self.data_directory is None:
+        else:
             raise ValueError("No data directory specified")
-        self.temp_file_path = os.path.join(self.data_directory, 'temp.json')
+
+        self.temp_file_path = os.path.join(self.data_directory, 'temp.json')  # type: ignore
 
         if config_files is not None:
             self.set_config_file(*config_files)
@@ -76,31 +73,36 @@ class AcquisitionManager:
 
     @data_directory.setter
     def data_directory(self, value: str) -> None:
-        check_directory(value)
+        create_directory(value)
         self._data_directory = value
 
-    def get_data_directory_and_verify(self):
+    def get_not_none_data_directory(self):
+        """Return data_directory or raise error if not set."""
         data_directory = self.data_directory
         if data_directory is None:
             raise ValueError("You should set self.data_directory")
         return data_directory
 
-    def set_config_file(self, *filenames: str) -> None:
-        self.config_files = [Path(file) for file in filenames]
+    def set_config_file(self, filename: Union[str, list]) -> None:
+        """Set self.config_file to filename. Verify if exists."""
+        if isinstance(filename, str):
+            filename = [filename]
+
+        self.config_files = [Path(file) for file in filename]
+
         for config_file in self.config_files:
             if not config_file.exists():
                 raise ValueError(f"Configuration file at {config_file} does not exist")
 
-    def get_exp_dir_path(self, experiment_name: str, data_directory: Optional[str] = None) -> str:
-        data_directory = data_directory or self.data_directory
-        if data_directory is None:
-            raise ValueError("You should specify data_directory before")
+    def create_subdir(self, experiment_name: str, data_directory: Optional[str] = None) -> str:
+        """Create a subdirectory inside data_directory"""
+        data_directory = data_directory or self.get_not_none_data_directory()
         return check_subdir(data_directory, experiment_name)
 
-    def get_exp_file_path(self, dic: AcquisitionTmpData) -> str:
-        filename = f'{dic.time_stamp}_{dic.experiment_name}'
-        directory = self.get_exp_dir_path(dic.experiment_name, data_directory=dic.directory)
-        return os.path.join(directory, filename)
+    def create_path_from_tmp_data(self, dic: AcquisitionTmpData) -> str:
+        return os.path.join(
+            self.create_subdir(dic.experiment_name, data_directory=dic.directory),
+            f'{dic.time_stamp}_{dic.experiment_name}')
 
     @staticmethod
     def get_temp_data(path) -> Optional[AcquisitionTmpData]:
@@ -108,8 +110,10 @@ class AcquisitionManager:
             return None
         return AcquisitionTmpData(**json_read(path))
 
-    def create_new_acquisition(self, experiment_name: str, cell: Optional[str] = None):
+    def new_acquisition(self, name: str, cell: Optional[str] = None):
+        """Creates a new acquisition with the given experiment name"""
         self._current_acquisition = None
+        self.cell = cell
         configs: Dict[str, str] = {}
         for config_file in self.config_files:
             if not config_file.is_file():
@@ -117,11 +121,10 @@ class AcquisitionManager:
             with open(config_file, 'r') as file:  # pylint: disable=W1514
                 configs[config_file.name] = file.read()
 
-        dic = AcquisitionTmpData(experiment_name=experiment_name,
+        dic = AcquisitionTmpData(experiment_name=name,
                                  time_stamp=get_timestamp(),
-                                 cell=cell,
                                  configs=configs,
-                                 directory=self.get_data_directory_and_verify())
+                                 directory=self.get_not_none_data_directory())
 
         json_write(self.temp_file_path, dic._asdict())
 
@@ -138,35 +141,32 @@ class AcquisitionManager:
         return self._current_acquisition
 
     @property
+    def aq(self):
+        return self.current_acquisition
+
+    @property
     def current_filepath(self) -> str:
         filepath = self.current_acquisition.filepath
         if filepath is None:
             raise ValueError("No filepath specified")
         return filepath
 
-    def get_ongoing_acquisition(self, replace: Optional[bool] = False):
+    def get_ongoing_acquisition(self, replace: Optional[bool] = False) -> NotebookAcquisitionData:
         current_acquisition_param = self.get_temp_data(self.temp_file_path)
         assert current_acquisition_param is not None, \
             "You should create a new acquisition. It will create temp.json file."
-        filepath = self.get_exp_file_path(current_acquisition_param)
+        filepath = self.create_path_from_tmp_data(current_acquisition_param)
         configs = current_acquisition_param.configs
-        cell = current_acquisition_param.cell
+        cell = self.cell
+
         return NotebookAcquisitionData(
             filepath=filepath,
             configs=configs,
             cell=cell,
-            overwrite=replace)
+            overwrite=replace,
+            save_on_edit=True)
 
     def save_acquisition(self, **kwds):
         acq_data = self.current_acquisition
         acq_data.update(**kwds)
-        acq_data.save()
-
-        acq_data.save_config_files()
-        acq_data.save_cell()
-
-        self.last_acquisition_saved = True
-
-
-def save_acquisition(**kwds):
-    return AcquisitionManager.save_acquisition(**kwds)
+        acq_data.save_additional_info()

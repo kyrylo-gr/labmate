@@ -6,12 +6,13 @@ In `H5PY` `np.ndarray` can be saved as soon as modified. To do that there exists
 1. Open file in write mode.
 
 ```python
-fd = SyncData('tmp_data/test.h5', overwrite=True, save_on_edit=False)
+from quanalys.syncdata import SyncData
+sd = SyncData('tmp_data/test.h5', overwrite=True, save_on_edit=False)
 ```
 2. Define new item as a h5nparray
 ~~~python
 shape = (100, 1000)
-fd['test_array'] = fd.h5nparray(np.zeros(shape))
+sd['test_array'] = sd.h5nparray(np.zeros(shape))
 ~~~
 `H5NpArray` takes the np.array as parameter to initialize the data inside the file.
 
@@ -19,13 +20,13 @@ fd['test_array'] = fd.h5nparray(np.zeros(shape))
 
 ```python
 for i in range(100):
-    fd['test_array'][i, :] = np.random.random(1000)
+    sd['test_array'][i, :] = np.random.random(1000)
 ```
 
 4. Check that data was saved
 ```python
-fd = SyncData('tmp_data/test.h5')
-fd['test_array']
+read = SyncData('tmp_data/test.h5')
+read['test_array']
 ```
 
 

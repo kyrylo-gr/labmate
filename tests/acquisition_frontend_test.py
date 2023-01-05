@@ -25,7 +25,7 @@ class BasicTest(unittest.TestCase):
     def setUpClass(cls):
         cls.name = "BasicTest"
         cls.aqm = AcquisitionManager(DATA_DIR)
-        cls.aqm.create_new_acquisition(cls.name)
+        cls.aqm.new_acquisition(cls.name)
         return super().setUpClass()
 
     def test_dir_was_created(self):
@@ -39,8 +39,7 @@ class BasicTest(unittest.TestCase):
         y = np.sin(x)
         self.aqm.save_acquisition(x=x, y=y)
 
-        am = AnalysisManager(self.aqm.current_filepath)
-        data = am.data
+        data = AnalysisManager(self.aqm.current_filepath)
 
         assert data is not None
 
@@ -49,7 +48,7 @@ class BasicTest(unittest.TestCase):
 
     def test_open_old_file(self):
         old_file_path = "tests/data/old_data_example.h5"
-        data = AnalysisManager(old_file_path).data
+        data = AnalysisManager(old_file_path)
         assert data, "File probably exists, but create SyncData object"
         self.assertAlmostEqual(
             np.abs(data.get('x') - (x := np.linspace(0, 10*np.pi, 101))).sum(), 0)
@@ -64,8 +63,7 @@ class BasicTest(unittest.TestCase):
 
         self.aqm = AcquisitionManager(DATA_DIR)
 
-        am = AnalysisManager(self.aqm.current_filepath)
-        data = am.data
+        data = AnalysisManager(self.aqm.current_filepath)
 
         assert data is not None
 
@@ -95,7 +93,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         It creates a dictionary to verify with."""
         cls.name = "LoopTest"
         cls.aqm = AcquisitionManager(DATA_DIR)
-        cls.aqm.create_new_acquisition(cls.name)
+        cls.aqm.new_acquisition(cls.name)
 
         cls.points = 101
         cls.freqs = np.linspace(0, 0.4, 10)
@@ -189,8 +187,7 @@ class AcquisitionLoopTest(unittest.TestCase):
     def data_verification_for_simple_loop(self):
         # fullpath = AcquisitionManager.current_acquisition.filepath
 
-        am = AnalysisManager(self.aqm.current_filepath)
-        data = am.data
+        data = AnalysisManager(self.aqm.current_filepath)
 
         assert data is not None
 
@@ -221,8 +218,7 @@ class AnalysisLoopTest(AcquisitionLoopTest):
     the AcquisitionLoopTest but has different data_verification function."""
 
     def data_verification_for_simple_loop(self):
-        am = AnalysisManager(self.aqm.current_filepath)
-        data = am.data
+        data = AnalysisManager(self.aqm.current_filepath)
 
         assert data is not None
 
@@ -250,7 +246,7 @@ class MultiAnalysisLoopTest(unittest.TestCase):
         """This setUp method runs ones of LoopTest.
         It creates a dictionary to verify with."""
         cls.aqm = AcquisitionManager(DATA_DIR)
-        cls.aqm.create_new_acquisition("MultiLoopTest2")
+        cls.aqm.new_acquisition("MultiLoopTest2")
 
         cls.points = 101
         cls.freqs = np.linspace(0, 0.4, 10)
@@ -299,8 +295,7 @@ class MultiAnalysisLoopTest(unittest.TestCase):
 
     def data_verification_for_2d_loop(self):
 
-        am = AnalysisManager(self.aqm.current_filepath)
-        data = am.data
+        data = AnalysisManager(self.aqm.current_filepath)
 
         assert data is not None
 

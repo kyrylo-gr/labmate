@@ -24,7 +24,11 @@ class AcquisitionNotebookManager(AcquisitionManager):
     def data(self):
         if self.am is None:
             raise ValueError('No data set')
-        return self.am.data
+        return self.am
+
+    @property
+    def d(self):
+        return self.data
 
     def save_fig(self, *arg, **kwds):
         if self.am is None:
@@ -37,6 +41,8 @@ class AcquisitionNotebookManager(AcquisitionManager):
 
     def load_am(self, filename: Optional[str] = None):
         filename = filename or self.current_filepath
+        if not os.path.exists(filename.rstrip('.h5') + '.h5'):
+            raise ValueError(f"Cannot load data from {filename}")
         self.am = AnalysisManager(filename, self.analysis_cell)
 
 
@@ -54,17 +60,22 @@ class AcquisitionMagic(Magics):
     @cell_magic
     def acquisition_cell(self, line, cell):
         experiment_name = line.strip()
-        acquisition = self.aqm.create_new_acquisition(experiment_name, cell)
-        print(id(self.aqm), self.aqm.current_filepath, acquisition.filepath)
-        if os.path.exists("init_acquisition_cell.py"):
-            with open("init_acquisition_cell.py", 'r') as f:
-                init_code = f.read()
-            cell = init_code + cell
+
+        self.aqm.new_acquisition(
+            name=experiment_name, cell=cell)
+
+        # print(id(self.aqm), self.aqm.current_filepath, acquisition.filepath)
+
+        # if os.path.exists("init_acquisition_cell.py",):
+        #     with open("init_acquisition_cell.py", 'r') as f:
+        #         init_code = f.read()
+        #     cell = init_code + cell
+
         self.shell.run_cell(cell)
 
     @cell_magic
     def analysis_cell(self, line, cell):
-        if len(line):  # getting old
+        if len(line):  # getting old data
             filename = line.strip("'").strip('"')
             self.aqm.is_old_data = True
         else:

@@ -9,3 +9,4 @@ tests/tmp_data/*
 .DS_Store
 *.pyc
 tmp_data
+*.egg-info
