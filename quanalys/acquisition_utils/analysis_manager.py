@@ -54,10 +54,11 @@ class AnalysisManager(SyncData):
         for key, value in self.items():
             if isinstance(value, dict) and value.get("__loop_shape__", None) is not None:
                 self._update(**{key: AnalysisLoop(value)})
+        self._analysis_cell = cell
 
-        self.unlock_data('analysis_cell')
-        self['analysis_cell'] = cell
-        self.lock_data('analysis_cell')
+        if cell is not None:
+            self.unlock_data('analysis_cell')\
+                .update(analysis_cell=cell).lock_data('analysis_cell')
 
         self.save_analysis_cell()
 

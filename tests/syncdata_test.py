@@ -135,6 +135,16 @@ class WithoutSavingTest(unittest.TestCase):
             dict(self.data_dict.items()),
             dict(self.data_smart.items()))
 
+    def test_items_iter(self):
+        self.apply_func("update", a1=self.create_random_data())
+        self.apply_func("update", a2=self.create_random_data())
+
+        data_dict = self.data_dict
+
+        for k, v in self.data_smart.items():
+            self.assertTrue(k in ('a1', 'a2'))
+            self.assertTrue(np.all(data_dict[k] == v))
+
     def test_keys(self):
         self.apply_func("update", a1=self.create_random_data())
         self.apply_func("update", a2=self.create_random_data())
@@ -144,6 +154,13 @@ class WithoutSavingTest(unittest.TestCase):
             set(self.data_dict.keys()),
             set(self.data_smart.keys())
         )
+
+    def test_iter(self):
+        self.apply_func("update", a1=self.create_random_data())
+        self.apply_func("update", a2=self.create_random_data())
+
+        for k in self.data_smart:
+            self.assertTrue(k in ('a1', 'a2'))
 
     def test_values(self):
         self.apply_func("update", a1=self.create_random_data())
@@ -332,6 +349,35 @@ class ReadModeTest(unittest.TestCase):
             d['t1'] = 2
         with self.assertRaises(TypeError):
             d['t2'] = 2
+
+    def test_unlock_data_with_str(self):
+        d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d['t1'], d['t2'] = 3, 4
+        d.lock_data()
+
+        d.unlock_data('t1')
+        d['t1'] = 5
+        self.assertEqual(d['t1'], 5)
+
+        with self.assertRaises(TypeError):
+            d['t2'] = 2
+
+    def test_unlock_data_everything(self):
+        d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d['t1'], d['t2'] = 3, 4
+        d.lock_data()
+
+        d.unlock_data()
+        d['t1'] = 5
+        self.assertEqual(d['t1'], 5)
+
+        d['t2'] = 2
+        self.assertEqual(d['t2'], 2)
+
+    def test_unlock_what_never_locked_or_exist(self):
+        d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=False)
+        d.unlock_data()
+        d.unlock_data("never_set")
 
     @classmethod
     def tearDownClass(cls):

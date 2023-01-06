@@ -49,6 +49,12 @@ def transform_to_possible_formats(data: DICT_OR_LIST_LIKE) -> DICT_OR_LIST_LIKE:
     return data
 
 
+def transform_on_open(value):
+    if isinstance(value, bytes):
+        return value.decode()
+    return value
+
+
 def save_sub_dict(
     group: Union[h5py.File, h5py.Group],
     data: Union[dict, list, np.ndarray, ClassWithAsdict],
@@ -104,7 +110,7 @@ def open_h5_group(group: Union[h5py.File, h5py.Group]) -> dict:
         if isinstance(value, h5py.Group):
             data[key] = open_h5_group(value)
         else:
-            data[key] = value[()]  # type: ignore
+            data[key] = transform_on_open(value[()])  # type: ignore
     return data
 
 

@@ -225,6 +225,9 @@ class SyncData:
     def keys(self):
         return self._data.keys()
 
+    def __iter__(self):
+        return iter(self.keys())
+
     def _get_repr(self):
         if self._repr is None:
             additional_info = {key: " (r)" for key in self._read_only} if isinstance(self._read_only, set) else None

@@ -78,7 +78,7 @@ class AcquisitionManager:
         create_directory(value)
         self._data_directory = value
 
-    def get_not_none_data_directory(self):
+    def get_data_directory(self):
         """Return data_directory or raise error if not set."""
         data_directory = self.data_directory
         if data_directory is None:
@@ -98,13 +98,13 @@ class AcquisitionManager:
 
     def create_subdir(self, experiment_name: str, data_directory: Optional[str] = None) -> str:
         """Create a subdirectory inside data_directory"""
-        data_directory = data_directory or self.get_not_none_data_directory()
+        data_directory = data_directory or self.get_data_directory()
         return check_subdir(data_directory, experiment_name)
 
     def create_path_from_tmp_data(self, dic: AcquisitionTmpData) -> str:
         return os.path.join(
             self.create_subdir(dic.experiment_name, data_directory=dic.directory),
-            f'{dic.time_stamp}_{dic.experiment_name}')
+            f'{dic.time_stamp}__{dic.experiment_name}')
 
     @staticmethod
     def get_temp_data(path) -> Optional[AcquisitionTmpData]:
@@ -126,7 +126,7 @@ class AcquisitionManager:
         dic = AcquisitionTmpData(experiment_name=name,
                                  time_stamp=get_timestamp(),
                                  configs=configs,
-                                 directory=self.get_not_none_data_directory())
+                                 directory=self.get_data_directory())
 
         json_write(self.temp_file_path, dic._asdict())
 
