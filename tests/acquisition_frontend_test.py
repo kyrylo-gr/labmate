@@ -26,7 +26,6 @@ class BasicTest(unittest.TestCase):
         cls.name = "BasicTest"
         cls.aqm = AcquisitionManager(DATA_DIR)
         cls.aqm.new_acquisition(cls.name)
-        return super().setUpClass()
 
     def test_dir_was_created(self):
         self.assertTrue(os.path.exists(
@@ -126,7 +125,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         """
         # Protocol
         loop = AcquisitionLoop()
-        for freq in loop(self.freqs):
+        for freq in loop.iter(self.freqs):
             x, y = self.acquire_sine(freq, self.points)
             loop.append_data(y=y, freq=freq)
         loop.append_data(x=x)  # type: ignore
@@ -151,7 +150,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         """
         # Protocol
         loop = AcquisitionLoop()
-        for freq in loop(self.freqs):
+        for freq in loop.iter(self.freqs):
             x, y = self.acquire_sine(freq, self.points)
             loop.append_data(y=y, freq=freq)
             loop.append_data(x=x, level=-1)
@@ -175,7 +174,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         """
         # Protocol
         loop = AcquisitionLoop()
-        for freq in loop(self.freqs):
+        for freq in loop.iter(self.freqs):
             x, y = self.acquire_sine(freq, self.points)
             loop.append_data(y=y, freq=freq)
             loop.append_data(x=x, level=-1)
@@ -281,9 +280,9 @@ class MultiAnalysisLoopTest(unittest.TestCase):
         # Protocol
         loop = AcquisitionLoop()
 
-        for tau in loop(self.taus):
+        for tau in loop.iter(self.taus):
             loop.append_data(tau=tau)
-            for freq in loop(self.freqs):
+            for freq in loop.iter(self.freqs):
                 x, y = self.acquire_sine(freq, self.points, tau)
                 loop.append_data(y=y, freq=freq)
             loop.append_data(x=x)  # type: ignore

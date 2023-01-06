@@ -48,3 +48,20 @@ def lstrip_int(line: str) -> Optional[Tuple[str, str]]:
         return None
 
     return prefix, suffix
+
+
+def get_var_name_from_def():
+    import traceback
+    line = traceback.extract_stack()[-3].line
+    if line and "=" in line:
+        return line.split("=")[0].strip()
+    return None
+
+
+def get_var_name_from_glob(variable):
+    globals_dict = globals()
+    return [var_name for var_name in globals_dict if globals_dict[var_name] is variable]
+
+
+def test():
+    print(3)

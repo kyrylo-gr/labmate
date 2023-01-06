@@ -7,7 +7,6 @@ everything is good.
 
 import os
 import shutil
-# import shutil
 
 import unittest
 

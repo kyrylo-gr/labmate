@@ -1,7 +1,7 @@
 from __future__ import annotations
 import os
-from typing import List, Optional
-from IPython import get_ipython
+from typing import List, Literal, Optional, Union
+from IPython import get_ipython, InteractiveShell
 
 from ..acquisition_utils import AcquisitionManager, AnalysisManager
 from ..utils import lstrip_int
@@ -39,11 +39,27 @@ class AcquisitionNotebookManager(AcquisitionManager):
                  data_directory: Optional[str] = None, *,
                  config_files: Optional[List[str]] = None,
                  save_files: bool = False,
-                 use_magic: bool = True):
+                 use_magic: bool = False,
+                 shell: Optional[Union[InteractiveShell, Literal[False]]] = False):
+        """
 
-        self.shell = get_ipython()
+        Args:
+            data_directory (Optional[str], optional):
+                Path to data_directory. Should be explicitly set here or as environ parameter.
+            config_files (Optional[List[str]], optional):
+                List of paths to config files. Defaults to empty.
+            save_files (bool, optional):
+                True to additionally save config files and the cells to files. Defaults to False.
+                So all information is saved inside the h5 file.
+            use_magic (bool, optional):
+                True to register the magic cells. Defaults to False.
+            shell (InteractiveShell | None, optional):
+                could be provided or explicitly set to None. Defaults to get_ipython().
+        """
+
+        self.shell = get_ipython() if shell is False else shell
+
         self._save_files = save_files
-        self._parsed_configs = {}
 
         if use_magic:
             from .acquisition_magic_class import load_ipython_extension
@@ -73,11 +89,11 @@ class AcquisitionNotebookManager(AcquisitionManager):
         self.load_am()
 
     def load_am(self, filename: Optional[str] = None):
-        self._parsed_configs = {}
         filename = filename or self.current_filepath
         if not os.path.exists(filename.rstrip('.h5') + '.h5'):
             raise ValueError(f"Cannot load data from {filename}")
-        self.am = AnalysisManager(filename, self.analysis_cell_str, save_files=self._save_files)
+        self.am = AnalysisManager(filename, cell=self.analysis_cell_str, save_files=self._save_files)
+        self.am.unlock_data('useful').update(**{'useful': True}).lock_data('useful')
         return self.am
 
     def acquisition_cell(self, name: str, cell: Optional[str] = None) -> AcquisitionNotebookManager:
@@ -85,16 +101,16 @@ class AcquisitionNotebookManager(AcquisitionManager):
         self.am = None
 
         if cell is None and self.shell is not None:
-            cell = self.shell.get_parent()['content']['code']
+            cell = self.shell.get_parent()['content']['code']  # type: ignore
 
-        print(os.path.basename(self.current_filepath))
+        # print(os.path.basename(self.current_filepath))
 
         self.new_acquisition(name=name, cell=cell)
         return self
 
     def analysis_cell(self, filename: Optional[str] = None, cell: Optional[str] = None) -> AcquisitionNotebookManager:
         if cell is None and self.shell is not None:
-            cell = self.shell.get_parent()['content']['code']
+            cell = self.shell.get_parent()['content']['code']  # type: ignore
             # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
 
         if filename:  # getting old data
@@ -124,8 +140,8 @@ class AcquisitionNotebookManager(AcquisitionManager):
         if code is None:
             raise ValueError('There is no field `analysis_cell` inside the data file.')
 
-        if isinstance(code, bytes):
-            code = code.decode()
+        # if isinstance(code, bytes):
+        #     code = code.decode()
 
         if look_inside:
             code = code.replace("aqm.analysis_cell()", f"aqm.analysis_cell('{self.am.filepath}')")
@@ -145,35 +161,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
         return filename
 
     def parse_config(self, config_name: str = "config"):
-        if config_name in self._parsed_configs:
-            return self._parsed_configs[config_name]
-
         if self.am is None:
             raise ValueError('No data set')
 
-        if 'configs' not in self.am:
-            raise ValueError("The is no config files save within AnalysisManager")
-
-        if config_name not in self.am['configs']:
-            original_config_name = config_name
-            for possible_name in self.am['configs']:
-                if possible_name.startswith(config_name):
-                    config_name = possible_name
-                    break
-            else:
-                raise ValueError(f"Cannot find config with name {config_name}. \
-                    Possible configs file are {self.am['configs'].keys()}")
-
-            if config_name in self._parsed_configs:
-                self._parsed_configs[original_config_name] = self._parsed_configs[config_name]
-                return self._parsed_configs[config_name]
-        else:
-            original_config_name = None
-
-        from ..utils import parse_str
-        config_data = parse_str(self.am['configs'][config_name])
-        self._parsed_configs[config_name] = config_data
-        if original_config_name is not None:
-            self._parsed_configs[original_config_name] = config_data
-
-        return config_data
+        return self.am.parse_config(config_name)

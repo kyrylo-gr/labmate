@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Union
@@ -47,7 +48,11 @@ class AcquisitionManager:
 
     def __init__(self,
                  data_directory: Optional[str] = None, *,
-                 config_files: Optional[List[str]] = None):
+                 config_files: Optional[List[str]] = None,
+                 save_files: Optional[bool] = None):
+
+        if save_files is not None:
+            self._save_files = save_files
 
         self._current_acquisition = None
 
@@ -85,7 +90,7 @@ class AcquisitionManager:
             raise ValueError("You should set self.data_directory")
         return data_directory
 
-    def set_config_file(self, filename: Union[str, list]) -> None:
+    def set_config_file(self, filename: Union[str, list]) -> AcquisitionManager:
         """Set self.config_file to filename. Verify if exists."""
         if isinstance(filename, str):
             filename = [filename]
@@ -95,6 +100,8 @@ class AcquisitionManager:
         for config_file in self.config_files:
             if not config_file.exists():
                 raise ValueError(f"Configuration file at {config_file} does not exist")
+
+        return self
 
     def create_subdir(self, experiment_name: str, data_directory: Optional[str] = None) -> str:
         """Create a subdirectory inside data_directory"""
@@ -169,7 +176,8 @@ class AcquisitionManager:
             save_on_edit=True,
             save_files=self._save_files)
 
-    def save_acquisition(self, **kwds):
+    def save_acquisition(self, **kwds) -> AcquisitionManager:
         acq_data = self.current_acquisition
         acq_data.update(**kwds)
         acq_data.save_additional_info()
+        return self

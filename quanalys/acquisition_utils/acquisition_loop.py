@@ -5,7 +5,7 @@ import numpy as np
 from ..syncdata import h5py_utils
 
 
-class AcquisitionLoop(object):
+class AcquisitionLoop:
     """Acquisition loop alow to save data during for loops.
 
     - Example 1 that saves list of squares till 10:
@@ -69,6 +69,10 @@ class AcquisitionLoop(object):
 
         if iterable is None:
             raise ValueError("You should provide iterable as an arg")
+
+        return self.iter(iterable)
+
+    def iter(self, iterable: Iterable) -> Iterator:
 
         if not hasattr(iterable, "__len__"):
             iterable = list(iterable)

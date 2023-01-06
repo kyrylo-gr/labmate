@@ -50,6 +50,7 @@ class AnalysisManager(SyncData):
 
         self._fig_index = 0
         self._figure_saved = False
+        self._parsed_configs = {}
 
         for key, value in self.items():
             if isinstance(value, dict) and value.get("__loop_shape__", None) is not None:
@@ -81,6 +82,21 @@ class AnalysisManager(SyncData):
         """saves the figure with the filename (...)_FIG_name
           If name is None, use (...)_FIG1, (...)_FIG2.
           pdf is used by default if no extension is provided in name"""
+
+        full_fig_name = self.get_fig_name(name)
+
+        if fig is not None:
+            fig.savefig(full_fig_name)
+        else:
+            plt.savefig(full_fig_name)
+
+        self._figure_saved = True
+
+    def get_fig_name(self, name: Optional[str] = None) -> str:
+        """
+        If name is not specified, suffix is FIG1.pdf, FIG2.pdf, etc.
+        If name like 123, the suffix is 123.pdf.
+        If name like abc, the suffix is abc.pdf """
         assert self.filepath, "You must set self.filepath before saving"
 
         if name is None:
@@ -93,14 +109,38 @@ class AnalysisManager(SyncData):
             if os.path.splitext(name)[-1] == '':
                 name = name + ".pdf"
 
-        full_fig_name = self.filepath + '_FIG' + name
+        return self.filepath + '_FIG' + name
 
-        if fig is not None:
-            fig.savefig(full_fig_name)
+    def parse_config(self, config_name: str = "config"):
+        if config_name in self._parsed_configs:
+            return self._parsed_configs[config_name]
+
+        if 'configs' not in self:
+            raise ValueError("The is no config files save within AnalysisManager")
+
+        if config_name not in self['configs']:
+            original_config_name = config_name
+            for possible_name in self['configs']:
+                if possible_name.startswith(config_name):
+                    config_name = possible_name
+                    break
+            else:
+                raise ValueError(f"Cannot find config with name {config_name}. \
+                    Possible configs file are {self['configs'].keys()}")
+
+            if config_name in self._parsed_configs:
+                self._parsed_configs[original_config_name] = self._parsed_configs[config_name]
+                return self._parsed_configs[config_name]
         else:
-            plt.savefig(full_fig_name)
+            original_config_name = None
 
-        self._figure_saved = True
+        from ..utils import parse_str
+        config_data = parse_str(self['configs'][config_name])
+        self._parsed_configs[config_name] = config_data
+        if original_config_name is not None:
+            self._parsed_configs[original_config_name] = config_data
+
+        return config_data
 
     @property
     def figure_saved(self):

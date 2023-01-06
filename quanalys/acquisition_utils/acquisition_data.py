@@ -20,6 +20,7 @@ class NotebookAcquisitionData(SyncData):
 
         self['configs'] = configs
         self['acquisition_cell'] = cell
+        self['useful'] = False
         self._save_files = save_files
 
     def save_config_files(self, configs: Optional[Dict[str, str]] = None, filepath: Optional[str] = None):
@@ -49,6 +50,8 @@ class NotebookAcquisitionData(SyncData):
             file.write(cell)
 
     def save_additional_info(self):
+        self['useful'] = True
+
         if not self._save_files:
             return
         self.save_cell()
