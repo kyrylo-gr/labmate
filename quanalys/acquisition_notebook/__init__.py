@@ -1,1 +1,1 @@
-from .acquisition_notebook_manage import AcquisitionNotebookManager  # noqa
+from .acquisition_notebook_manager import AcquisitionNotebookManager  # noqa

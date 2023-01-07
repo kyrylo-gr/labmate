@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Union
 import logging
 
-from .acquisition_data import NotebookAcquisitionData
+from .acquisition_data import NotebookAcquisitionData, read_config_files
 
 from ..utils import get_timestamp
 from ..json_utils import json_read, json_write
@@ -43,16 +43,21 @@ class AcquisitionManager:
     _current_filepath = None
 
     _save_files = False
+    _save_on_edit = True
 
     cell: Optional[str] = None
 
     def __init__(self,
                  data_directory: Optional[str] = None, *,
                  config_files: Optional[List[str]] = None,
-                 save_files: Optional[bool] = None):
+                 save_files: Optional[bool] = None,
+                 save_on_edit: Optional[bool] = None):
 
         if save_files is not None:
             self._save_files = save_files
+
+        if save_on_edit is not None:
+            self._save_on_edit = save_on_edit
 
         self._current_acquisition = None
 
@@ -90,15 +95,16 @@ class AcquisitionManager:
             raise ValueError("You should set self.data_directory")
         return data_directory
 
-    def set_config_file(self, filename: Union[str, list]) -> AcquisitionManager:
-        """Set self.config_file to filename. Verify if exists."""
+    def set_config_file(self, filename: Union[str, List[str]]) -> AcquisitionManager:
+        """Set self.config_file to filename. Verify if exists.
+        Only set config file for future acquisition and will not change current acquisition"""
         if isinstance(filename, str):
             filename = [filename]
 
-        self.config_files = [Path(file) for file in filename]
+        self.config_files = [file for file in filename]
 
         for config_file in self.config_files:
-            if not config_file.exists():
+            if not os.path.exists(config_file):
                 raise ValueError(f"Configuration file at {config_file} does not exist")
 
         return self
@@ -123,12 +129,7 @@ class AcquisitionManager:
         """Creates a new acquisition with the given experiment name"""
         self._current_acquisition = None
         self.cell = cell
-        configs: Dict[str, str] = {}
-        for config_file in self.config_files:
-            if not config_file.is_file():
-                raise ValueError(f"Config file should be a file. Cannot save directory. Path: {config_file.absolute()}")
-            with open(config_file, 'r') as file:  # pylint: disable=W1514
-                configs[config_file.name] = file.read()
+        configs = read_config_files(self.config_files)
 
         dic = AcquisitionTmpData(experiment_name=name,
                                  time_stamp=get_timestamp(),
@@ -173,11 +174,13 @@ class AcquisitionManager:
             configs=configs,
             cell=cell,
             overwrite=replace,
-            save_on_edit=True,
+            save_on_edit=self._save_on_edit,
             save_files=self._save_files)
 
     def save_acquisition(self, **kwds) -> AcquisitionManager:
         acq_data = self.current_acquisition
         acq_data.update(**kwds)
         acq_data.save_additional_info()
+        if self._save_on_edit is False:
+            acq_data.save()
         return self

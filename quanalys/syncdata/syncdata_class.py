@@ -259,9 +259,18 @@ class SyncData:
         filepath = self._check_if_filepath_was_set(filepath, self._filepath)
 
         if just_update is False:
-            h5py_utils.save_dict(
-                filename=filepath + '.h5',
-                data=self._data)
+            if self._read_only is False:
+                h5py_utils.save_dict(
+                    filename=filepath + '.h5',
+                    data=self._data
+                )
+            else:
+                h5py_utils.save_dict(
+                    filename=filepath + '.h5',
+                    data={key: value for key, value in self._data.items()
+                          if key not in self._read_only or key in last_update}
+                )
+
             return self
 
         for key in last_update:

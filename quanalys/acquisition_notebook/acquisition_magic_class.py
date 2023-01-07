@@ -1,5 +1,5 @@
 from IPython.core.magic import Magics, magics_class, cell_magic
-from .acquisition_notebook_manage import AcquisitionNotebookManager
+from .acquisition_notebook_manager import AcquisitionNotebookManager
 
 
 @magics_class

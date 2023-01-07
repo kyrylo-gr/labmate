@@ -1,7 +1,7 @@
 import json
 import os
 import h5py
-from typing import Optional, Protocol, Union
+from typing import Dict, Optional, Protocol, Union
 
 import numpy as np
 
@@ -114,7 +114,7 @@ def open_h5_group(group: Union[h5py.File, h5py.Group]) -> dict:
     return data
 
 
-def output_dict_structure(data: dict, additional_info: Optional[dict[str, str]] = None) -> str:
+def output_dict_structure(data: dict, additional_info: Optional[Dict[str, str]] = None) -> str:
     dict_str = dict_to_json_format_str(get_dict_structure(data))
     if additional_info:
         for key, value in additional_info.items():

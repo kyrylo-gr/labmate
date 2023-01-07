@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional
+from typing import Optional, Union
 
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
@@ -38,12 +38,13 @@ class AnalysisManager(SyncData):
     def __init__(self,
                  filepath: str,
                  cell: Optional[str] = None,
-                 save_files: bool = False):
+                 save_files: bool = False,
+                 save_on_edit: bool = True):
 
         if filepath is None:
             raise ValueError("You must specify filepath")
 
-        super().__init__(filepath=filepath, overwrite=False, read_only=False, save_on_edit=True)
+        super().__init__(filepath=filepath, overwrite=False, read_only=False, save_on_edit=save_on_edit)
         self.lock_data()
 
         self._save_files = save_files
@@ -55,6 +56,7 @@ class AnalysisManager(SyncData):
         for key, value in self.items():
             if isinstance(value, dict) and value.get("__loop_shape__", None) is not None:
                 self._update(**{key: AnalysisLoop(value)})
+
         self._analysis_cell = cell
 
         if cell is not None:
@@ -67,7 +69,7 @@ class AnalysisManager(SyncData):
         if not self._save_files:
             return
 
-        cell = cell or self['analysis_cell']
+        cell = cell or self._analysis_cell
 
         if cell is None or cell == "":
             logging.debug("Cell is not set. Nothing to save")
@@ -78,7 +80,7 @@ class AnalysisManager(SyncData):
         with open(self.filepath + '_ANALYSIS_CELL.py', 'w', encoding="UTF-8") as file:
             file.write(cell)
 
-    def save_fig(self, fig: Optional[Figure] = None, name: Optional[str] = None):
+    def save_fig(self, fig: Optional[Figure] = None, name: Optional[Union[str, int]] = None):
         """saves the figure with the filename (...)_FIG_name
           If name is None, use (...)_FIG1, (...)_FIG2.
           pdf is used by default if no extension is provided in name"""
@@ -92,18 +94,19 @@ class AnalysisManager(SyncData):
 
         self._figure_saved = True
 
-    def get_fig_name(self, name: Optional[str] = None) -> str:
+    def get_fig_name(self, name: Optional[Union[str, int]] = None) -> str:
         """
-        If name is not specified, suffix is FIG1.pdf, FIG2.pdf, etc.
-        If name like 123, the suffix is 123.pdf.
-        If name like abc, the suffix is abc.pdf """
+        If name is not specified, suffix is `FIG1.pdf`, `FIG2.pdf`, etc.
+        If name like `123`, the suffix is `FIG123.pdf`.
+        If name like `abc`, the suffix is `FIG_abc.pdf` """
         assert self.filepath, "You must set self.filepath before saving"
 
         if name is None:
             self._fig_index += 1
             name = f'{self._fig_index}.pdf'
         else:
-            name = str(name)
+            if not isinstance(name, str):
+                name = str(name)
             if not name.isnumeric() and name[0] != '_':
                 name = "_" + name
             if os.path.splitext(name)[-1] == '':

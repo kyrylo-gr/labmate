@@ -1,6 +1,7 @@
 """
 This model saves the classical dict to json file and load it from there.
 """
+import os
 from pathlib import Path
 import json
 from typing import Optional, Union
@@ -63,6 +64,10 @@ def json_write(file: str,
     Path is optional to precise the location of the file.
     Extension in filename is optional."""
     path = get_file_path(file, path, '.json')
+
+    path_dir = os.path.dirname(path)
+    if not os.path.exists(path_dir):
+        os.makedirs(path_dir)
 
     with open(path, 'w', encoding='utf-8') as outfile:
         json.dump(

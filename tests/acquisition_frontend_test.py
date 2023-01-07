@@ -49,8 +49,9 @@ class BasicTest(unittest.TestCase):
         old_file_path = "tests/data/old_data_example.h5"
         data = AnalysisManager(old_file_path)
         assert data, "File probably exists, but create SyncData object"
+        x = np.linspace(0, 10*np.pi, 101)
         self.assertAlmostEqual(
-            np.abs(data.get('x') - (x := np.linspace(0, 10*np.pi, 101))).sum(), 0)
+            np.abs(data.get('x') - x).sum(), 0)
         self.assertAlmostEqual(
             np.abs(data.get('y') - np.sin(x)).sum(), 0)
 

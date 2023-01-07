@@ -1,0 +1,18 @@
+int = 123
+int_underscore = 213_020
+wrong_int = 123 213
+div_int = 123 // 4
+
+float = 123.45
+wrong_float = 123.321.213
+
+exp = 1e5
+wrong_exp = 1e3ef
+wrong_exp2 = 1e3e22
+
+int_with_comment = 123 # comment
+
+# commented_value = 123
+
+for 1 in range(10):
+    tab_variable = 'nothing'

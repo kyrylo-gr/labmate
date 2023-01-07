@@ -1,7 +1,8 @@
 from __future__ import annotations
+import logging
 import os
-from typing import List, Literal, Optional, Union
-from IPython import get_ipython, InteractiveShell
+from typing import Any, List, Optional
+# from IPython import get_ipython, InteractiveShell
 
 from ..acquisition_utils import AcquisitionManager, AnalysisManager
 from ..utils import lstrip_int
@@ -40,7 +41,9 @@ class AcquisitionNotebookManager(AcquisitionManager):
                  config_files: Optional[List[str]] = None,
                  save_files: bool = False,
                  use_magic: bool = False,
-                 shell: Optional[Union[InteractiveShell, Literal[False]]] = False):
+                 save_on_edit: bool = True,
+                 save_on_edit_analysis: Optional[bool] = None,
+                 shell: Any = False):
         """
 
         Args:
@@ -53,21 +56,33 @@ class AcquisitionNotebookManager(AcquisitionManager):
                 So all information is saved inside the h5 file.
             use_magic (bool, optional):
                 True to register the magic cells. Defaults to False.
-            shell (InteractiveShell | None, optional):
+            save_on_edit (bool. Defaults to True):
+                True to save data for every change.
+            save_on_edit_analysis (bool. Defaults to same as save_on_edit):
+                save_on_edit parameter for AnalysisManager i.e. data inside analysis_cell
+            shell (InteractiveShell | None, optional. Defaults to False):
                 could be provided or explicitly set to None. Defaults to get_ipython().
         """
-
-        self.shell = get_ipython() if shell is False else shell
-
-        self._save_files = save_files
+        if shell is False or shell is True:  # behavior by default shell
+            from IPython import get_ipython
+            self.shell = get_ipython()
+        else:  # if any shell is provided. even None
+            self.shell = shell
 
         if use_magic:
             from .acquisition_magic_class import load_ipython_extension
             load_ipython_extension(aqm=self, shell=self.shell)
 
+        if save_on_edit_analysis is None:
+            save_on_edit_analysis = save_on_edit
+
+        self._save_on_edit_analysis = save_on_edit_analysis
+
         super().__init__(
             data_directory=data_directory,
-            config_files=config_files)
+            config_files=config_files,
+            save_files=save_files,
+            save_on_edit=save_on_edit)
 
     @property
     def data(self):
@@ -87,13 +102,22 @@ class AcquisitionNotebookManager(AcquisitionManager):
     def save_acquisition(self, **kwds):
         super().save_acquisition(**kwds)
         self.load_am()
+        return self
 
     def load_am(self, filename: Optional[str] = None):
         filename = filename or self.current_filepath
         if not os.path.exists(filename.rstrip('.h5') + '.h5'):
             raise ValueError(f"Cannot load data from {filename}")
-        self.am = AnalysisManager(filename, cell=self.analysis_cell_str, save_files=self._save_files)
+
+        self.am = AnalysisManager(
+            filename, cell=self.analysis_cell_str,
+            save_files=self._save_files, save_on_edit=self._save_on_edit_analysis)
+
         self.am.unlock_data('useful').update(**{'useful': True}).lock_data('useful')
+
+        if self._save_on_edit_analysis is False:
+            self.am.save()
+
         return self.am
 
     def acquisition_cell(self, name: str, cell: Optional[str] = None) -> AcquisitionNotebookManager:
@@ -103,9 +127,10 @@ class AcquisitionNotebookManager(AcquisitionManager):
         if cell is None and self.shell is not None:
             cell = self.shell.get_parent()['content']['code']  # type: ignore
 
-        # print(os.path.basename(self.current_filepath))
-
         self.new_acquisition(name=name, cell=cell)
+
+        logging.info(os.path.basename(self.current_filepath))
+
         return self
 
     def analysis_cell(self, filename: Optional[str] = None, cell: Optional[str] = None) -> AcquisitionNotebookManager:
@@ -122,7 +147,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
             self.is_old_data = False
             self.analysis_cell_str = cell
 
-        print(os.path.basename(filename))
+        logging.info(os.path.basename(filename))
 
         if os.path.exists(filename.rstrip('.h5') + '.h5'):
             self.load_am(filename)
@@ -147,7 +172,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
             code = code.replace("aqm.analysis_cell()", f"aqm.analysis_cell('{self.am.filepath}')")
 
         if self.shell is not None:
-            self.shell.set_next_input(code)
+            self.shell.set_next_input(code)  # type: ignore
         return code
 
     def get_full_filename(self, filename) -> str:
