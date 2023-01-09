@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Any, Dict, Iterable, Optional, Set, Union
 from . import h5py_utils
 from .h5_np_array import H5NpArray
@@ -29,8 +30,8 @@ class SyncData:
     _read_only: Union[bool, Set[str]]
 
     def __init__(self,
-                 filepath_or_data: Optional[Union[str, dict]] = None, /, *,
-                 filepath: Optional[str] = None,
+                 filepath_or_data: Optional[Union[str, dict, Path]] = None, /, *,
+                 filepath: Optional[Union[str, Path]] = None,
                  save_on_edit: bool = False,
                  read_only: Optional[Union[bool, Set[str]]] = None,
                  overwrite: Optional[bool] = None,
@@ -42,9 +43,12 @@ class SyncData:
             # print("Data given")
             data = data or filepath_or_data
 
-        if isinstance(filepath_or_data, str):
+        if isinstance(filepath_or_data, (str, Path)):
             # print("Filepath given")
             filepath = filepath or filepath_or_data
+
+        if filepath and not isinstance(filepath, str):
+            filepath = str(filepath)
 
         self._data = data or {}
         self._attrs = set()
@@ -54,8 +58,6 @@ class SyncData:
 
         if read_only is None:
             read_only = (save_on_edit is False and not overwrite) and filepath is not None
-
-        # print(read_only)
 
         self._read_only = read_only
 
@@ -198,6 +200,9 @@ class SyncData:
 
     def __getattr__(self, __name: str):
         """Will be called if __getattribute__ does not work"""
+        if len(__name) >= 2 and __name[0] == 'i' and \
+                __name[1:].isdigit() and __name not in self._data:
+            __name = __name[1:]
         if __name in self._data:
             data = self.get(__name)
             if isinstance(data, dict) and data:
@@ -239,6 +244,7 @@ class SyncData:
         not_saved = '' if self._last_data_saved or self._read_only is True else " (not saved)"
         mode = 'r' if self._read_only is True else 'w' if self._read_only is False else 'rw'
         mode = 'l' if self._filepath is None and self._read_only is not True else mode
+        not_saved = '' if mode == 'l' else not_saved
 
         return f"{type(self).__name__} ({mode}){not_saved}: \n {self._repr}"
 
