@@ -10,3 +10,5 @@ tests/tmp_data/*
 *.pyc
 tmp_data
 *.egg-info
+dist
+build
