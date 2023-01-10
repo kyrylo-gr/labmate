@@ -45,15 +45,15 @@ class EditorWindow(QtWidgets.QMainWindow):
 
     def run_analysis(self):
         with h5py.File(file_path, 'r') as f:
-            analysis_code = self.text_edit.toPlainText()
+            analysis_code_original = self.text_edit.toPlainText()
         with open(osp.join(osp.split(osp.abspath(__file__))[0], "init_viewer_analysis.py"), 'r') as f:
             init_code = f.read()
         #os.chdir(r"C:\Users\CryoPc\Documents\GitHub\mecaflux\notebooks\cooldowns\2023_01_06_CEAv1_die8")
 
-        analysis_code = analysis_code.replace("%", "#%")
-        analysis_code = analysis_code.replace("aqm.analysis_cell()", f"aqm.analysis_cell(r'{file_path}')")
+        analysis_code = analysis_code_original.replace("%", "#%")
+        analysis_code = analysis_code.replace("aqm.analysis_cell(", f"aqm.analysis_cell(r'{file_path}', cell=__the_cell_content__)\n#aqm.analysis_cell(")
 
-        exec(init_code + '\n' + analysis_code)
+        exec(init_code + '\n'  + analysis_code, dict(__the_cell_content__=analysis_code_original))
         #with h5py.File(file_path, 'w') as f:
         #    f["analysis_cell"] = self.text_edit.toPlainText()
 
@@ -71,13 +71,12 @@ class EditorWindow(QtWidgets.QMainWindow):
         
     def set_default_key(self):
         self.combo.setCurrentText("acquisition_cell")
-        
+        self.combo.setCurrentText("analysis_cell") # if existing, pick this one
+
     def open_file(self, file_path):
         self.file_path = file_path
         set_default = self.combo.currentIndex()==-1
         self.combo.clear()
-
-
 
         with h5py.File(file_path, 'r') as f:
             def depth_first_search(key, obj, all_items=[]):
