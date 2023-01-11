@@ -55,7 +55,7 @@ class AnalysisManager(SyncData):
 
         for key, value in self.items():
             if isinstance(value, dict) and value.get("__loop_shape__", None) is not None:
-                self._update(**{key: AnalysisLoop(value)})
+                self._update({key: AnalysisLoop(value)})
 
         self._analysis_cell = cell
 

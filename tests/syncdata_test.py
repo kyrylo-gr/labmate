@@ -55,13 +55,25 @@ class WithoutSavingTest(unittest.TestCase):
         self.compare_dict(data_smart._asdict(), data_dict)  # noqa
 
     def test_init_dict(self):
-        data_dict = {'a': [1, 2, 3]}
+        data_dict = {'a': [1, 2, 3], 'b': [1, 2, 3]}
         data_smart = SyncData(data_dict)
         self.compare_dict(data_smart._asdict(), data_dict)  # noqa
 
-    def test_update(self):
+    def test_update_kwds(self):
         self.apply_func("update", a=self.create_random_data())
         self.apply_func("update", b=self.create_random_data())
+
+        self.compare()
+
+    def test_update_dict(self):
+        # self.data_dict.update(data)
+        # self.data_smart.update(data)
+        # self.apply_func("update", )
+        self.apply_func("update", {'a': self.create_random_data()})
+        self.apply_func("update", {'b': self.create_random_data()})
+        self.apply_func("update", {
+            'd': self.create_random_data(),
+            'c': self.create_random_data()})
 
         self.compare()
 
@@ -482,7 +494,9 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
         return super().tearDownClass()
 
 
-class SavingDifferentFormatTest(SavingOnEditDifferentFormatTest):
+class SavingOnSaveDifferentFormatTest(SavingOnEditDifferentFormatTest):
+    """Test to save different formats of data, when save_on_edit is False"""
+
     def create_file(self):
         return SyncData(
             DATA_FILE_PATH, save_on_edit=False, overwrite=False, read_only=False)
@@ -490,6 +504,89 @@ class SavingDifferentFormatTest(SavingOnEditDifferentFormatTest):
     def read_file(self, d):
         d.save()
         return SyncData(DATA_FILE_PATH)
+
+
+class PullTest(unittest.TestCase):
+    """Testing to open SyncData in write mode in 2 different kernel"""
+
+    def test_open_two_files(self):
+        # from quanalys.utils.async_utils import sleep
+        sd1 = SyncData(
+            DATA_FILE_PATH, save_on_edit=True, overwrite=True, read_only=False)
+        sd1['a'] = 1
+        sd2 = SyncData(
+            DATA_FILE_PATH, overwrite=False, read_only=True)
+
+        sd2.pull()
+        self.assertTrue('a' in sd2)
+        self.assertEqual(sd2['a'], 1)
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove tmp_test_data directory ones all test finished."""
+        # data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)
+        if os.path.exists(DATA_DIR):
+            shutil.rmtree(DATA_DIR)
+        return super().tearDownClass()
+
+
+class OpenOnInitTest(WithoutSavingTest):
+    def setUp(self):
+        if os.path.exists(DATA_FILE_PATH):
+            os.remove(DATA_FILE_PATH)
+        self.data_smart = SyncData(
+            filepath=DATA_FILE_PATH, overwrite=False, save_on_edit=True, open_on_init=False)
+
+    @property
+    def data_dict(self):
+        return SyncData(DATA_FILE_PATH, open_on_init=False)
+
+    def compare_dict(self, d1, d2):
+        self.assertSetEqual(
+            set(d1.keys()), set(d2.keys()))
+
+        for key in d1.keys():
+            self.assertTrue(np.all(d1[key] == d2[key]))
+
+    def apply_func(self, func, *args, **kwds):
+        getattr(self.data_smart, func)(*args, **kwds)
+
+    def test_delitem(self):
+        pass
+
+    def test_delattr(self):
+        pass
+
+    def test_getitem2(self):
+        data = self.create_random_data()
+        self.data_smart['a'] = data
+
+        sd = SyncData(DATA_FILE_PATH, open_on_init=False)
+        self.assertDictEqual(sd._data, {})
+        self.assertSetEqual(sd.keys(), set(['a']))
+        self.assertTrue(np.all(sd.get('a') == data))
+
+    def test_setitem2(self):
+        data = self.create_random_data()
+        self.data_smart['a'] = data
+
+        sd = SyncData(DATA_FILE_PATH, open_on_init=False, save_on_edit=True, overwrite=False)
+        self.assertDictEqual(sd._data, {})  # pylint: disable=W0212
+        self.assertSetEqual(sd.keys(), set(['a']))
+
+        data = self.create_random_data()
+        sd['a'] = data
+
+        sd = SyncData(DATA_FILE_PATH, open_on_init=False)
+        self.assertTrue(np.all(sd.get('a') == data))
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove tmp_test_data directory ones all test finished."""
+        # data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)
+        if os.path.exists(DATA_DIR):
+            shutil.rmtree(DATA_DIR)
+        return super().tearDownClass()
 
 
 if __name__ == '__main__':

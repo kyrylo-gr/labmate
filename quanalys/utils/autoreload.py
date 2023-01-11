@@ -1,3 +1,4 @@
+""" Use `import quanalys.utils.autoreload` """
 from IPython import get_ipython
 
 shell = get_ipython()

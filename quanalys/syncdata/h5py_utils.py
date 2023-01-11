@@ -1,7 +1,7 @@
 import json
 import os
 import h5py
-from typing import Dict, Optional, Protocol, Union
+from typing import Dict, Optional, Protocol, Set, Union
 
 import numpy as np
 
@@ -21,6 +21,29 @@ class ClassWithAsarray(Protocol):
 
     def asarray(self) -> np.ndarray:
         ...
+
+
+class FileLockedError(Exception):
+    """Exception raised when a file is locked"""
+
+
+class LockFile:
+    def __init__(self, filename):
+        self.lock_filename = os.path.splitext(filename)[0] + ".lock"
+
+    def __enter__(self):
+        if os.path.exists(self.lock_filename):
+            raise FileLockedError("File locked and cannot be opened in write mode")
+        with open(self.lock_filename, 'w', encoding='utf-8'):
+            pass
+        # print("lock file", time.time())
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if os.path.exists(self.lock_filename):
+            os.remove(self.lock_filename)
+        #     print("lock del", time.time())
+        # else:
+        #     print("exit without lock file", time.time())
 
 
 DICT_OR_LIST_LIKE = Optional[Union[dict, list, np.ndarray, ClassWithAsdict, ClassWithAsarray,
@@ -69,48 +92,66 @@ def save_sub_dict(
         for k, v in data.items():
             save_sub_dict(g, v, k)
     elif (key is not None) and (data is not None):
-        group.create_dataset(key, data=data)
+        if isinstance(data, (np.ndarray, list)):
+            group.create_dataset(key, data=data, compression="gzip")
+        else:
+            group.create_dataset(key, data=data)
 
 
 def save_dict(
     filename: str,
     data: dict,
 ):
-    if not os.path.exists(os.path.dirname(filename)):
-        os.makedirs(os.path.dirname(filename))
-
-    mode = 'a' if os.path.exists(filename) else 'w'
-    with h5py.File(filename, mode) as file:
-        for key, value in data.items():
-            if key in file.keys():
-                file.pop(key)
-            if value is None:
-                continue
-            save_sub_dict(file, value, key)
-    return filename
+    # if not os.path.exists(os.path.dirname(filename)):
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    mode = 'a'  # if os.path.exists(filename) else 'w'
+    with LockFile(filename):
+        with h5py.File(filename, mode) as file:
+            for key, value in data.items():
+                if key in file.keys():
+                    file.pop(key)
+                if value is None:
+                    continue
+                save_sub_dict(file, value, key)
+    return os.path.getmtime(filename)
 
 
 def del_dict(
     filename: str,
     key: str
 ):
+    with LockFile(filename):
+        with h5py.File(filename, 'a') as file:
+            file.pop(key)
+    return os.path.getmtime(filename)
 
-    with h5py.File(filename, 'a') as file:
-        file.pop(key)
+
+def keys_h5(filename) -> Set[str]:
+    with h5py.File(filename, 'r') as file:
+        return set(file.keys())
 
 
-def open_h5(fullpath: str) -> dict:
+def open_h5(fullpath: str, key: Optional[Union[str, Set[str]]] = None) -> dict:
     with h5py.File(fullpath, 'r') as file:
-        return open_h5_group(file)
+        return open_h5_group(file, key=key)
 
 
-def open_h5_group(group: Union[h5py.File, h5py.Group]) -> dict:
+def open_h5_group(
+    group: Union[h5py.File, h5py.Group],
+    key: Optional[Union[str, Set[str]]] = None
+) -> dict:
     data = {}
-    for key, value in group.items():
+    if key is not None:
+        key = key if isinstance(key, set) else set([key])
+
+    for group_key in group.keys():
+        if key is not None and group_key not in key:
+            continue
+        value = group[group_key]
         if isinstance(value, h5py.Group):
-            data[key] = open_h5_group(value)
+            data[group_key] = open_h5_group(value)
         else:
-            data[key] = transform_on_open(value[()])  # type: ignore
+            data[group_key] = transform_on_open(value[()])  # type: ignore
     return data
 
 

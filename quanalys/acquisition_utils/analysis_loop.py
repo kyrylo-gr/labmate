@@ -37,12 +37,10 @@ class AnalysisLoop(SyncData):
     """
 
     def __init__(self, data: Optional[dict] = None, loop_shape: Optional[List[int]] = None):
-        super().__init__()
-        data = data or {}
+        super().__init__(data=data)
         if loop_shape is None:
-            loop_shape = data.get("__loop_shape__", None)
+            loop_shape = self.get("__loop_shape__", None)
         self._loop_shape = loop_shape
-        self._update(**data)
 
     def __iter__(self):
         if self._data is None:

@@ -23,14 +23,14 @@ def check_subdir(parent_dir: Union[str, Path], directory: Union[str, Path]) -> s
     Returns final path."""
     path = os.path.join(parent_dir, directory)
     if not os.path.exists(path):
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
         logging.info("Directory was created. Path is %s", str(path))
     return path
 
 
 def create_directory(path: Union[str, Path]) -> None:
-    if not os.path.exists(path):
-        os.makedirs(path)
+    # if not os.path.exists(path):
+    os.makedirs(path, exist_ok=True)
 
 
 class AcquisitionManager:

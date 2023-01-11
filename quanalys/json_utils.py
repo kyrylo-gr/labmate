@@ -66,8 +66,8 @@ def json_write(file: str,
     path = get_file_path(file, path, '.json')
 
     path_dir = os.path.dirname(path)
-    if not os.path.exists(path_dir):
-        os.makedirs(path_dir)
+    # if not os.path.exists(path_dir):
+    os.makedirs(path_dir, exist_ok=True)
 
     with open(path, 'w', encoding='utf-8') as outfile:
         json.dump(

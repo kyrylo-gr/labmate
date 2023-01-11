@@ -31,7 +31,7 @@ class AcquisitionMagic(Magics):
         else:
             line = None
 
-        self.aqm.analysis_cell(line, )
+        self.aqm.analysis_cell(line, cell)
 
         self.shell.run_cell(cell)
 

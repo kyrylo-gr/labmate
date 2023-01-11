@@ -43,8 +43,8 @@ class H5NpArray(np.ndarray):
         if not self.__filename__ or not self.__filekey__:
             raise ValueError("Cannot save changes without filename and filekey provided")
 
-        if not os.path.exists(os.path.dirname(self.__filename__)):
-            os.makedirs(os.path.dirname(self.__filename__))
+        # if not os.path.exists(os.path.dirname(self.__filename__)):
+        os.makedirs(os.path.dirname(self.__filename__), exist_ok=True)
 
         if not just_update:
             with h5py.File(self.__filename__, 'a') as file:

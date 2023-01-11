@@ -1,11 +1,12 @@
 from __future__ import annotations
-import logging
-import os
-from typing import Any, List, Optional
-# from IPython import get_ipython, InteractiveShell
-
-from ..acquisition_utils import AcquisitionManager, AnalysisManager
 from ..utils import lstrip_int
+from ..acquisition_utils import AcquisitionManager, AnalysisManager
+from typing import Any, List, Optional
+import os
+
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class AcquisitionNotebookManager(AcquisitionManager):
@@ -129,7 +130,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
 
         self.new_acquisition(name=name, cell=cell)
 
-        logging.info(os.path.basename(self.current_filepath))
+        logger.info(os.path.basename(self.current_filepath))
 
         return self
 
@@ -147,7 +148,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
             self.is_old_data = False
             self.analysis_cell_str = cell
 
-        logging.info(os.path.basename(filename))
+        logger.info(os.path.basename(filename))
 
         if os.path.exists(filename.rstrip('.h5') + '.h5'):
             self.load_am(filename)
