@@ -6,8 +6,11 @@ Created on Mon Jan  9 16:36:40 2023
 """
 import sys, os
 import IPython
+import pdb
+import traceback
 
 from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt5.QtWidgets import QStyle
 from PyQt5.QtGui import QFileOpenEvent
 
 import h5py
@@ -38,31 +41,65 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.combo = QtWidgets.QComboBox()
         self.setMenuWidget(self.combo)
         self.combo.currentIndexChanged.connect(self.item_changed)
+
+        self.icon = self.style().standardIcon(QStyle.SP_DriveFDIcon)
+        self.setWindowIcon(self.icon)
         
         self.file_path = None
         
         #self.combo.addItem("Nothing to display")
 
+    def find_code_dir(self):
+        """
+        A source code directory with analysis scripts is conventionally located in measurement_dir/code
+        """
+        measurement_dir = osp.split(osp.split(self.file_path)[0])[0]
+        return osp.join(measurement_dir, 'code')
+
     def run_analysis(self):
-        with h5py.File(file_path, 'r') as f:
+        code_dir = self.find_code_dir()
+        os.chdir(code_dir)
+        import sys
+        sys.path.append(code_dir)
+        with h5py.File(self.file_path, 'r') as f:
             analysis_code_original = self.text_edit.toPlainText()
-        with open(osp.join(osp.split(osp.abspath(__file__))[0], "init_viewer_analysis.py"), 'r') as f:
-            init_code = f.read()
+        init_code = """from init_notebook import *"""
+        
+        #with open(osp.join(osp.split(osp.abspath(__file__))[0], "init_viewer_analysis.py"), 'r') as f:
+        #    init_code = f.read()
         #os.chdir(r"C:\Users\CryoPc\Documents\GitHub\mecaflux\notebooks\cooldowns\2023_01_06_CEAv1_die8")
 
         analysis_code = analysis_code_original.replace("%", "#%")
-        analysis_code = analysis_code.replace("aqm.analysis_cell(", f"aqm.analysis_cell(r'{file_path}', cell=__the_cell_content__)\n#aqm.analysis_cell(")
+        analysis_code = analysis_code.replace("aqm.analysis_cell(", f"aqm.analysis_cell(r'{self.file_path}', cell=__the_cell_content__)\n#aqm.analysis_cell(")
 
-        exec(init_code + '\n'  + analysis_code, dict(__the_cell_content__=analysis_code_original))
+        try:
+            exec(init_code + '\n'  + analysis_code, dict(__the_cell_content__=analysis_code_original))
+        except Exception:
+            print(traceback.format_exc())
         #with h5py.File(file_path, 'w') as f:
         #    f["analysis_cell"] = self.text_edit.toPlainText()
 
+    @property
+    def filename(self):
+        return os.path.split(self.file_path)[-1]
+
+    def replace_analysis_cell_statement(self, value):
+        return "\n".join([line if not line.startswith("aqm.analysis_cell(") else f'aqm.analysis_cell("{self.filename}")' for line in value.split("\n")])
+
     def item_changed(self):
+        key = self.combo.currentText()
         with h5py.File(self.file_path, 'r') as f:
-            if self.combo.currentText() in f.keys():
-                self.text_edit.setText(str(f[self.combo.currentText()][()]))
+            if key in f.keys():
+                value = str(f[key][()])
+                if key=="analysis_cell":
+                    value = self.replace_analysis_cell_statement(value)
+                self.text_edit.setText(value)
             else:
-                self.text_edit.setText("")
+                if key=="analysis_cell":
+                    value = f'aqm.analysis_cell("{self.filename}")\n'
+                else:
+                    value = ""
+                self.text_edit.setText(value)
         self.set_button_visibility()
 
     def set_button_visibility(self):
@@ -107,17 +144,24 @@ class EditorWindow(QtWidgets.QMainWindow):
 #            print(f'A file was opened: {file_path}')
 #        return super().event(event)
 
+
+# Apparently needed for the icon
+import ctypes
+myappid = u'mycompany.myproduct.subproduct.version' # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
+
+
 #APP = FileOpenEventHandler(sys.argv)
 APP = QtWidgets.QApplication(sys.argv)
 EDITOR = EditorWindow(None)
+APP.setWindowIcon(EDITOR.icon) # Not sure if needed
 EDITOR.show()
 
 #%%
 
 if __name__=="__main__":
-    
     if len(sys.argv)>1:
         file_path = sys.argv[1] 
         EDITOR.open_file(file_path)
-
     APP.exec_()
