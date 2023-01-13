@@ -1,11 +1,11 @@
 from IPython.core.magic import Magics, magics_class, cell_magic
-from .acquisition_notebook_manager import AcquisitionNotebookManager
+from .acquisition_analysis_manager import AcquisitionAnalysisManager
 
 
 @magics_class
 class AcquisitionMagic(Magics):
 
-    def __init__(self, aqm: AcquisitionNotebookManager, shell, **kwargs):
+    def __init__(self, aqm: AcquisitionAnalysisManager, shell, **kwargs):
         if shell is None:
             raise ValueError("Not shell specified")
         self.shell = shell

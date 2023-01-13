@@ -3,7 +3,7 @@ import shutil
 
 import unittest
 
-from quanalys.acquisition_notebook import AcquisitionNotebookManager
+from quanalys.acquisition_notebook import AcquisitionAnalysisManager
 # from quanalys.acquisition_utils import AcquisitionManager, AnalysisManager
 from quanalys.syncdata import SyncData
 
@@ -12,8 +12,8 @@ DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
 DATA_FILE_PATH = os.path.join(DATA_DIR, "some_data.h5")
 
 
-class AcquisitionNotebookManagerTest(unittest.TestCase):
-    """Test of AcquisitionNotebookManager.
+class AcquisitionAnalysisManagerTest(unittest.TestCase):
+    """Test of AcquisitionAnalysisManager.
     It mainly checks what acquisition_cell and analysis_cell do"""
 
     cell_text = "this is a analysis cell"
@@ -23,7 +23,7 @@ class AcquisitionNotebookManagerTest(unittest.TestCase):
 
     def setUp(self):
         shell = ShellEmulator(self.cell_text)
-        self.aqm = AcquisitionNotebookManager(
+        self.aqm = AcquisitionAnalysisManager(
             DATA_DIR, use_magic=False, save_files=False,
             save_on_edit=True,
             shell=shell)  # type: ignore
@@ -96,13 +96,13 @@ class AcquisitionNotebookManagerTest(unittest.TestCase):
         self.create_acquisition_cell()
         self.create_data_and_check()
 
-        self.assertIsNone(self.aqm.am)
+        self.assertIsNone(self.aqm.current_analysis)
 
         self.create_analysis_cell()
-        self.assertIsNotNone(self.aqm.am)
-        assert self.aqm.am
-        self.check_2_list(self.aqm.am['x'], self.x)
-        self.check_2_list(self.aqm.am['y'], self.y)
+        self.assertIsNotNone(self.aqm.current_analysis)
+        assert self.aqm.current_analysis
+        self.check_2_list(self.aqm.current_analysis['x'], self.x)
+        self.check_2_list(self.aqm.current_analysis['y'], self.y)
 
     def test_analysis_after_restart(self):
         self.create_acquisition_cell()
@@ -111,10 +111,10 @@ class AcquisitionNotebookManagerTest(unittest.TestCase):
 
         self.create_analysis_cell()
 
-        self.assertIsNotNone(self.aqm.am)
-        assert self.aqm.am
-        self.check_2_list(self.aqm.am['x'], self.x)
-        self.check_2_list(self.aqm.am['y'], self.y)
+        self.assertIsNotNone(self.aqm.current_analysis)
+        assert self.aqm.current_analysis
+        self.check_2_list(self.aqm.current_analysis['x'], self.x)
+        self.check_2_list(self.aqm.current_analysis['y'], self.y)
 
     def test_useful_flag_after_save_acquisition(self):
         self.create_acquisition_cell()
@@ -140,8 +140,8 @@ class AcquisitionNotebookManagerTest(unittest.TestCase):
             shutil.rmtree(DATA_DIR)
 
 
-class AcquisitionNotebookManagerWithSaveOnEditOffTest(unittest.TestCase):
-    """Check AcquisitionNotebookManager with save_on_edit = False."""
+class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
+    """Check AcquisitionAnalysisManager with save_on_edit = False."""
 
     cell_text = "this is a analysis cell"
     experiment_name = "abc"
@@ -150,7 +150,7 @@ class AcquisitionNotebookManagerWithSaveOnEditOffTest(unittest.TestCase):
 
     def setUp(self):
         shell = ShellEmulator(self.cell_text)
-        self.aqm = AcquisitionNotebookManager(
+        self.aqm = AcquisitionAnalysisManager(
             DATA_DIR, use_magic=False, save_files=False,
             save_on_edit=False,
             shell=shell)  # type: ignore
@@ -209,25 +209,25 @@ class AcquisitionNotebookManagerWithSaveOnEditOffTest(unittest.TestCase):
 
         self.check_xy_values()
 
-        assert self.aqm.am
+        assert self.aqm.current_analysis
 
         self.assertEqual(
-            self.aqm.am.get("acquisition_cell"), self.cell_text)
+            self.aqm.current_analysis.get("acquisition_cell"), self.cell_text)
 
     def test_save_acquisition_creates_am(self):
         self.create_acquisition_cell()
-        self.assertIsNone(self.aqm.am)
+        self.assertIsNone(self.aqm.current_analysis)
         self.aqm.save_acquisition()
-        self.assertIsNotNone(self.aqm.am)
+        self.assertIsNotNone(self.aqm.current_analysis)
         self.assertEqual(self.aqm.d.get('useful'), True)
 
     def test_run_analysis_before_saving(self):
         self.create_acquisition_cell()
-        self.assertIsNone(self.aqm.am)
+        self.assertIsNone(self.aqm.current_analysis)
         self.create_analysis_cell()
-        self.assertIsNone(self.aqm.am)
+        self.assertIsNone(self.aqm.current_analysis)
         self.aqm.save_acquisition()
-        self.assertIsNotNone(self.aqm.am)
+        self.assertIsNotNone(self.aqm.current_analysis)
 
     def test_analysis_cell_saved(self):
         self.create_acquisition_cell()

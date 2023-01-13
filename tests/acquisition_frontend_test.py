@@ -12,7 +12,7 @@ from typing import Union
 import unittest
 import numpy as np
 
-from quanalys.acquisition_utils import AcquisitionLoop, AcquisitionManager, AnalysisManager
+from quanalys.acquisition_utils import AcquisitionLoop, AcquisitionManager, AnalysisData
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
@@ -38,7 +38,7 @@ class BasicTest(unittest.TestCase):
         y = np.sin(x)
         self.aqm.save_acquisition(x=x, y=y)
 
-        data = AnalysisManager(self.aqm.current_filepath)
+        data = AnalysisData(self.aqm.current_filepath)
 
         assert data is not None
 
@@ -47,7 +47,7 @@ class BasicTest(unittest.TestCase):
 
     def test_open_old_file(self):
         old_file_path = "tests/data/old_data_example.h5"
-        data = AnalysisManager(old_file_path)
+        data = AnalysisData(old_file_path)
         assert data, "File probably exists, but create SyncData object"
         x = np.linspace(0, 10*np.pi, 101)
         self.assertAlmostEqual(
@@ -63,7 +63,7 @@ class BasicTest(unittest.TestCase):
 
         self.aqm = AcquisitionManager(DATA_DIR)
 
-        data = AnalysisManager(self.aqm.current_filepath)
+        data = AnalysisData(self.aqm.current_filepath)
 
         assert data is not None
 
@@ -187,7 +187,7 @@ class AcquisitionLoopTest(unittest.TestCase):
     def data_verification_for_simple_loop(self):
         # fullpath = AcquisitionManager.current_acquisition.filepath
 
-        data = AnalysisManager(self.aqm.current_filepath)
+        data = AnalysisData(self.aqm.current_filepath)
 
         assert data is not None
 
@@ -218,7 +218,7 @@ class AnalysisLoopTest(AcquisitionLoopTest):
     the AcquisitionLoopTest but has different data_verification function."""
 
     def data_verification_for_simple_loop(self):
-        data = AnalysisManager(self.aqm.current_filepath)
+        data = AnalysisData(self.aqm.current_filepath)
 
         assert data is not None
 
@@ -295,7 +295,7 @@ class MultiAnalysisLoopTest(unittest.TestCase):
 
     def data_verification_for_2d_loop(self):
 
-        data = AnalysisManager(self.aqm.current_filepath)
+        data = AnalysisData(self.aqm.current_filepath)
 
         assert data is not None
 

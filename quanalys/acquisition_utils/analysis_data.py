@@ -12,7 +12,7 @@ from ..syncdata import SyncData
 from ..path import Path
 
 
-class AnalysisManager(SyncData):
+class AnalysisData(SyncData):
     """AnalysisManager is subclass of SyncData.
     It opens the filepath and immediately looks every existing keys.
     So that you can add and modify a new key, but cannot change old keys.
