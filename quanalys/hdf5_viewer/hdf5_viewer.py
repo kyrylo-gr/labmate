@@ -51,24 +51,34 @@ class EditorWindow(QtWidgets.QMainWindow):
         """
         A source code directory with analysis scripts is conventionally located in measurement_dir/code
         """
-        assert self.file_path, "normally find_code_dir runs after open_file. It wasn't the case now"
-        measurement_dir = osp.split(osp.split(self.file_path)[0])[0]
+        measurement_dir = self.find_measurement_dir()
         return osp.join(measurement_dir, 'code')
+
+    def find_measurement_dir(self):
+        assert self.file_path, "normally find_code_dir runs after open_file. It wasn't the case now"
+        return osp.split(osp.split(self.file_path)[0])[0]
 
     def run_analysis(self):
         code_dir = self.find_code_dir()
-
-        os.chdir(code_dir)
-        sys.path.append(code_dir)
+        if osp.exists(code_dir):
+            os.chdir(code_dir)
+            sys.path.append(code_dir)
 
         analysis_code_original = self.text_edit.toPlainText()
-        init_code = """from init_notebook import *"""
+        measurement_dir = self.find_measurement_dir()
+        init_code = f"""try:
+    from init_notebook import *
+except ModuleNotFoundError:
+    from quanalys.acquisition_notebook import AcquisitionNotebookManager
+    measurement_dir = r"{measurement_dir}"
+    import matplotlib.pyplot as plt
+    aqm = AcquisitionNotebookManager(measurement_dir)
+    print("init_notebook wasn't found, skipping import...")"""
 
         analysis_code = analysis_code_original.replace("%", "#%")
         analysis_code = analysis_code.replace(
             "aqm.analysis_cell(",
             f"aqm.analysis_cell(r'{self.file_path}', cell=__the_cell_content__)\n#aqm.analysis_cell(")
-
         try:
             exec(init_code + '\n' + analysis_code,  # pylint: disable=W0122
                  dict(__the_cell_content__=analysis_code_original))
@@ -106,12 +116,16 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.set_button_visibility()
 
     def set_button_visibility(self):
-        visibility = self.combo.currentText() == "analysis_cell"
+        visibility = self.combo.currentText().startswith("analysis_cell")
         self.run_analysis_button.setVisible(visibility)
 
     def set_default_key(self):
         self.combo.setCurrentText("acquisition_cell")
-        self.combo.setCurrentText("analysis_cell")  # if existing, pick this one
+        index = self.combo.findText('analysis_cell')
+        key = self.combo.itemText(index)
+        #analysis_keys = [key for key in self.combo.keys() if key.startswith('analysis_cell')]
+        #if len(analysis_keys)>0:
+        self.combo.setCurrentText(key)  # if existing, pick this one
 
     def open_file(self, file_path):
         self.file_path = file_path
@@ -119,10 +133,8 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.combo.clear()
 
         with h5py.File(file_path, 'r') as f:
-            items = depth_first_search("", f)
-            for key, _ in items:
+            for key in allkeys(f):
                 self.combo.addItem(key)
-
             if "analysis_cell" not in f.keys():
                 self.combo.addItem("analysis_cell")
 
@@ -133,15 +145,17 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.resize(500, 600)
 
 
-def depth_first_search(key, obj, all_items=None):
-    if all_items is None:
-        all_items = []
-    if hasattr(obj, "keys"):
-        for child_key in obj.keys():
-            depth_first_search(key + '/' + child_key, obj[child_key], all_items)
-    else:
-        all_items.append([key.lstrip("/"), obj])
-    return all_items
+def allkeys(obj):
+    "Recursively find all keys in an h5py.Group."
+    keys = []
+    if isinstance(obj, h5py.Group):
+        for key, value in obj.items():
+            if isinstance(value, h5py.Group):
+                keys = keys + allkeys(value)
+            else:
+                keys = keys + [value.name,]
+    return [key.lstrip("/") for key in keys]
+
 
 # class FileOpenEventHandler(QtWidgets.QApplication):
 #    def event(self, event):
