@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 
@@ -10,6 +11,10 @@ from quanalys.syncdata import SyncData
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
 DATA_FILE_PATH = os.path.join(DATA_DIR, "some_data.h5")
+
+logging.basicConfig(level=logging.WARNING, force=True)
+logging.StreamHandler().setLevel(logging.WARNING)
+logging.getLogger().setLevel(logging.WARNING)
 
 
 class AcquisitionAnalysisManagerTest(unittest.TestCase):
@@ -258,6 +263,126 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
         self.assertEqual(data['useful'], True)
         self.aqm.d.save()
         self.check_2_list(SyncData(self.aqm.aq.filepath).get('y'), self.y)
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove tmp_test_data directory ones all test finished."""
+        # data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)
+        if os.path.exists(DATA_DIR):
+            shutil.rmtree(DATA_DIR)
+
+
+class OldDataLoadTestsWithNoShell(unittest.TestCase):
+    cell_text = "this is a analysis cell"
+    cell_text2 = "this is the second analysis cell"
+
+    experiment_name = "abc"
+
+    x, y = [1, 2, 3], [4, 5, 6]
+
+    def setUp(self):
+        self.aqm = AcquisitionAnalysisManager(
+            DATA_DIR, use_magic=False, save_files=False,
+            save_on_edit=True,
+            shell=None)  # type: ignore
+
+    def test_current_acquisition_not_none(self):
+        self.aqm.acquisition_cell(self.experiment_name)
+        self.aqm.save_acquisition(x=self.x)
+        self.aqm.analysis_cell()
+        self.assertIsNotNone(self.aqm.current_acquisition)
+
+    def test_current_acquisition_none(self):
+        self.aqm.acquisition_cell(self.experiment_name)
+        self.aqm.save_acquisition(x=self.x)
+        self.aqm.analysis_cell(self.aqm.aq.filepath)
+        self.assertIsNone(self.aqm.current_acquisition)
+
+    def test_analysis_cell_after_old_data_loaded(self):
+        self.aqm.acquisition_cell(self.experiment_name)
+        self.aqm.save_acquisition(x=self.x)
+        self.aqm.analysis_cell(self.aqm.aq.filepath)
+        self.aqm.analysis_cell()
+        self.assertIsNotNone(self.aqm.d)
+
+    def test_change_analysis_cell_for_old_data_specified(self):
+        self.aqm.acquisition_cell(self.experiment_name)
+        self.aqm.save_acquisition(x=self.x)
+        self.aqm.analysis_cell(self.aqm.aq.filepath, cell=self.cell_text2)
+
+        sd = SyncData(self.aqm.d.filepath)
+        self.assertEqual(
+            sd.get("analysis_cell"), self.cell_text2)
+
+    def test_change_analysis_cell_for_old_data_explicit_cell(self):
+        self.aqm.acquisition_cell(self.experiment_name)
+        self.aqm.save_acquisition(x=self.x)
+        self.aqm.analysis_cell(self.aqm.aq.filepath)
+        self.aqm.save_analysis_cell()
+
+    def test_change_analysis_cell_for_old_data_explicit_named(self):
+        self.aqm.acquisition_cell(self.experiment_name)
+        self.aqm.save_acquisition(x=self.x)
+        self.aqm.analysis_cell(self.aqm.aq.filepath)
+        self.aqm.save_analysis_cell(name="abc")
+
+    def test_change_analysis_cell_for_old_data_explicit_named_specified_cell(self):
+        self.aqm.acquisition_cell(self.experiment_name)
+        self.aqm.save_acquisition(x=self.x)
+        self.aqm.analysis_cell()
+        self.aqm.analysis_cell(self.aqm.aq.filepath)
+        self.aqm.save_analysis_cell(name="abc", cell=self.cell_text2)
+
+        sd = SyncData(self.aqm.d.filepath)
+        self.assertEqual(
+            sd.get("analysis_cell_abc"), self.cell_text2)
+
+
+class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
+
+    def setUp(self):
+        shell = ShellEmulator(self.cell_text)
+        self.aqm = AcquisitionAnalysisManager(
+            DATA_DIR, use_magic=False, save_files=False,
+            save_on_edit=True,
+            shell=shell)  # type: ignore
+
+    def test_change_analysis_cell_for_new_data(self):
+        self.aqm.acquisition_cell(self.experiment_name)
+        self.aqm.save_acquisition(x=self.x)
+        self.aqm.analysis_cell()
+
+        sd = SyncData(self.aqm.aq.filepath)
+        self.assertEqual(
+            sd.get("analysis_cell"), self.cell_text)
+
+    def test_change_analysis_cell_for_old_data(self):
+        self.aqm.acquisition_cell(self.experiment_name)
+        self.aqm.save_acquisition(x=self.x)
+        self.aqm.analysis_cell()
+        self.aqm.shell = ShellEmulator(self.cell_text2)
+        self.aqm.analysis_cell(self.aqm.aq.filepath)
+
+        sd = SyncData(self.aqm.d.filepath)
+        self.assertEqual(
+            sd.get("analysis_cell"), self.cell_text)
+
+    def test_change_analysis_cell_for_old_data_explicit_cell(self):
+        self.aqm.acquisition_cell(self.experiment_name)
+        self.aqm.save_acquisition(x=self.x)
+        self.aqm.analysis_cell()
+        self.aqm.shell = ShellEmulator(self.cell_text2)
+        self.aqm.analysis_cell(self.aqm.aq.filepath)
+        self.aqm.save_analysis_cell()
+
+        sd = SyncData(self.aqm.d.filepath)
+        self.assertEqual(
+            sd.get("analysis_cell"), self.cell_text2)
+
+    def tearDown(self) -> None:
+        file = self.aqm.d.filepath + '.h5'
+        if os.path.exists(file):
+            os.remove(file)
 
     @classmethod
     def tearDownClass(cls):

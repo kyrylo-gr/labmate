@@ -118,22 +118,30 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         return self._analysis_data.save_fig(fig=fig, name=name, **kwds)
 
-    def save_analysis_cell(self, name: Optional[str] = None):
+    def save_analysis_cell(self, name: Optional[str] = None, cell: Optional[str] = None):
         if self._analysis_data is None:
             raise ValueError('No data set')
 
         if name is None:
             name = self._analysis_data.figure_last_name
 
-        cell = get_current_cell(self.shell)
-        self._analysis_data.save_analysis_cell(cell, name)
+        if name is not None:
+            name = str(name)
+
+        if cell is None and self.shell is not None:
+            cell = get_current_cell(self.shell)
+        self._analysis_data.save_analysis_cell(cell=cell, cell_name=name)
 
     def save_fig_and_analysis_cell(self,
                                    fig: Optional[Figure] = None,
-                                   name: Optional[Union[str, int]] = None, **kwds):
+                                   name: Optional[Union[str, int]] = None,
+                                   cell: Optional[str] = None,
+                                   **kwds):
 
         self.save_fig(fig=fig, name=name, **kwds)
-        self.save_analysis_cell(name=str(name))
+        if name is not None:
+            name = str(name)
+        self.save_analysis_cell(name=name, cell=cell)
 
     def save_acquisition(self, **kwds):
         super().save_acquisition(**kwds)
@@ -171,17 +179,17 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return self
 
     def analysis_cell(self, filename: Optional[str] = None, cell: Optional[str] = None) -> AcquisitionAnalysisManager:
-        if cell is None and self.shell is not None:
-            cell = get_current_cell(self.shell)
-            # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
+        # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
 
         if filename:  # getting old data
             self.is_old_data = True
-            self._analysis_cell_str = None
+            self._analysis_cell_str = cell
             filename = self.get_full_filename(filename)
         else:
             self.is_old_data = False
             filename = str(self.current_filepath)
+            if cell is None and self.shell is not None:
+                cell = get_current_cell(self.shell)
             self._analysis_cell_str = cell
 
         logger.info(os.path.basename(filename))

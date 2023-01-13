@@ -203,3 +203,9 @@ class AnalysisData(SyncData):
     @property
     def figure_last_name(self) -> Optional[str]:
         return self._figure_last_name
+
+    @property
+    def filepath(self) -> str:
+        filepath = super().filepath
+        assert filepath is not None
+        return filepath
