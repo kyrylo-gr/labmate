@@ -3,7 +3,7 @@ import shutil
 
 import unittest
 
-from quanalys.acquisition_utils import AcquisitionManager, AnalysisManager
+from quanalys.acquisition_utils import AcquisitionManager, AnalysisData
 from quanalys.acquisition_utils.acquisition_manager import read_config_files
 from quanalys.syncdata import SyncData
 
@@ -21,16 +21,16 @@ class AnalysisManagerTest(unittest.TestCase):
         self.aqm = AcquisitionManager(DATA_DIR)
         self.aqm.new_acquisition(self.experiment_name)
         self.aqm.aq.update(x=[1, 2, 3], y=[[1, 2], [3, 4], [4, 5]])
-        self.am = AnalysisManager(self.aqm.current_filepath, cell=self.analysis_cell)
+        self.ad = AnalysisData(self.aqm.current_filepath, cell=self.analysis_cell)
 
     def test_open_read_mode(self):
-        self.assertEqual(self.am.get('x', [])[0], 1)  # pylint: disable=E1136
+        self.assertEqual(self.ad.get('x', [])[0], 1)  # pylint: disable=E1136
         with self.assertRaises(TypeError, msg="Data is not locked"):
-            self.am['x'] = 2
+            self.ad['x'] = 2
 
-        self.am['z'] = 3
+        self.ad['z'] = 3
 
-        sd = SyncData(self.am.filepath)
+        sd = SyncData(self.ad.filepath)
         self.assertEqual(sd.get('z'), 3)
 
     def test_analysis_cell(self):
@@ -43,21 +43,21 @@ class AnalysisManagerTest(unittest.TestCase):
 
     def test_save_fig(self):
         fig = SimpleSaveFig()
-        self.am.save_fig(fig)  # type: ignore
+        self.ad.save_fig(fig)  # type: ignore
 
         self.assertTrue(os.path.exists(
             os.path.join(DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG1.pdf')))
 
     def test_save_fig_given_number(self):
         fig = SimpleSaveFig()
-        self.am.save_fig(fig, 123)  # type: ignore
+        self.ad.save_fig(fig, 123)  # type: ignore
 
         self.assertTrue(os.path.exists(
             os.path.join(DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG123.pdf')))
 
     def test_save_fig_given_name(self):
         fig = SimpleSaveFig()
-        self.am.save_fig(fig, "abc")  # type: ignore
+        self.ad.save_fig(fig, "abc")  # type: ignore
 
         self.assertTrue(os.path.exists(
             os.path.join(DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG_abc.pdf')))
@@ -67,8 +67,8 @@ class AnalysisManagerTest(unittest.TestCase):
         config = (os.path.join(TEST_DIR, "data/config.txt"))
         self.aqm.aq['configs'] = read_config_files([config])
 
-        self.am = AnalysisManager(self.aqm.current_filepath)
-        # print(self.am.parse_config("config.txt"))
+        self.ad = AnalysisData(self.aqm.current_filepath)
+        # print(self.ad.parse_config("config.txt"))
         self.compare_config()
 
     def test_parse_file_pushing_from_begging(self):
@@ -80,13 +80,13 @@ class AnalysisManagerTest(unittest.TestCase):
         self.aqm.set_config_file(config)
         self.aqm.new_acquisition(self.experiment_name)
 
-        self.am = AnalysisManager(self.aqm.current_filepath)
-        # print(self.am.parse_config("config.txt"))
+        self.ad = AnalysisData(self.aqm.current_filepath)
+        # print(self.ad.parse_config("config.txt"))
         self.compare_config()
 
     def compare_config(self):
-        self.am = AnalysisManager(self.aqm.current_filepath)
-        data = self.am.parse_config("config.txt")
+        self.ad = AnalysisData(self.aqm.current_filepath)
+        data = self.ad.parse_config("config.txt")
 
         self.assertEqual(data['int'], 123)
         self.assertEqual(data['int_underscore'], 213020)

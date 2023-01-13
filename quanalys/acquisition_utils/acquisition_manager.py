@@ -1,8 +1,8 @@
 from __future__ import annotations
 import os
 
-from ..path import Path
 from typing import Dict, List, NamedTuple, Optional, Union
+from ..path import Path
 # import logging
 
 from .acquisition_data import NotebookAcquisitionData, read_config_files
@@ -125,7 +125,7 @@ class AcquisitionManager:
         return self.current_acquisition
 
     @property
-    def current_acquisition(self):
+    def current_acquisition(self) -> NotebookAcquisitionData:
         if self._current_acquisition is None:
             self._current_acquisition = self.get_ongoing_acquisition()
         return self._current_acquisition
