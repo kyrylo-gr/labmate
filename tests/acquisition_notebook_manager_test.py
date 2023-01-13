@@ -51,7 +51,7 @@ class AcquisitionNotebookManagerTest(unittest.TestCase):
 
     def test_current_filepath(self):
         self.create_acquisition_cell()
-        self.assertEqual(self.aqm.current_filepath, self.aqm.aq.filepath)
+        self.assertEqual(str(self.aqm.current_filepath), self.aqm.aq.filepath)
 
     def test_aq_equal_current_acquisition(self):
         self.create_acquisition_cell()

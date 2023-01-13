@@ -1,8 +1,9 @@
 from __future__ import annotations
 import os
-from pathlib import Path
+
+from ..path import Path
 from typing import Dict, List, NamedTuple, Optional, Union
-import logging
+# import logging
 
 from .acquisition_data import NotebookAcquisitionData, read_config_files
 
@@ -15,28 +16,16 @@ class AcquisitionTmpData(NamedTuple):
     experiment_name: str
     time_stamp: str
     configs: Dict[str, str] = {}
-    directory: Optional[str] = None
+    directory: Optional[Union[str, Path]] = None
 
-
-def check_subdir(parent_dir: Union[str, Path], directory: Union[str, Path]) -> str:
-    """Check whether directory exists in parent directory. Creates if not.
-    Returns final path."""
-    path = os.path.join(parent_dir, directory)
-    if not os.path.exists(path):
-        os.makedirs(path, exist_ok=True)
-        logging.info("Directory was created. Path is %s", str(path))
-    return path
-
-
-def create_directory(path: Union[str, Path]) -> None:
-    # if not os.path.exists(path):
-    os.makedirs(path, exist_ok=True)
+    def asdict(self):
+        return self._asdict()  # pylint: disable=no-member
 
 
 class AcquisitionManager:
     """AcquisitionManager"""
 
-    _data_directory = None
+    _data_directory: Optional[Path] = None
     config_files = []
 
     _current_acquisition = None
@@ -48,7 +37,7 @@ class AcquisitionManager:
     cell: Optional[str] = None
 
     def __init__(self,
-                 data_directory: Optional[str] = None, *,
+                 data_directory: Optional[Union[str, Path]] = None, *,
                  config_files: Optional[List[str]] = None,
                  save_files: Optional[bool] = None,
                  save_on_edit: Optional[bool] = None):
@@ -62,13 +51,13 @@ class AcquisitionManager:
         self._current_acquisition = None
 
         if data_directory is not None:
-            self.data_directory = data_directory
+            self.data_directory = Path(data_directory)
         elif "ACQUISITION_DIR" in os.environ:
-            self.data_directory = os.environ["ACQUISITION_DIR"]
+            self.data_directory = Path(os.environ["ACQUISITION_DIR"])
         else:
             raise ValueError("No data directory specified")
 
-        self.temp_file_path = os.path.join(self.data_directory, 'temp.json')  # type: ignore
+        self.temp_file_path = self.get_data_directory()/'temp.json'
 
         if config_files is not None:
             self.set_config_file(*config_files)
@@ -76,19 +65,18 @@ class AcquisitionManager:
             self.set_config_file(*os.environ["ACQUISITION_CONFIG_FILES"].split(","))
 
     @property
-    def data_directory(self) -> Union[str, None]:
+    def data_directory(self) -> Union[Path, None]:
         if self._data_directory is not None:
             return self._data_directory
         params_from_last_acquisition = self.get_temp_data(self.temp_file_path)
-        return params_from_last_acquisition.directory if \
-            params_from_last_acquisition is not None else None
+        return Path(params_from_last_acquisition.directory) if \
+            (params_from_last_acquisition is not None and params_from_last_acquisition.directory is not None) else None
 
     @data_directory.setter
-    def data_directory(self, value: str) -> None:
-        create_directory(value)
-        self._data_directory = value
+    def data_directory(self, directory: Path) -> None:
+        self._data_directory = directory.makedirs()
 
-    def get_data_directory(self):
+    def get_data_directory(self) -> Path:
         """Return data_directory or raise error if not set."""
         data_directory = self.data_directory
         if data_directory is None:
@@ -101,7 +89,7 @@ class AcquisitionManager:
         if isinstance(filename, str):
             filename = [filename]
 
-        self.config_files = [file for file in filename]
+        self.config_files = list(filename)
 
         for config_file in self.config_files:
             if not os.path.exists(config_file):
@@ -109,18 +97,12 @@ class AcquisitionManager:
 
         return self
 
-    def create_subdir(self, experiment_name: str, data_directory: Optional[str] = None) -> str:
-        """Create a subdirectory inside data_directory"""
-        data_directory = data_directory or self.get_data_directory()
-        return check_subdir(data_directory, experiment_name)
-
-    def create_path_from_tmp_data(self, dic: AcquisitionTmpData) -> str:
-        return os.path.join(
-            self.create_subdir(dic.experiment_name, data_directory=dic.directory),
-            f'{dic.time_stamp}__{dic.experiment_name}')
+    def create_path_from_tmp_data(self, dic: AcquisitionTmpData) -> Path:
+        data_directory = dic.directory or self.get_data_directory()
+        return (Path(data_directory)/dic.experiment_name).makedirs()/f'{dic.time_stamp}__{dic.experiment_name}'
 
     @staticmethod
-    def get_temp_data(path) -> Optional[AcquisitionTmpData]:
+    def get_temp_data(path: Path) -> Optional[AcquisitionTmpData]:
         if not os.path.exists(path):
             return None
         return AcquisitionTmpData(**json_read(path))
@@ -136,7 +118,7 @@ class AcquisitionManager:
                                  configs=configs,
                                  directory=self.get_data_directory())
 
-        json_write(self.temp_file_path, dic._asdict())
+        json_write(self.temp_file_path, dic.asdict())
 
         self._current_acquisition = self.get_ongoing_acquisition(replace=True)
 
@@ -144,33 +126,31 @@ class AcquisitionManager:
 
     @property
     def current_acquisition(self):
-        # print(2, cls._current_acquisition)
         if self._current_acquisition is None:
             self._current_acquisition = self.get_ongoing_acquisition()
-            # print(3, cls._current_acquisition)
         return self._current_acquisition
 
     @property
-    def aq(self):
+    def aq(self):  # pylint: disable=invalid-name
         return self.current_acquisition
 
     @property
-    def current_filepath(self) -> str:
+    def current_filepath(self) -> Path:
         filepath = self.current_acquisition.filepath
         if filepath is None:
             raise ValueError("No filepath specified")
-        return filepath
+        return Path(filepath)
 
     def get_ongoing_acquisition(self, replace: Optional[bool] = False) -> NotebookAcquisitionData:
-        current_acquisition_param = self.get_temp_data(self.temp_file_path)
-        assert current_acquisition_param is not None, \
+        acquisition_tmp_data = self.get_temp_data(self.temp_file_path)
+        assert acquisition_tmp_data is not None, \
             "You should create a new acquisition. It will create temp.json file."
-        filepath = self.create_path_from_tmp_data(current_acquisition_param)
-        configs = current_acquisition_param.configs
+        filepath = self.create_path_from_tmp_data(acquisition_tmp_data)
+        configs = acquisition_tmp_data.configs
         cell = self.cell
 
         return NotebookAcquisitionData(
-            filepath=filepath,
+            filepath=str(filepath),
             configs=configs,
             cell=cell,
             overwrite=replace,

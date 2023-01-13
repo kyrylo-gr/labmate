@@ -102,8 +102,10 @@ def save_dict(
     filename: str,
     data: dict,
 ):
-    # if not os.path.exists(os.path.dirname(filename)):
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    dirname = os.path.dirname(filename)
+    if dirname and not os.path.exists(dirname):
+        os.makedirs(dirname, exist_ok=True)
+
     mode = 'a'  # if os.path.exists(filename) else 'w'
     with LockFile(filename):
         with h5py.File(filename, mode) as file:

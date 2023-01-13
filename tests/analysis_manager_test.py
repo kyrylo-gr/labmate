@@ -24,7 +24,7 @@ class AnalysisManagerTest(unittest.TestCase):
         self.am = AnalysisManager(self.aqm.current_filepath, cell=self.analysis_cell)
 
     def test_open_read_mode(self):
-        self.assertEqual(self.am.get('x')[0], 1)
+        self.assertEqual(self.am.get('x', [])[0], 1)  # pylint: disable=E1136
         with self.assertRaises(TypeError, msg="Data is not locked"):
             self.am['x'] = 2
 
@@ -35,8 +35,11 @@ class AnalysisManagerTest(unittest.TestCase):
 
     def test_analysis_cell(self):
         sd = SyncData(self.aqm.aq.filepath)
+        analysis_cell = sd.get("analysis_cell")
+        if isinstance(analysis_cell, bytes):
+            analysis_cell = analysis_cell.decode()
         self.assertEqual(
-            sd.get("analysis_cell"), self.analysis_cell)
+            analysis_cell, self.analysis_cell)
 
     def test_save_fig(self):
         fig = SimpleSaveFig()

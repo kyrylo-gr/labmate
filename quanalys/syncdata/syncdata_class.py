@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional, Set, Union
+from typing import Any, Dict, Iterable, Optional, Set, TypeVar, Union, overload
 from . import h5py_utils
 from .h5_np_array import H5NpArray
 from ..utils import async_utils
@@ -29,6 +29,9 @@ def check_data_up_to_date(func):
         return res
 
     return verify_file_modif_load_if_needed
+
+
+_T = TypeVar("_T")
 
 
 class SyncData:
@@ -209,6 +212,14 @@ class SyncData:
             self._data.pop(key)
         return self
 
+    @overload
+    def get(self, __key: str) -> Optional[None]:
+        ...
+
+    @overload
+    def get(self, __key: str, __default: _T) -> Union[Any, _T]:
+        ...
+
     def get(self, key: str, default: Optional[Any] = None):
         return self.__get_data__(key, default)
 
@@ -269,7 +280,15 @@ class SyncData:
             return self.__delitem__(__name)
         return object.__delattr__(self, __name)
 
-    def __get_data__(self, __key: str, __default=None):
+    @overload
+    def __get_data__(self, __key: str) -> Optional[None]:
+        ...
+
+    @overload
+    def __get_data__(self, __key: str, __default: _T) -> Union[Any, _T]:
+        ...
+
+    def __get_data__(self, __key: str, __default: Optional[Any] = None):
         if __key in self._unopened_keys:
             self._load_from_h5(key=__key)
         return self._data.get(__key, __default)
@@ -298,7 +317,7 @@ class SyncData:
 
     def keys(self):
         # self.pull(auto=True)
-        return self._keys
+        return self._keys.copy()
 
     def __iter__(self):
         return iter(self.keys())

@@ -1,7 +1,9 @@
 from __future__ import annotations
+
+from matplotlib.figure import Figure
 from ..utils import lstrip_int
 from ..acquisition_utils import AcquisitionManager, AnalysisManager
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 import os
 
 import logging
@@ -36,6 +38,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
     am: Optional[AnalysisManager] = None
     analysis_cell_str = None
     is_old_data = False
+    last_fig_name = None
 
     def __init__(self,
                  data_directory: Optional[str] = None, *,
@@ -44,6 +47,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
                  use_magic: bool = False,
                  save_on_edit: bool = True,
                  save_on_edit_analysis: Optional[bool] = None,
+                 save_fig_inside_h5: bool = True,
                  shell: Any = False):
         """
 
@@ -78,6 +82,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
             save_on_edit_analysis = save_on_edit
 
         self._save_on_edit_analysis = save_on_edit_analysis
+        self._save_fig_inside_h5 = save_fig_inside_h5
 
         super().__init__(
             data_directory=data_directory,
@@ -95,10 +100,30 @@ class AcquisitionNotebookManager(AcquisitionManager):
     def d(self):
         return self.data
 
-    def save_fig(self, *arg, **kwds):
+    def save_fig(self,
+                 fig: Optional[Figure] = None,
+                 name: Optional[Union[str, int]] = None, **kwds):
         if self.am is None:
             raise ValueError('No data set')
-        return self.am.save_fig(*arg, **kwds)
+
+        return self.am.save_fig(fig=fig, name=name, **kwds)
+
+    def save_analysis_cell(self, name: Optional[str] = None):
+        if self.am is None:
+            raise ValueError('No data set')
+
+        if name is None:
+            name = self.am.figure_last_name
+
+        cell = get_current_cell(self.shell)
+        self.am.save_analysis_cell(cell, name)
+
+    def save_fig_and_analysis_cell(self,
+                                   fig: Optional[Figure] = None,
+                                   name: Optional[Union[str, int]] = None, **kwds):
+
+        self.save_fig(fig=fig, name=name, **kwds)
+        self.save_analysis_cell(name=str(name))
 
     def save_acquisition(self, **kwds):
         super().save_acquisition(**kwds)
@@ -106,13 +131,14 @@ class AcquisitionNotebookManager(AcquisitionManager):
         return self
 
     def load_am(self, filename: Optional[str] = None):
-        filename = filename or self.current_filepath
+        filename = filename or str(self.current_filepath)
         if not os.path.exists(filename.rstrip('.h5') + '.h5'):
             raise ValueError(f"Cannot load data from {filename}")
 
         self.am = AnalysisManager(
             filename, cell=self.analysis_cell_str,
-            save_files=self._save_files, save_on_edit=self._save_on_edit_analysis)
+            save_files=self._save_files, save_on_edit=self._save_on_edit_analysis,
+            save_fig_inside_h5=self._save_fig_inside_h5)
 
         self.am.unlock_data('useful').update(**{'useful': True}).lock_data('useful')
 
@@ -126,7 +152,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
         self.am = None
 
         if cell is None and self.shell is not None:
-            cell = self.shell.get_parent()['content']['code']  # type: ignore
+            cell = get_current_cell(self.shell)
 
         self.new_acquisition(name=name, cell=cell)
 
@@ -136,7 +162,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
 
     def analysis_cell(self, filename: Optional[str] = None, cell: Optional[str] = None) -> AcquisitionNotebookManager:
         if cell is None and self.shell is not None:
-            cell = self.shell.get_parent()['content']['code']  # type: ignore
+            cell = get_current_cell(self.shell)
             # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
 
         if filename:  # getting old data
@@ -144,7 +170,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
             self.analysis_cell_str = None
             filename = self.get_full_filename(filename)
         else:
-            filename = self.current_filepath
+            filename = str(self.current_filepath)
             self.is_old_data = False
             self.analysis_cell_str = cell
 
@@ -162,23 +188,23 @@ class AcquisitionNotebookManager(AcquisitionManager):
         if self.am is None:
             raise ValueError('No data set')
 
-        code = self.am.get('analysis_cell')
-        if code is None:
-            raise ValueError('There is no field `analysis_cell` inside the data file.')
-
-        # if isinstance(code, bytes):
-        #     code = code.decode()
-
-        if look_inside:
-            code = code.replace("aqm.analysis_cell()", f"aqm.analysis_cell('{self.am.filepath}')")
+        code = self.am.get_analysis_code(update_code=look_inside)
 
         if self.shell is not None:
             self.shell.set_next_input(code)  # type: ignore
         return code
 
+    def get_analysis_fig(self) -> List[Figure]:
+        if self.am is None:
+            raise ValueError('No data set')
+
+        return self.am.get_analysis_fig()
+
     def get_full_filename(self, filename) -> str:
         if '/' in filename or '\\' in filename:
             return filename
+
+        filename = filename.rstrip('.h5')
 
         name_with_prefix = lstrip_int(filename)
         if name_with_prefix:
@@ -191,3 +217,7 @@ class AcquisitionNotebookManager(AcquisitionManager):
             raise ValueError('No data set')
 
         return self.am.parse_config(config_name)
+
+
+def get_current_cell(shell: Any):
+    return shell.get_parent()['content']['code']

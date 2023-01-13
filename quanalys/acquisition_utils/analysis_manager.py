@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
@@ -9,6 +9,7 @@ from matplotlib.figure import Figure
 from .analysis_loop import AnalysisLoop
 
 from ..syncdata import SyncData
+from ..path import Path
 
 
 class AnalysisManager(SyncData):
@@ -35,23 +36,27 @@ class AnalysisManager(SyncData):
     else:  # if None, then put analysis in the same folder as data (recommended)
         analysis_directory = None
 
+    _figure_last_name = None
+    _figure_saved = False
+    _fig_index = 0
+
     def __init__(self,
-                 filepath: str,
+                 filepath: Union[str, Path],
                  cell: Optional[str] = None,
                  save_files: bool = False,
-                 save_on_edit: bool = True):
+                 save_on_edit: bool = True,
+                 save_fig_inside_h5: bool = True):
 
         if filepath is None:
             raise ValueError("You must specify filepath")
 
-        super().__init__(filepath=filepath, overwrite=False, read_only=False, save_on_edit=save_on_edit)
+        super().__init__(filepath=str(filepath), overwrite=False, read_only=False, save_on_edit=save_on_edit)
         self.lock_data()
 
         self._save_files = save_files
+        self._save_fig_inside_h5 = save_fig_inside_h5
 
-        self._fig_index = 0
-        self._figure_saved = False
-        self._parsed_configs = {}
+        self.reset_am()
 
         for key, value in self.items():
             if isinstance(value, dict) and value.get("__loop_shape__", None) is not None:
@@ -61,36 +66,53 @@ class AnalysisManager(SyncData):
 
         if cell is not None:
             self.unlock_data('analysis_cell')\
-                .update(analysis_cell=cell).lock_data('analysis_cell')
+                .update({'analysis_cell': cell}).lock_data('analysis_cell')
 
         self.save_analysis_cell()
 
-    def save_analysis_cell(self, cell: Optional[str] = None):
-        if not self._save_files:
-            return
+    def reset_am(self):
+        self._fig_index = 0
+        self._figure_saved = False
+        self._parsed_configs = {}
 
+    def save_analysis_cell(self, cell: Optional[str] = None, cell_name: Optional[str] = None):
+        cell_name = "analysis_cell" + ("" if cell_name is None else f"_{cell_name}")
         cell = cell or self._analysis_cell
-
         if cell is None or cell == "":
             logging.debug("Cell is not set. Nothing to save")
             return
 
-        assert self.filepath, "You must set self.filepath before saving"
+        self.unlock_data(cell_name)\
+            .update({cell_name: cell}).lock_data(cell_name)
 
-        with open(self.filepath + '_ANALYSIS_CELL.py', 'w', encoding="UTF-8") as file:
-            file.write(cell)
+        if self._save_files:
+            assert self.filepath, "You must set self.filepath before saving"
+            with open(self.filepath + '_ANALYSIS_CELL.py', 'w', encoding="UTF-8") as file:
+                file.write(cell)
 
-    def save_fig(self, fig: Optional[Figure] = None, name: Optional[Union[str, int]] = None):
+    def save_fig(self,
+                 fig: Optional[Figure] = None,
+                 name: Optional[Union[str, int]] = None,
+                 **kwargs):
         """saves the figure with the filename (...)_FIG_name
           If name is None, use (...)_FIG1, (...)_FIG2.
           pdf is used by default if no extension is provided in name"""
 
-        full_fig_name = self.get_fig_name(name)
+        self._figure_last_name = str(name)
+
+        fig_name = self.get_fig_name(name)
+        full_fig_name = f'{self.filepath}_{fig_name}'
 
         if fig is not None:
-            fig.savefig(full_fig_name)
+            if self._save_fig_inside_h5:
+                import pickle
+                import codecs
+                pickled = codecs.encode(pickle.dumps(fig), "base64").decode()
+                self[f"figures/{fig_name}"] = pickled
+
+            fig.savefig(full_fig_name, **kwargs)
         else:
-            plt.savefig(full_fig_name)
+            plt.savefig(full_fig_name, **kwargs)
 
         self._figure_saved = True
 
@@ -112,7 +134,7 @@ class AnalysisManager(SyncData):
             if os.path.splitext(name)[-1] == '':
                 name = name + ".pdf"
 
-        return self.filepath + '_FIG' + name
+        return 'FIG' + name
 
     def parse_config(self, config_name: str = "config"):
         if config_name in self._parsed_configs:
@@ -145,6 +167,39 @@ class AnalysisManager(SyncData):
 
         return config_data
 
+    def get_analysis_code(self, update_code: bool = True) -> str:
+        code = self.get('analysis_cell')
+        if code is None:
+            raise ValueError('There is no field `analysis_cell` inside the data file.')
+
+        if isinstance(code, bytes):
+            code = code.decode()
+
+        if update_code:
+            code = code.replace("aqm.analysis_cell()", f"aqm.analysis_cell('{self.filepath}')")
+        return code
+
+    def get_analysis_fig(self) -> List[Figure]:
+        figures = []
+
+        for figure_key in self.get("figures", []):  # pylint: disable=E1133
+            import pickle
+            import codecs
+            figure_code = self['figures'][figure_key]
+            if isinstance(figure_code, str):
+                figure_code = figure_code.encode()
+            figure: Figure = pickle.loads(codecs.decode(figure_code, 'base64'))
+            figures.append(figure)
+        return figures
+
+    def pull(self, force_pull: bool = False):
+        self.reset_am()
+        return super().pull(force_pull)
+
     @property
     def figure_saved(self):
         return self._figure_saved
+
+    @property
+    def figure_last_name(self) -> Optional[str]:
+        return self._figure_last_name
