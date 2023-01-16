@@ -37,7 +37,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     """
     _analysis_data: Optional[AnalysisData] = None
     _analysis_cell_str = None
-    is_old_data = False
+    _is_old_data = False
     _last_fig_name = None
 
     def __init__(self,
@@ -92,7 +92,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     @property
     def current_acquisition(self):
-        if self.is_old_data:
+        if self._is_old_data:
             return None
         return super().current_acquisition
 
@@ -110,15 +110,22 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def d(self):  # pylint: disable=invalid-name
         return self.data
 
-    def save_fig(self,
-                 fig: Optional[Figure] = None,
-                 name: Optional[Union[str, int]] = None, **kwds):
+    def save_fig_only(
+            self,
+            fig: Optional[Figure] = None,
+            name: Optional[Union[str, int]] = None, **kwds
+    ) -> AcquisitionAnalysisManager:
         if self._analysis_data is None:
             raise ValueError('No data set')
 
-        return self._analysis_data.save_fig(fig=fig, name=name, **kwds)
+        self._analysis_data.save_fig(fig=fig, name=name, **kwds)
+        return self
 
-    def save_analysis_cell(self, name: Optional[str] = None, cell: Optional[str] = None):
+    def save_analysis_cell(
+            self,
+            name: Optional[Union[str, int]] = None,
+            cell: Optional[str] = None
+    ) -> AcquisitionAnalysisManager:
         if self._analysis_data is None:
             raise ValueError('No data set')
 
@@ -128,22 +135,25 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if name is not None:
             name = str(name)
 
-        if cell is None and self.shell is not None:
-            cell = get_current_cell(self.shell)
+        cell = cell or self._analysis_cell_str
+
         self._analysis_data.save_analysis_cell(cell=cell, cell_name=name)
 
-    def save_fig_and_analysis_cell(self,
-                                   fig: Optional[Figure] = None,
-                                   name: Optional[Union[str, int]] = None,
-                                   cell: Optional[str] = None,
-                                   **kwds):
+        return self
 
-        self.save_fig(fig=fig, name=name, **kwds)
-        if name is not None:
-            name = str(name)
+    def save_fig(
+            self,
+            fig: Optional[Figure] = None,
+            name: Optional[Union[str, int]] = None,
+            cell: Optional[str] = None,
+            **kwds
+    ) -> AcquisitionAnalysisManager:
+
+        self.save_fig_only(fig=fig, name=name, **kwds)
         self.save_analysis_cell(name=name, cell=cell)
+        return self
 
-    def save_acquisition(self, **kwds):
+    def save_acquisition(self, **kwds) -> AcquisitionAnalysisManager:
         super().save_acquisition(**kwds)
         self.load_analysis_data()
         return self
@@ -154,7 +164,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             raise ValueError(f"Cannot load data from {filename}")
 
         self._analysis_data = AnalysisData(
-            filename, cell=self._analysis_cell_str,
+            filepath=filename,
             save_files=self._save_files, save_on_edit=self._save_on_edit_analysis,
             save_fig_inside_h5=self._save_fig_inside_h5)
 
@@ -168,9 +178,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def acquisition_cell(self, name: str, cell: Optional[str] = None) -> AcquisitionAnalysisManager:
         self._analysis_cell_str = None
         self._analysis_data = None
+        self._is_old_data = False
 
-        if cell is None and self.shell is not None:
-            cell = get_current_cell(self.shell)
+        cell = cell or get_current_cell(self.shell)
 
         self.new_acquisition(name=name, cell=cell)
 
@@ -181,25 +191,25 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def analysis_cell(self, filename: Optional[str] = None, cell: Optional[str] = None) -> AcquisitionAnalysisManager:
         # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
 
+        self._analysis_cell_str = cell or get_current_cell(self.shell)
         if filename:  # getting old data
-            self.is_old_data = True
-            self._analysis_cell_str = cell
+            self._is_old_data = True
             filename = self.get_full_filename(filename)
         else:
-            self.is_old_data = False
+            self._is_old_data = False
             filename = str(self.current_filepath)
-            if cell is None and self.shell is not None:
-                cell = get_current_cell(self.shell)
-            self._analysis_cell_str = cell
-
         logger.info(os.path.basename(filename))
 
         if os.path.exists(filename.rstrip('.h5') + '.h5'):
             self.load_analysis_data(filename)
         else:
-            if self.is_old_data:
+            if self._is_old_data:
                 raise ValueError(f"Cannot load data from {filename}")
             self._analysis_data = None
+
+        if cell is not None:
+            self.save_analysis_cell(cell=cell)
+
         return self
 
     def get_analysis_code(self, look_inside: bool = True) -> str:
@@ -237,5 +247,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return self._analysis_data.parse_config(config_name)
 
 
-def get_current_cell(shell: Any):
+def get_current_cell(shell: Any) -> Optional[str]:
+    if shell is None:
+        return None
     return shell.get_parent()['content']['code']

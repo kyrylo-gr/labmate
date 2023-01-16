@@ -77,6 +77,7 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
     def test_analysis_cell_saved(self):
         self.create_acquisition_cell()
         self.create_analysis_cell()
+        self.aqm.save_analysis_cell()
 
         sd = SyncData(self.aqm.aq.filepath)
         self.assertEqual(
@@ -238,8 +239,13 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
         self.create_acquisition_cell()
         self.aqm.save_acquisition()
         self.create_analysis_cell()
+        self.aqm.save_analysis_cell()
+
+        sd = SyncData(self.aqm.d.filepath)
         self.assertEqual(
-            SyncData(self.aqm.aq.filepath).get("analysis_cell"), self.cell_text)
+            sd.get("analysis_cell"), self.cell_text,
+            msg=f"Key saved {sd.keys()}, \
+            aqm._analysis_cell_str='{self.aqm._analysis_cell_str}'")  # pylint: disable=W0212
 
     def test_run_analysis_before_saving_check_cell(self):
         self.create_acquisition_cell()
@@ -249,7 +255,7 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
             msg="H5 file was created. But analysis_cell should not create it.")
         self.aqm.save_acquisition()
         self.assertEqual(
-            SyncData(self.aqm.aq.filepath).get("analysis_cell"), self.cell_text)
+            SyncData(self.aqm.aq.filepath).get("acquisition_cell"), self.cell_text)
 
     def test_save_inside_analysis_data(self):
         self.create_acquisition_cell()
@@ -351,6 +357,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
         self.aqm.acquisition_cell(self.experiment_name)
         self.aqm.save_acquisition(x=self.x)
         self.aqm.analysis_cell()
+        self.aqm.save_analysis_cell()
 
         sd = SyncData(self.aqm.aq.filepath)
         self.assertEqual(
@@ -360,6 +367,8 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
         self.aqm.acquisition_cell(self.experiment_name)
         self.aqm.save_acquisition(x=self.x)
         self.aqm.analysis_cell()
+        self.aqm.save_analysis_cell()
+
         self.aqm.shell = ShellEmulator(self.cell_text2)
         self.aqm.analysis_cell(self.aqm.aq.filepath)
 

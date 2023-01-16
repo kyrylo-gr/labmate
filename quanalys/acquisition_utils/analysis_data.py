@@ -83,7 +83,7 @@ class AnalysisData(SyncData):
             return
 
         self.unlock_data(cell_name)\
-            .update({cell_name: cell}).lock_data(cell_name)
+            .update({cell_name: cell}).lock_data(cell_name).save([cell_name])
 
         if self._save_files:
             assert self.filepath, "You must set self.filepath before saving"
@@ -98,7 +98,7 @@ class AnalysisData(SyncData):
           If name is None, use (...)_FIG1, (...)_FIG2.
           pdf is used by default if no extension is provided in name"""
 
-        self._figure_last_name = str(name)
+        self._figure_last_name = str(name).lstrip('_') if name is not None else None
 
         fig_name = self.get_fig_name(name)
         full_fig_name = f'{self.filepath}_{fig_name}'
@@ -109,6 +109,7 @@ class AnalysisData(SyncData):
                 import codecs
                 pickled = codecs.encode(pickle.dumps(fig), "base64").decode()
                 self[f"figures/{fig_name}"] = pickled
+                self.save([f"figures/{fig_name}"])
 
             fig.savefig(full_fig_name, **kwargs)
         else:

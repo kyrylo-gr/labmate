@@ -159,6 +159,10 @@ class AcquisitionManager:
 
     def save_acquisition(self, **kwds) -> AcquisitionManager:
         acq_data = self.current_acquisition
+        if acq_data is None:
+            raise ValueError("Cannot save data to acquisition as current acquisition is None. \n\
+                Possibly because you have never run `acquisition_cell(..)` or it's an old data""")
+
         acq_data.update(**kwds)
         acq_data.save_additional_info()
         if self._save_on_edit is False:
