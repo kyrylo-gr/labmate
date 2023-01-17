@@ -60,8 +60,9 @@ class SyncData:
                  open_on_init: bool = True):
         """This class should not contain any not local attributes.
         Look in __setattr__() to see why it would not work."""
-
-        if isinstance(filepath_or_data, dict):
+        if filepath_or_data is not None and hasattr(filepath_or_data, "keys"):
+            if not isinstance(filepath_or_data, dict):
+                filepath_or_data = {key: filepath_or_data[key] for key in filepath_or_data.keys()}  # type: ignore
             # print("Data given")
             data = data or filepath_or_data
 
@@ -249,7 +250,6 @@ class SyncData:
         if hasattr(__value, "__init__filepath__"):
             if self._filepath is None:
                 raise ValueError("Cannot run __init__filepath__ with file unspecified")
-
             __value.__init__filepath__(  # type: ignore
                 filepath=self._filepath, filekey=__key, save_on_edit=self._save_on_edit)
         self.__set_data__(__key, __value)
@@ -348,13 +348,18 @@ class SyncData:
     def __dir__(self) -> Iterable[str]:
         return list(self._keys) + self._default_attr
 
-    def save(self, just_update: bool = False, filepath: Optional[str] = None):
+    def save(self, just_update: Union[bool, Iterable[str]] = False, filepath: Optional[str] = None):
         # print(f"saving globally with {just_update=}")
         if self._read_only is True:
             raise ValueError("Cannot save opened in a read-only mode. Should reopen the file")
+        if isinstance(just_update, Iterable):
+            last_update = self._last_update.intersection(just_update)
+            self._last_update = self._last_update.difference(just_update)
+        else:
+            last_update, self._last_update = self._last_update, set()
 
-        self._last_data_saved = True
-        last_update, self._last_update = self._last_update, set()
+        if len(self._last_update) == 0:
+            self._last_data_saved = True
 
         filepath = self._check_if_filepath_was_set(filepath, self._filepath)
 
