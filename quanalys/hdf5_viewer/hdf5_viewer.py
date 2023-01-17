@@ -69,10 +69,10 @@ class EditorWindow(QtWidgets.QMainWindow):
         init_code = f"""try:
     from init_notebook import *
 except ModuleNotFoundError:
-    from quanalys.acquisition_notebook import AcquisitionNotebookManager
+    from quanalys.acquisition_notebook import AcquisitionAnalysisManager
     measurement_dir = r"{measurement_dir}"
     import matplotlib.pyplot as plt
-    aqm = AcquisitionNotebookManager(measurement_dir)
+    aqm = AcquisitionAnalysisManager(measurement_dir)
     print("init_notebook wasn't found, skipping import...")"""
 
         analysis_code = analysis_code_original.replace("%", "#%")
