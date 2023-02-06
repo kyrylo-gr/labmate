@@ -6,7 +6,7 @@ import unittest
 
 import numpy as np
 
-from quanalys.syncdata import SyncData
+from quanalys.syncdata import SyncData, SyncNp
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
@@ -20,7 +20,7 @@ class H5NpArraySaveOnEditTest(unittest.TestCase):
         self.sd = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
         self.size = (100, 1000)
         self.check = np.zeros(shape=self.size)
-        self.sd['test'] = self.sd.h5nparray(self.check)
+        self.sd['test'] = SyncNp(self.check)
 
     def compare(self):
         self.assertTrue(self.compare_np_array(
@@ -78,7 +78,7 @@ class H5NpArrayTest(H5NpArraySaveOnEditTest):
         self.sd = SyncData(DATA_FILE_PATH, save_on_edit=False, overwrite=True)
         self.size = (100, 1000)
         self.check = np.zeros(shape=self.size)
-        self.sd['test'] = self.sd.h5nparray(self.check)
+        self.sd['test'] = SyncNp(self.check)
 
     def compare(self):
         self.sd['test'].save(just_update=True)  # pylint: disable=E1101 # type: ignore

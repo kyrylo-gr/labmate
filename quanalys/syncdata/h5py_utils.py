@@ -1,7 +1,7 @@
 import json
 import os
 import h5py
-from typing import Dict, Optional, Protocol, Set, Union
+from typing import Dict, Literal, Optional, Protocol, Set, Union
 
 import numpy as np
 
@@ -81,7 +81,8 @@ def transform_on_open(value):
 def save_sub_dict(
     group: Union[h5py.File, h5py.Group],
     data: Union[dict, list, np.ndarray, ClassWithAsdict],
-    key: str
+    key: str,
+    use_compression: Optional[Union[Literal[True], str]] = None
 ):
     if hasattr(data, '_asdict'):
         data = data._asdict()  # type: ignore
@@ -90,10 +91,11 @@ def save_sub_dict(
     if isinstance(data, dict):
         g = group.create_group(key)
         for k, v in data.items():
-            save_sub_dict(g, v, k)
+            save_sub_dict(g, v, k, use_compression=use_compression)
     elif (key is not None) and (data is not None):
         if isinstance(data, (np.ndarray, list)):
-            group.create_dataset(key, data=data, compression="gzip")
+            use_compression = "gzip" if use_compression is True else use_compression
+            group.create_dataset(key, data=data, compression=use_compression)  # compression="gzip"
         else:
             group.create_dataset(key, data=data)
 
@@ -101,6 +103,8 @@ def save_sub_dict(
 def save_dict(
     filename: str,
     data: dict,
+    key_prefix: Optional[str] = None,
+    use_compression: Optional[Union[Literal[True], str]] = None
 ):
     dirname = os.path.dirname(filename)
     if dirname and not os.path.exists(dirname):
@@ -110,43 +114,59 @@ def save_dict(
     with LockFile(filename):
         with h5py.File(filename, mode) as file:
             for key, value in data.items():
+                key = key if key_prefix is None else f"{key_prefix}/{key}"
                 if key in file.keys():
                     file.pop(key)
                 if value is None:
                     continue
-                save_sub_dict(file, value, key)
+                save_sub_dict(file, value, key, use_compression=use_compression)
     return os.path.getmtime(filename)
 
 
 def del_dict(
     filename: str,
-    key: str
+    key: str,
+    key_prefix: Optional[str] = None,
 ):
     with LockFile(filename):
         with h5py.File(filename, 'a') as file:
+            key = key if key_prefix is None else f"{key_prefix}/{key}"
             file.pop(key)
     return os.path.getmtime(filename)
 
 
-def keys_h5(filename) -> Set[str]:
+def keys_h5(
+    filename,
+    key_prefix: Optional[str] = None
+) -> Set[str]:
     with h5py.File(filename, 'r') as file:
-        return set(file.keys())
+        if key_prefix is not None:
+            file = file[key_prefix]
+        return set(file.keys())  # type: ignore
 
 
-def open_h5(fullpath: str, key: Optional[Union[str, Set[str]]] = None) -> dict:
+def open_h5(
+    fullpath: str,
+    key: Optional[Union[str, Set[str]]] = None,
+    key_prefix: Optional[str] = None
+) -> dict:
     with h5py.File(fullpath, 'r') as file:
-        return open_h5_group(file, key=key)
+        if key_prefix is None:
+            return open_h5_group(file, key=key)
+        return open_h5_group(file[key_prefix], key=key)
 
 
 def open_h5_group(
     group: Union[h5py.File, h5py.Group],
-    key: Optional[Union[str, Set[str]]] = None
+    key: Optional[Union[str, Set[str]]] = None,
+    key_prefix: Optional[str] = None
 ) -> dict:
     data = {}
     if key is not None:
         key = key if isinstance(key, set) else set([key])
 
     for group_key in group.keys():
+        key = key if key_prefix is None else f"{key_prefix}/{key}"
         if key is not None and group_key not in key:
             continue
         value = group[group_key]
@@ -157,7 +177,10 @@ def open_h5_group(
     return data
 
 
-def output_dict_structure(data: dict, additional_info: Optional[Dict[str, str]] = None) -> str:
+def output_dict_structure(
+        data: dict,
+        additional_info: Optional[Dict[str, str]] = None
+) -> str:
     dict_str = dict_to_json_format_str(get_dict_structure(data))
     if additional_info:
         for key, value in additional_info.items():

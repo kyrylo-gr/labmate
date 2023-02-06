@@ -4,6 +4,11 @@ import numpy as np
 import h5py
 
 
+class SyncNp():
+    def __new__(cls, data):
+        return data.view(H5NpArray)
+
+
 class H5NpArray(np.ndarray):
     __filename__: Optional[str] = None
     __filekey__: Optional[str] = None

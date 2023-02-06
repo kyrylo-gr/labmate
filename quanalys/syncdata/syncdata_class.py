@@ -3,8 +3,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional, Set, TypeVar, Union, overload
 from . import h5py_utils
-from .h5_np_array import H5NpArray
-from ..utils import async_utils
+# from .h5_np_array import H5NpArray
 
 
 def editing(func):
@@ -34,6 +33,18 @@ def check_data_up_to_date(func):
 _T = TypeVar("_T")
 
 
+class NotLoaded(object):
+    def __init__(self):
+        pass
+
+    def __str__(self) -> str:
+        return """This key is not loaded. If you see this message,
+                it means that you accessed the key not via SyncData object"""
+
+    def __repr__(self) -> str:
+        return """This key is not loaded"""
+
+
 class SyncData:
     """
     This object is obtained by loading a dataset contained in a .h5 file.
@@ -57,7 +68,8 @@ class SyncData:
                  read_only: Optional[Union[bool, Set[str]]] = None,
                  overwrite: Optional[bool] = None,
                  data: Optional[dict] = None,
-                 open_on_init: bool = True):
+                 open_on_init: Optional[bool] = None,
+                 **kwds):
         """This class should not contain any not local attributes.
         Look in __setattr__() to see why it would not work."""
         if filepath_or_data is not None and hasattr(filepath_or_data, "keys"):
@@ -78,13 +90,14 @@ class SyncData:
         self._last_update = set()
         self._save_on_edit = save_on_edit
         self._classes_should_be_saved_internally = set()
+        self._key_prefix: Optional[str] = kwds.get("key_prefix", None)
 
         if read_only is None:
             read_only = (save_on_edit is False and not overwrite) and filepath is not None
 
         if open_on_init is False and overwrite is True:
             raise ValueError("Cannot overwrite file and open_on_init=False mode")
-        self._open_on_init = open_on_init
+        self._open_on_init = open_on_init if open_on_init is not None else (None if self._data else True)
         self._unopened_keys = set()
 
         # if keep_up_to_data and read_only is True:
@@ -109,10 +122,10 @@ class SyncData:
                     os.remove(filepath)
 
                 if read_only or (not read_only and not overwrite):
-                    if open_on_init:
+                    if self._open_on_init:
                         self._load_from_h5(filepath)
-                    else:
-                        self._keys = h5py_utils.keys_h5(filepath.rstrip(".h5") + ".h5")
+                    elif self._open_on_init is False:
+                        self._keys = h5py_utils.keys_h5(filepath.rstrip(".h5") + ".h5", key_prefix=self._key_prefix)
                         self._unopened_keys.update(self._keys)
 
             elif read_only:
@@ -125,7 +138,7 @@ class SyncData:
         filepath = filepath or self._filepath
         if filepath is None:
             raise ValueError("Filepath is not specified. So cannot load_h5")
-        data = h5py_utils.open_h5(filepath.rstrip(".h5") + ".h5", key=key)
+        data = h5py_utils.open_h5(filepath.rstrip(".h5") + ".h5", key=key, key_prefix=self._key_prefix)
         self._file_modified_time = os.path.getmtime(filepath.rstrip(".h5") + ".h5")
         self._update(data)
 
@@ -211,7 +224,18 @@ class SyncData:
         # self.pull(auto=True)
         if key not in self._unopened_keys:
             self._data.pop(key)
-        return self
+            return self
+
+    @overload
+    def get_dict(self, __key: str) -> Optional[None]:
+        ...
+
+    @overload
+    def get_dict(self, __key: str, __default: _T) -> Union[Any, _T]:
+        ...
+
+    def get_dict(self, key: str, default: Optional[Any] = None):
+        return self.__get_data__(key, default)
 
     @overload
     def get(self, __key: str) -> Optional[None]:
@@ -222,7 +246,10 @@ class SyncData:
         ...
 
     def get(self, key: str, default: Optional[Any] = None):
-        return self.__get_data__(key, default)
+        data = self.__get_data__(key, default)
+        if isinstance(data, dict) and data:
+            return SyncData(filepath=self._filepath, data=data, key_prefix=key)
+        return data
 
     def __getitem__(self, __key: Union[str, tuple]):
         if isinstance(__key, tuple):
@@ -259,13 +286,13 @@ class SyncData:
 
     def __getattr__(self, __name: str):
         """Will be called if __getattribute__ does not work"""
-        if len(__name) >= 2 and __name[0] == 'i' and \
+        if len(__name) > 1 and __name[0] == 'i' and \
                 __name[1:].isdigit() and __name not in self.keys():
             __name = __name[1:]
         if __name in self.keys():
             data = self.get(__name)
-            if isinstance(data, dict) and data:
-                return SyncData(data)
+            # if isinstance(data, dict) and data:
+            #     return SyncData(filepath=self._filepath, data=data, key_prefix=__name)
             return data
         raise AttributeError(f"No attribute {__name} found in SyncDatas")
 
@@ -291,13 +318,21 @@ class SyncData:
     def __get_data__(self, __key: str, __default: Optional[Any] = None):
         if __key in self._unopened_keys:
             self._load_from_h5(key=__key)
-        return self._data.get(__key, __default)
+        data = self._data.get(__key, __default)
+        if isinstance(data, NotLoaded):
+            self._load_from_h5(key=__key)
+            data = self._data.get(__key, __default)
+        return data
 
     def __get_data_or_raise__(self, __key):
         # self.pull(auto=True)
         if __key in self._unopened_keys:
             self._load_from_h5(key=__key)
-        return self._data.__getitem__(__key)
+        data = self._data.__getitem__(__key)
+        if isinstance(data, NotLoaded):
+            self._load_from_h5(key=__key)
+            data = self._data.__getitem__(__key)
+        return data
 
     def __set_data__(self, __key: str, __value):
         # self.pull(auto=True)
@@ -394,14 +429,16 @@ class SyncData:
                 # print("_raise_file_locked_error", self._raise_file_locked_error, list(data.keys()))
                 self._file_modified_time = h5py_utils.save_dict(
                     filename=filepath + '.h5',
-                    data=data
+                    data=data,
+                    key_prefix=self._key_prefix
                 )
                 return
             except h5py_utils.FileLockedError as error:
                 if self._raise_file_locked_error:
                     raise error
                 logging.info("File is locked. waiting 2s and %d more retrying.", i)
-                async_utils.sleep(2)
+                from ..utils import async_utils
+                async_utils.sleep(1)
 
         raise h5py_utils.FileLockedError(
             f"Even after {self._retry_on_file_locked_error} data was not saved")
@@ -423,8 +460,8 @@ class SyncData:
     def _asdict(self):
         return self._data
 
-    def h5nparray(self, data) -> H5NpArray:
-        return data.view(H5NpArray)
+    # def h5nparray(self, data) -> H5NpArray:
+    #     return data.view(H5NpArray)
 
     def create_item_as_instance(self, cls, key, *args, **kwds):
         self[key] = cls(*args, **kwds)

@@ -11,6 +11,9 @@ from .analysis_loop import AnalysisLoop
 from ..syncdata import SyncData
 from ..path import Path
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
+
 
 class AnalysisData(SyncData):
     """AnalysisManager is subclass of SyncData.
@@ -104,12 +107,15 @@ class AnalysisData(SyncData):
         full_fig_name = f'{self.filepath}_{fig_name}'
 
         if fig is not None:
-            if self._save_fig_inside_h5:
-                import pickle
-                import codecs
-                pickled = codecs.encode(pickle.dumps(fig), "base64").decode()
-                self[f"figures/{fig_name}"] = pickled
-                self.save([f"figures/{fig_name}"])
+            if self._save_fig_inside_h5 and kwargs.get("pickle", True):
+                try:
+                    import pickle
+                    import codecs
+                    pickled = codecs.encode(pickle.dumps(fig), "base64").decode()
+                    self[f"figures/{fig_name}"] = pickled
+                    self.save([f"figures/{fig_name}"])
+                except Exception as error:
+                    logger.warning("Failed to pickle the figure due to %s", error)
 
             fig.savefig(full_fig_name, **kwargs)
         else:
@@ -182,8 +188,10 @@ class AnalysisData(SyncData):
 
     def get_analysis_fig(self) -> List[Figure]:
         figures = []
+        # print(self.get("figures"))
 
         for figure_key in self.get("figures", []):  # pylint: disable=E1133
+            # print(figure_key)
             import pickle
             import codecs
             figure_code = self['figures'][figure_key]
