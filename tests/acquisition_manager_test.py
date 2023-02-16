@@ -3,8 +3,8 @@ import shutil
 
 import unittest
 
-from quanalys.acquisition_utils import AcquisitionManager
-from quanalys.syncdata import SyncData
+from labmate.acquisition_utils import AcquisitionManager
+from labmate.syncdata import SyncData
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")

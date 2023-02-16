@@ -11,6 +11,6 @@ def add_parent_dir_to_path():
 
 
 try:
-    import quanalys
+    import labmate
 except ModuleNotFoundError:
     add_parent_dir_to_path()

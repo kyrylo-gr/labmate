@@ -69,7 +69,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         init_code = f"""try:
     from init_notebook import *
 except ModuleNotFoundError:
-    from quanalys.acquisition_notebook import AcquisitionAnalysisManager
+    from labmatequisition_notebook import AcquisitionAnalysisManager
     measurement_dir = r"{measurement_dir}"
     import matplotlib.pyplot as plt
     aqm = AcquisitionAnalysisManager(measurement_dir)
@@ -124,7 +124,7 @@ except ModuleNotFoundError:
         index = self.combo.findText('analysis_cell')
         key = self.combo.itemText(index)
         #analysis_keys = [key for key in self.combo.keys() if key.startswith('analysis_cell')]
-        #if len(analysis_keys)>0:
+        # if len(analysis_keys)>0:
         self.combo.setCurrentText(key)  # if existing, pick this one
 
     def open_file(self, file_path):
@@ -153,7 +153,7 @@ def allkeys(obj):
             if isinstance(value, h5py.Group):
                 keys = keys + allkeys(value)
             else:
-                keys = keys + [value.name,]
+                keys = keys + [value.name, ]
     return [key.lstrip("/") for key in keys]
 
 

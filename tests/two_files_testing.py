@@ -2,8 +2,8 @@ import os
 import subprocess
 
 import numpy as np
-from quanalys.syncdata import SyncData
-# from quanalys.syncdata import FileLockedError
+from labmate.syncdata import SyncData
+# from labmate.syncdata import FileLockedError
 TEST_DIR = r'/Users/4cd87a/Documents/Projects/PhD/codes/acquisition_utils/tests/'
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
 DATA_FILE_PATH = "/Users/4cd87a/Documents/Projects/PhD/codes/acquisition_utils/tests/tmp_test_data/some_data.h5"

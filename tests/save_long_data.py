@@ -10,8 +10,8 @@ import smart_import  # noqa # type: ignore # pylint: disable=unused-import
 import os
 import numpy as np
 
-from quanalys.syncdata import SyncData
-# from quanalys.utils.async_utils import sleep
+from labmate.syncdata import SyncData
+# from labmate.utils.async_utils import sleep
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")

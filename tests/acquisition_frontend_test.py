@@ -12,7 +12,7 @@ from typing import Union
 import unittest
 import numpy as np
 
-from quanalys.acquisition_utils import AcquisitionLoop, AcquisitionManager, AnalysisData
+from labmate.acquisition_utils import AcquisitionLoop, AcquisitionManager, AnalysisData
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")

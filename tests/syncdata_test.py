@@ -12,8 +12,8 @@ import unittest
 
 import numpy as np
 
-from quanalys.syncdata import SyncData
-from quanalys.syncdata import h5py_utils
+from labmate.syncdata import SyncData
+from labmate.syncdata import h5py_utils
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
@@ -510,7 +510,7 @@ class PullTest(unittest.TestCase):
     """Testing to open SyncData in write mode in 2 different kernel"""
 
     def test_open_two_files(self):
-        # from quanalys.utils.async_utils import sleep
+        # from labmate.utils.async_utils import sleep
         sd1 = SyncData(
             DATA_FILE_PATH, save_on_edit=True, overwrite=True, read_only=False)
         sd1['a'] = 1

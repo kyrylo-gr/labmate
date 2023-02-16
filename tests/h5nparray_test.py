@@ -6,7 +6,7 @@ import unittest
 
 import numpy as np
 
-from quanalys.syncdata import SyncData, SyncNp
+from labmate.syncdata import SyncData, SyncNp
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")

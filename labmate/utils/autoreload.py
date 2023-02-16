@@ -1,4 +1,4 @@
-""" Use `import quanalys.utils.autoreload` """
+""" Use `import labmate.utils.autoreload` """
 from IPython import get_ipython
 
 shell = get_ipython()
