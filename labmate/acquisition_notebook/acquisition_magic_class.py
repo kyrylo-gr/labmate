@@ -17,7 +17,7 @@ class AcquisitionMagic(Magics):
         """Create new_acquisition with the name provided"""
         experiment_name = line.strip()
 
-        self.aqm.acquisition_cell(experiment_name, cell)
+        self.aqm.acquisition_cell(experiment_name, cell=cell)
 
         self.shell.run_cell(cell)
 
@@ -31,7 +31,7 @@ class AcquisitionMagic(Magics):
         else:
             line = None
 
-        self.aqm.analysis_cell(line, cell)
+        self.aqm.analysis_cell(line, cell=cell)
 
         self.shell.run_cell(cell)
 

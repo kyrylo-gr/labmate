@@ -141,6 +141,10 @@ class AcquisitionManager:
             raise ValueError("No filepath specified")
         return Path(filepath)
 
+    @property
+    def current_name(self) -> str:
+        return ""  # self.current_acquisition.name
+
     def get_ongoing_acquisition(self, replace: Optional[bool] = False) -> NotebookAcquisitionData:
         acquisition_tmp_data = self.get_temp_data(self.temp_file_path)
         assert acquisition_tmp_data is not None, \

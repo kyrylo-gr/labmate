@@ -188,7 +188,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         return self
 
-    def analysis_cell(self, filename: Optional[str] = None, cell: Optional[str] = None) -> AcquisitionAnalysisManager:
+    def analysis_cell(
+            self,
+            filename: Optional[str] = None, *,
+            acquisition_name=None,
+            cell: Optional[str] = None
+    ) -> AcquisitionAnalysisManager:
         # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
 
         self._analysis_cell_str = cell or get_current_cell(self.shell)
@@ -197,6 +202,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             filename = self.get_full_filename(filename)
         else:
             self._is_old_data = False
+            if acquisition_name is not None and acquisition_name != self.current_name:
+                raise ValueError("current acquisition name is not the one that is expected for this analysis cell")
             filename = str(self.current_filepath)
         logger.info(os.path.basename(filename))
 

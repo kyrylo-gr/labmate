@@ -1,6 +1,10 @@
-## Installation
+## Install
 
-`pip install -e .`
+`pip install labmate`
+
+## Installation in dev mode
+
+`pip install -e .[dev]`
 
 or
 
