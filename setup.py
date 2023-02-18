@@ -5,7 +5,7 @@ with open("README.md", "r", encoding='utf-8') as fh:
 
 setuptools.setup(
     name='labmate',
-    version="0.1.0",
+    version="0.2.0",
     author="LKB-OMQ",
     author_email="cryo.paris.su@gmail.com",
     description="Data management library to save data and plots to hdf5 files",
@@ -14,20 +14,20 @@ setuptools.setup(
     url="https://github.com/kyrylo-gr/labmate",
     # py_modules=['labmate'],
     # package_dir={'': 'src'},
-    packages=['labmate'],
-    # packages=setuptools.find_packages(exclude=['tests', 'tests.*']),
+    # packages=['labmate'],
+    packages=setuptools.find_packages(exclude=['tests', 'tests.*']),
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.8',
     install_requires=[
-        "matplotlib",
         "numpy",
-        "h5py"
+        "h5py",
     ],
     extras_require={
         "dev": [
+            "matplotlib",
             "pytest",
             "check-manifest",
         ]

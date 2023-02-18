@@ -5,7 +5,7 @@ import shutil
 import unittest
 
 from labmate.acquisition_notebook import AcquisitionAnalysisManager
-# from quanalys.acquisition_utils import AcquisitionManager, AnalysisManager
+# from quanalys.acquisition import AcquisitionManager, AnalysisManager
 from labmate.syncdata import SyncData
 
 TEST_DIR = os.path.dirname(__file__)
@@ -81,7 +81,7 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
 
         sd = SyncData(self.aqm.aq.filepath)
         self.assertEqual(
-            sd.get("analysis_cell"), self.cell_text)
+            sd.get("analysis_cells", {}).get('default'), self.cell_text)
 
     def test_simple_acq_cell(self):
         self.create_acquisition_cell()
@@ -243,7 +243,7 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
 
         sd = SyncData(self.aqm.d.filepath)
         self.assertEqual(
-            sd.get("analysis_cell"), self.cell_text,
+            sd.get("analysis_cells", {}).get('default'), self.cell_text,
             msg=f"Key saved {sd.keys()}, \
             aqm._analysis_cell_str='{self.aqm._analysis_cell_str}'")  # pylint: disable=W0212
 
@@ -318,7 +318,7 @@ class OldDataLoadTestsWithNoShell(unittest.TestCase):
 
         sd = SyncData(self.aqm.d.filepath)
         self.assertEqual(
-            sd.get("analysis_cell"), self.cell_text2)
+            sd.get("analysis_cells", {}).get('default'), self.cell_text2)
 
     def test_change_analysis_cell_for_old_data_explicit_cell(self):
         self.aqm.acquisition_cell(self.experiment_name)
@@ -341,7 +341,7 @@ class OldDataLoadTestsWithNoShell(unittest.TestCase):
 
         sd = SyncData(self.aqm.d.filepath)
         self.assertEqual(
-            sd.get("analysis_cell_abc"), self.cell_text2)
+            sd.get("analysis_cells", {}).get('abc'), self.cell_text2)
 
 
 class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
@@ -361,7 +361,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
 
         sd = SyncData(self.aqm.aq.filepath)
         self.assertEqual(
-            sd.get("analysis_cell"), self.cell_text)
+            sd.get("analysis_cells", {}).get('default'), self.cell_text)
 
     def test_change_analysis_cell_for_old_data(self):
         self.aqm.acquisition_cell(self.experiment_name)
@@ -374,7 +374,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
 
         sd = SyncData(self.aqm.d.filepath)
         self.assertEqual(
-            sd.get("analysis_cell"), self.cell_text)
+            sd.get("analysis_cells", {}).get('default'), self.cell_text)
 
     def test_change_analysis_cell_for_old_data_explicit_cell(self):
         self.aqm.acquisition_cell(self.experiment_name)
@@ -386,7 +386,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
 
         sd = SyncData(self.aqm.d.filepath)
         self.assertEqual(
-            sd.get("analysis_cell"), self.cell_text2)
+            sd.get("analysis_cells", {}).get('default'), self.cell_text2)
 
     def tearDown(self) -> None:
         file = self.aqm.d.filepath + '.h5'
@@ -401,6 +401,19 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
             shutil.rmtree(DATA_DIR)
 
 
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+
+def create_attr_dict(value: dict):
+    for k, v in value.items():
+        if isinstance(v, dict):
+            value[k] = AttrDict(create_attr_dict(v))
+    return AttrDict(value)
+
+
 class ShellEmulator:
     """This is emulation of a Figure class.
     The only goal of this class is to save something with savefig method."""
@@ -412,6 +425,10 @@ class ShellEmulator:
         return {'content': {
             'code': self.internal_data
         }}
+
+    @property
+    def last_execution_result(self):
+        return create_attr_dict({'info': {'raw_cell': '', }, 'success': True})
 
 
 if __name__ == '__main__':

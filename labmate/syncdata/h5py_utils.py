@@ -153,7 +153,7 @@ def open_h5(
     with h5py.File(fullpath, 'r') as file:
         if key_prefix is None:
             return open_h5_group(file, key=key)
-        return open_h5_group(file[key_prefix], key=key)
+        return open_h5_group(file[key_prefix], key=key)  # type: ignore
 
 
 def open_h5_group(
@@ -209,9 +209,19 @@ def get_dict_structure(data: dict, level: int = 3) -> dict:
         elif isinstance(v, (int, np.int_)):  # type: ignore
             structure[k] = f"{v:.0f} (type : {type(v).__name__})"
         elif isinstance(v, (float, np.float_)):  # type: ignore
-            str_value = f"{v:.3f}" if .1 <= v <= 100 else f"{v:.3e}"
+            str_value = f"{v:.3f}" if .1 <= v <= 100. else f"{v:.3e}"
             structure[k] = f"{str_value} (type : {type(v).__name__})"
         else:
             structure[k] = f"variable of type {type(v).__name__}"
+    return structure
+
+
+def get_keys_structure(data) -> dict:
+    structure = {}
+    for k, v in data.items():
+        if isinstance(v, dict):
+            structure[k] = get_keys_structure(v)
+        else:
+            structure[k] = None
 
     return structure

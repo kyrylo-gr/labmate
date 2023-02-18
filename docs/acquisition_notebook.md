@@ -5,7 +5,7 @@
 ## Import
 
 ```python
-from labmate.acquisition_utils import AcquisitionManager, save_acquisition, load_acquisition, AcquisitionLoop, AnalysisManager
+from labmate.acquisition import AcquisitionManager, save_acquisition, load_acquisition, AcquisitionLoop, AnalysisManager
 from labmate.acquisition_notebook import acquisition_cell
 ```
 

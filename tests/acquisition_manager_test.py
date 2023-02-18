@@ -3,7 +3,7 @@ import shutil
 
 import unittest
 
-from labmate.acquisition_utils import AcquisitionManager
+from labmate.acquisition import AcquisitionManager
 from labmate.syncdata import SyncData
 
 TEST_DIR = os.path.dirname(__file__)

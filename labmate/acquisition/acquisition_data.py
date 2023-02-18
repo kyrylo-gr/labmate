@@ -24,7 +24,8 @@ class NotebookAcquisitionData(SyncData):
             configs = read_config_files(configs)
 
         self['configs'] = configs
-        self['acquisition_cell'] = cell
+        if cell is not None and cell != "none":
+            self['acquisition_cell'] = cell
         self['useful'] = False
         self._save_files = save_files
 
@@ -47,7 +48,7 @@ class NotebookAcquisitionData(SyncData):
 
         filepath = self._check_if_filepath_was_set(filepath, self._filepath)
 
-        cell = cell or self['acquisition_cell']
+        cell = cell or (self['acquisition_cell'] if 'acquisition_cell' in self else None)
         if cell is None:
             return
 
@@ -70,7 +71,7 @@ def read_config_files(config_files: List[str]) -> Dict[str, str]:
         if not os.path.isfile(config_file):
             raise ValueError(f"Config file should be a file. Cannot save directory. \
                              Path: {os.path.abspath(config_file)}")
-        with open(config_file, 'r') as file:  # pylint: disable=W1514
+        with open(config_file, 'r', encoding="utf-8") as file:  # pylint: disable=W1514
             config_file_name = os.path.basename(config_file)
             if config_file_name in configs:
                 raise ValueError("Some of the files have the same name. So it cannot \

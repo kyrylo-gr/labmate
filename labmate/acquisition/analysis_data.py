@@ -1,10 +1,6 @@
 import logging
 import os
-from typing import List, Optional, Union
-
-from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
-
+from typing import Literal, Optional, Protocol, Union
 
 from .analysis_loop import AnalysisLoop
 
@@ -13,6 +9,11 @@ from ..path import Path
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
+
+
+class FigureProtocol(Protocol):
+    def savefig(self, fname, **kwds):
+        ...
 
 
 class AnalysisData(SyncData):
@@ -78,8 +79,11 @@ class AnalysisData(SyncData):
         self._figure_saved = False
         self._parsed_configs = {}
 
-    def save_analysis_cell(self, cell: Optional[str] = None, cell_name: Optional[str] = None):
-        cell_name = "analysis_cell" + ("" if cell_name is None else f"_{cell_name}")
+    def save_analysis_cell(self, cell: Optional[Union[str, Literal['none']]] = None, cell_name: Optional[str] = None):
+        if cell == "none":
+            return
+        cell_name = cell_name or "default"
+        cell_name = f"analysis_cells/{cell_name}"
         cell = cell or self._analysis_cell
         if cell is None or cell == "":
             logging.debug("Cell is not set. Nothing to save")
@@ -90,11 +94,11 @@ class AnalysisData(SyncData):
 
         if self._save_files:
             assert self.filepath, "You must set self.filepath before saving"
-            with open(self.filepath + '_ANALYSIS_CELL.py', 'w', encoding="UTF-8") as file:
+            with open(self.filepath + f'_ANALYSIS_CELL_{cell_name}.py', 'w', encoding="UTF-8") as file:
                 file.write(cell)
 
     def save_fig(self,
-                 fig: Optional[Figure] = None,
+                 fig: Optional[FigureProtocol] = None,
                  name: Optional[Union[str, int]] = None,
                  **kwargs):
         """saves the figure with the filename (...)_FIG_name
@@ -119,6 +123,7 @@ class AnalysisData(SyncData):
 
             fig.savefig(full_fig_name, **kwargs)
         else:
+            from matplotlib import pyplot as plt
             plt.savefig(full_fig_name, **kwargs)
 
         self._figure_saved = True
@@ -186,7 +191,7 @@ class AnalysisData(SyncData):
             code = code.replace("aqm.analysis_cell()", f"aqm.analysis_cell('{self.filepath}')")
         return code
 
-    def get_analysis_fig(self) -> List[Figure]:
+    def open_fig(self) -> list:
         figures = []
         # print(self.get("figures"))
 
@@ -197,7 +202,7 @@ class AnalysisData(SyncData):
             figure_code = self['figures'][figure_key]
             if isinstance(figure_code, str):
                 figure_code = figure_code.encode()
-            figure: Figure = pickle.loads(codecs.decode(figure_code, 'base64'))
+            figure = pickle.loads(codecs.decode(figure_code, 'base64'))
             figures.append(figure)
         return figures
 

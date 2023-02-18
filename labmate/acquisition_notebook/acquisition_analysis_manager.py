@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from matplotlib.figure import Figure
 import logging
-from typing import Any, List, Optional, Union
+from typing import Any, List, Literal, Optional, Union
 from ..utils import lstrip_int
-from ..acquisition_utils import AcquisitionManager, AnalysisData
+from ..acquisition import AcquisitionManager, AnalysisData, FigureProtocol
 import os
 
 logger = logging.getLogger(__name__)
@@ -112,7 +111,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def save_fig_only(
             self,
-            fig: Optional[Figure] = None,
+            fig: Optional[FigureProtocol] = None,
             name: Optional[Union[str, int]] = None, **kwds
     ) -> AcquisitionAnalysisManager:
         if self._analysis_data is None:
@@ -124,7 +123,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def save_analysis_cell(
             self,
             name: Optional[Union[str, int]] = None,
-            cell: Optional[str] = None
+            cell: Optional[Union[str, Literal['none']]] = None
     ) -> AcquisitionAnalysisManager:
         if self._analysis_data is None:
             raise ValueError('No data set')
@@ -143,7 +142,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def save_fig(
             self,
-            fig: Optional[Figure] = None,
+            fig: Optional[FigureProtocol] = None,
             name: Optional[Union[str, int]] = None,
             cell: Optional[str] = None,
             **kwds
@@ -202,10 +201,17 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             filename = self.get_full_filename(filename)
         else:
             self._is_old_data = False
-            if acquisition_name is not None and acquisition_name != self.current_name:
+            if acquisition_name is not None and acquisition_name != self.current_experiment_name:
                 raise ValueError("current acquisition name is not the one that is expected for this analysis cell")
             filename = str(self.current_filepath)
         logger.info(os.path.basename(filename))
+
+        if not self._is_old_data and self.shell:
+            if ('acquisition_cell' in self.shell.last_execution_result.info.raw_cell and
+                    not self.shell.last_execution_result.success):
+                raise ChildProcessError(
+                    """Last executed cell was probably an `acquisition_cell` and failed to run.
+                    Check if everything is ok and executive again""")
 
         if os.path.exists(filename.rstrip('.h5') + '.h5'):
             self.load_analysis_data(filename)
@@ -229,11 +235,11 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             self.shell.set_next_input(code)  # type: ignore
         return code
 
-    def get_analysis_fig(self) -> List[Figure]:
+    def open_analysis_fig(self) -> List[FigureProtocol]:
         if self._analysis_data is None:
             raise ValueError('No data set')
 
-        return self._analysis_data.get_analysis_fig()
+        return self._analysis_data.open_fig()
 
     def get_full_filename(self, filename) -> str:
         if '/' in filename or '\\' in filename:
@@ -250,7 +256,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def parse_config(self, config_name: str = "config"):
         if self._analysis_data is None:
             raise ValueError('No data set')
-
         return self._analysis_data.parse_config(config_name)
 
 

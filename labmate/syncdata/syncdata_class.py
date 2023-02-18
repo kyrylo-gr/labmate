@@ -352,7 +352,14 @@ class SyncData:
 
     def keys(self):
         # self.pull(auto=True)
-        return self._keys.copy()
+        return self._keys.copy().union(self._unopened_keys.copy())
+
+    def keys_tree(self) -> Dict[str, Optional[dict]]:
+        structure = h5py_utils.get_keys_structure(self._data)
+
+        for key in self._unopened_keys:
+            structure[key] = None
+        return structure
 
     def __iter__(self):
         return iter(self.keys())

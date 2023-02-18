@@ -3,8 +3,8 @@ import shutil
 
 import unittest
 
-from labmate.acquisition_utils import AcquisitionManager, AnalysisData
-from labmate.acquisition_utils.acquisition_manager import read_config_files
+from labmate.acquisition import AcquisitionManager, AnalysisData
+from labmate.acquisition.acquisition_manager import read_config_files
 from labmate.syncdata import SyncData
 
 TEST_DIR = os.path.dirname(__file__)
