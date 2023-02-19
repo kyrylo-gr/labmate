@@ -4,6 +4,12 @@
 name: TestPyPi
 
 on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: environment
+        default: DEV
+        required: true
   workflow_run:
     workflows: ['UploadPyPi']
     branches: [main]
