@@ -191,14 +191,15 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             self,
             filename: Optional[str] = None, *,
             acquisition_name=None,
-            cell: Optional[str] = None
+            cell: Optional[str] = None,
+            filepath: Optional[str] = None,
     ) -> AcquisitionAnalysisManager:
         # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
 
         self._analysis_cell_str = cell or get_current_cell(self.shell)
-        if filename:  # getting old data
+        if filename or filepath:  # getting old data
             self._is_old_data = True
-            filename = self.get_full_filename(filename)
+            filename = filepath or self.get_full_filename(filename)
         else:
             self._is_old_data = False
             if acquisition_name is not None and acquisition_name != self.current_experiment_name:
