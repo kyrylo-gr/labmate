@@ -46,7 +46,8 @@ class BasicTest(unittest.TestCase):
         self.assertTrue(np.all(y == data.get('y')))
 
     def test_open_old_file(self):
-        old_file_path = "tests/data/old_data_example.h5"
+        basedir = os.path.dirname(__file__)
+        old_file_path = os.path.join(basedir, "data/old_data_example.h5")
         data = AnalysisData(old_file_path)
         assert data, "File probably exists, but create SyncData object"
         x = np.linspace(0, 10*np.pi, 101)
