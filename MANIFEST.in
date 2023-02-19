@@ -4,7 +4,6 @@ recursive-include docs *.ipynb
 recursive-include docs *.md
 recursive-include docs *.py
 recursive-include docs *.txt
-recursive-include labmate *.bat
 recursive-include labmate *.py
 
 exclude tests
