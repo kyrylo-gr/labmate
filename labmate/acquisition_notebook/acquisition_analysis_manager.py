@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import os
 import logging
 from typing import Any, List, Literal, Optional, Union
 from ..utils import lstrip_int
 from ..acquisition import AcquisitionManager, AnalysisData, FigureProtocol
-import os
+from ..syncdata import SyncData
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -40,7 +41,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     _last_fig_name = None
 
     def __init__(self,
-                 data_directory: Optional[str] = None, *,
+                 data_directory: Optional[Union[str, Any]] = None, *,
                  config_files: Optional[List[str]] = None,
                  save_files: bool = False,
                  use_magic: bool = False,
@@ -84,7 +85,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self._save_fig_inside_h5 = save_fig_inside_h5
 
         super().__init__(
-            data_directory=data_directory,
+            data_directory=str(data_directory),
             config_files=config_files,
             save_files=save_files,
             save_on_edit=save_on_edit)
@@ -114,6 +115,20 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             fig: Optional[FigureProtocol] = None,
             name: Optional[Union[str, int]] = None, **kwds
     ) -> AcquisitionAnalysisManager:
+        """Saves the fig as a file.
+
+        Args:
+            fig (Figure, optional): Figure that should be saved.
+                Figure could be any class with function save_fig implemented. Defaults to None.
+
+            name (str, optional): name of the fig. It's not the name of the file, it's its suffix. Defaults to None.
+
+        Raises:
+            ValueError: if analysis_data is not loaded
+
+        Returns:
+            self
+        """
         if self._analysis_data is None:
             raise ValueError('No data set')
 
@@ -257,10 +272,34 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def parse_config(self, config_name: str = "config"):
         if self._analysis_data is None:
             raise ValueError('No data set')
-        return self._analysis_data.parse_config(config_name)
+        return SyncData(self._analysis_data.parse_config(config_name))
 
 
 def get_current_cell(shell: Any) -> Optional[str]:
     if shell is None:
         return None
     return shell.get_parent()['content']['code']
+
+
+class AcquisitionAnalysisManagerDataOnly:
+    def __init__(self, *args, **kwds):
+        self.aqm = AcquisitionAnalysisManager(*args, **kwds)
+
+    def analysis_cell(self, *args, **kwds):
+        return self.aqm.analysis_cell(*args, **kwds)
+
+    @property
+    def current_acquisition(self):
+        return None
+
+    @property
+    def current_analysis(self):
+        return self.aqm.current_analysis
+
+    @property
+    def data(self):
+        return self.aqm.data
+
+    @property
+    def d(self):  # pylint: disable=invalid-name
+        return self.data

@@ -111,7 +111,7 @@ class AcquisitionManager:
 
         return self
 
-    def set_init_file(self, filename: Union[str, Path]) -> None:
+    def set_init_analyse_file(self, filename: Union[str, Path]) -> None:
         if not isinstance(filename, Path):
             filename = Path(filename)
         if not filename.exists():

@@ -7,6 +7,8 @@ from . import h5py_utils
 
 
 def editing(func):
+    """If a function changes the data it should be saved. It's a wrapper for such function"""
+
     def run_func_and_clean_precalculated_results(self, *args, **kwargs):
         self._last_data_saved = False  # pylint: disable=W0212
         res = func(self, *args, **kwargs)
@@ -34,6 +36,8 @@ _T = TypeVar("_T")
 
 
 class NotLoaded(object):
+    """Internal class for data that has not been loaded yet"""
+
     def __init__(self):
         pass
 
@@ -50,6 +54,9 @@ class SyncData:
     This object is obtained by loading a dataset contained in a .h5 file.
     Datasets can be obtained as in a dictionary: e.g.
     data[freqs]
+
+    This class should not contain any not local attributes.
+    Look in __setattr__() to see why it would not work.
     """
     _repr: Optional[str] = None
     _default_attr = ['get', 'items', 'keys', 'pop', 'update', 'values', 'save']
@@ -70,16 +77,28 @@ class SyncData:
                  data: Optional[dict] = None,
                  open_on_init: Optional[bool] = None,
                  **kwds):
-        """This class should not contain any not local attributes.
-        Look in __setattr__() to see why it would not work."""
+        """_summary_
+
+        Args:
+            filepath_or_data (str|dict, optional): either filepath, either data as dict.
+            filepath (str|Path, optional): filepath to load. Defaults to None.
+            save_on_edit (bool, optional): do you what to save file every time it edited. Defaults to False.
+            read_only (bool, optional): opens file in read_only mode, i.e. it cannot be modified.
+                Defaults to (save_on_edit is False && overwrite is False) and filepath is set.
+            overwrite (Optional[bool], optional):
+                If file exists, it should be explicitly precised.
+                By default raises an error if file exist.
+            data (Optional[dict], optional):
+                Data to load. If data provided, file . Defaults to None.
+            open_on_init (Optional[bool], optional): open_on_init. Defaults to True.
+
+        """
         if filepath_or_data is not None and hasattr(filepath_or_data, "keys"):
             if not isinstance(filepath_or_data, dict):
                 filepath_or_data = {key: filepath_or_data[key] for key in filepath_or_data.keys()}  # type: ignore
-            # print("Data given")
             data = data or filepath_or_data
 
         if isinstance(filepath_or_data, (str, Path)):
-            # print("Filepath given")
             filepath = filepath or filepath_or_data
 
         if filepath and not isinstance(filepath, str):
@@ -470,8 +489,8 @@ class SyncData:
     # def h5nparray(self, data) -> H5NpArray:
     #     return data.view(H5NpArray)
 
-    def create_item_as_instance(self, cls, key, *args, **kwds):
-        self[key] = cls(*args, **kwds)
+    # def create_item_as_instance(self, cls, key, *args, **kwds):
+    #     self[key] = cls(*args, **kwds)
 
     def pull(self, force_pull: bool = False):
         # if self._keep_up_to_data is False or self._file_modified_time == 0:
@@ -489,7 +508,7 @@ class SyncData:
         file_modified = os.path.getmtime(self.filepath + '.h5') if force_pull is False else 0
 
         if self._file_modified_time != file_modified or force_pull:
-            logging.info('File modified so it will be reloaded.')
+            logging.debug('File modified so it will be reloaded.')
             # if key is None:
             self._data = {}
             self._keys = set()

@@ -17,11 +17,13 @@ def parse_str(file: str, /) -> Dict[str, Union[str, int, float]]:
         param, value = line.split('=')[:2]
         value = value.split('#')[0].replace("_", "").strip()
         try:
-            if value.isdigit():
+            if value.isdigit() or (value[0] == '-' and value[1:].isdigit()):
                 value = int(value)
-            elif value.replace('.', '').isdigit():
+            elif value.replace('.', '').isdigit() or \
+                    (value[0] == '-' and value[1:].replace('.', '').isdigit()):
                 value = float(value)
-            elif value[0].isdigit() and value[-1].isdigit() and 'e' in value:
+            elif (value[0].isdigit() or (value[0] == "-" and value[1].isdigit())) \
+                    and value[-1].isdigit() and 'e' in value:
                 value = float(value)
         except ValueError:
             pass
