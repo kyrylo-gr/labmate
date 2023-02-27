@@ -244,11 +244,14 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if filename or filepath:  # getting old data
             self._is_old_data = True
             if self.shell is not None:
-                from IPython import display
-                html = """<div style="
-                background-color:#ec7413; padding: .5em; text-align:center"
-                >Old data analysis</div>"""
-                display.display(display.HTML(str(html)))
+                try:
+                    from IPython import display
+                    html = """<div style="
+                    background-color:#ec7413; padding: .5em; text-align:center"
+                    >Old data analysis</div>"""
+                    display.display(display.HTML(str(html)))
+                except ImportError:
+                    logger.warning("Old data analysis")
 
             filename = filepath or self.get_full_filename(filename)
         else:

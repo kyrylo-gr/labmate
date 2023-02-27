@@ -575,6 +575,8 @@ class PullTest(unittest.TestCase):
             DATA_FILE_PATH, overwrite=False, read_only=True)
 
         sd1['a'] = 1
+        import time
+        time.sleep(1)
         sd2.pull()
         self.assertTrue('a' in sd2)
         self.assertEqual(sd2['a'], 1)
