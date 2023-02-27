@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import os
 import logging
-from typing import Any, List, Literal, Optional, Union
+import time
+from typing import Any, Callable, Iterable, List, Literal, Optional, Union
 from ..utils import lstrip_int
 from ..acquisition import AcquisitionManager, AnalysisData, FigureProtocol
-from ..syncdata import SyncData
+# from ..syncdata import SyncData
 
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
 class AcquisitionAnalysisManager(AcquisitionManager):
     """
+    AcquisitionAnalysisManager
 
     ### Init:
     ```
@@ -39,6 +42,11 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     _analysis_cell_str = None
     _is_old_data = False
     _last_fig_name = None
+    _default_config_files = []
+    _acquisition_started = 0
+    _linting_external_vars = None
+    _analysis_cell_prerun_hook: Optional[Callable] = None
+    _acquisition_cell_prerun_hook: Optional[Callable] = None
 
     def __init__(self,
                  data_directory: Optional[Union[str, Any]] = None, *,
@@ -48,8 +56,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                  save_on_edit: bool = True,
                  save_on_edit_analysis: Optional[bool] = None,
                  save_fig_inside_h5: bool = True,
-                 shell: Any = False):
+                 shell: Any = True):
         """
+        AcquisitionAnalysisManager.
 
         Args:
             data_directory (Optional[str], optional):
@@ -65,12 +74,15 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 True to save data for every change.
             save_on_edit_analysis (bool. Defaults to same as save_on_edit):
                 save_on_edit parameter for AnalysisManager i.e. data inside analysis_cell
-            shell (InteractiveShell | None, optional. Defaults to False):
+            shell (InteractiveShell | None, optional. Defaults to True):
                 could be provided or explicitly set to None. Defaults to get_ipython().
         """
         if shell is False or shell is True:  # behavior by default shell
-            from IPython import get_ipython
-            self.shell = get_ipython()
+            try:
+                from IPython import get_ipython
+                self.shell = get_ipython()
+            except ImportError:
+                self.shell = None
         else:  # if any shell is provided. even None
             self.shell = shell
 
@@ -115,7 +127,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             fig: Optional[FigureProtocol] = None,
             name: Optional[Union[str, int]] = None, **kwds
     ) -> AcquisitionAnalysisManager:
-        """Saves the fig as a file.
+        """
+        Save the fig as a file.
 
         Args:
             fig (Figure, optional): Figure that should be saved.
@@ -126,7 +139,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         Raises:
             ValueError: if analysis_data is not loaded
 
-        Returns:
+        Return:
             self
         """
         if self._analysis_data is None:
@@ -168,6 +181,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return self
 
     def save_acquisition(self, **kwds) -> AcquisitionAnalysisManager:
+        acquisition_finished = time.time()
+        kwds.update({"info": {"acquisition_duration": acquisition_finished-self._acquisition_started}})
         super().save_acquisition(**kwds)
         self.load_analysis_data()
         return self
@@ -189,16 +204,29 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         return self._analysis_data
 
-    def acquisition_cell(self, name: str, cell: Optional[str] = None) -> AcquisitionAnalysisManager:
+    def acquisition_cell(
+            self,
+            name: str,
+            cell: Optional[str] = None,
+            prerun: Optional[Callable] = None,
+            save_on_edit: Optional[bool] = None
+    ) -> AcquisitionAnalysisManager:
         self._analysis_cell_str = None
         self._analysis_data = None
         self._is_old_data = False
+        self._acquisition_started = time.time()
 
         cell = cell or get_current_cell(self.shell)
 
-        self.new_acquisition(name=name, cell=cell)
+        self.new_acquisition(name=name, cell=cell, save_on_edit=save_on_edit)
 
         logger.info(os.path.basename(self.current_filepath))
+
+        if self._acquisition_cell_prerun_hook is not None:
+            self._acquisition_cell_prerun_hook()
+
+        if prerun is not None:
+            prerun()
 
         return self
 
@@ -208,12 +236,20 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             acquisition_name=None,
             cell: Optional[str] = None,
             filepath: Optional[str] = None,
+            prerun: Optional[Callable] = None
     ) -> AcquisitionAnalysisManager:
         # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
 
         self._analysis_cell_str = cell or get_current_cell(self.shell)
         if filename or filepath:  # getting old data
             self._is_old_data = True
+            if self.shell is not None:
+                from IPython import display
+                html = """<div style="
+                background-color:#ec7413; padding: .5em; text-align:center"
+                >Old data analysis</div>"""
+                display.display(display.HTML(str(html)))
+
             filename = filepath or self.get_full_filename(filename)
         else:
             self._is_old_data = False
@@ -238,6 +274,20 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         if cell is not None:
             self.save_analysis_cell(cell=cell)
+
+        if self._analysis_cell_str is not None:
+            if self._linting_external_vars is not None:
+                from ..acquisition import lint
+                _, external_vars = lint.find_variables_from_code(
+                    self._analysis_cell_str, self._linting_external_vars)
+                for var in external_vars:
+                    logger.warning("External variable used inside the analysis code: %s", var)
+
+        if self._analysis_cell_prerun_hook is not None:
+            self._analysis_cell_prerun_hook()
+
+        if prerun is not None:
+            prerun()
 
         return self
 
@@ -266,13 +316,42 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         name_with_prefix = lstrip_int(filename)
         if name_with_prefix:
             suffix = name_with_prefix[1]
-            return os.path.join(self.get_data_directory(), suffix, filename)
+            return os.path.join(self.data_directory, suffix, filename)
         return filename
 
     def parse_config(self, config_name: str = "config"):
-        if self._analysis_data is None:
-            raise ValueError('No data set')
-        return SyncData(self._analysis_data.parse_config(config_name))
+        logging.warning("Function `parse_config` changed its behavior.\
+                        Old parse_config function now calls `parse_config_file`.\
+                        Please update the name or use the function `parse_config_str`")
+        return self.data.parse_config_file(config_name)
+
+    def parse_config_str(
+        self,
+        values: List[str], /,
+        max_length: Optional[int] = None,
+    ) -> str:
+        return self.data.parse_config_str(
+            values, max_length=max_length, config_files=self._default_config_files)
+
+    def linting(self,
+                allowed_variables: Optional[Iterable[str]] = None,
+                init_file: Optional[str] = None):
+        from ..acquisition import lint
+        allowed_variables = set() if allowed_variables is None else set(allowed_variables)
+        if init_file is not None:
+            allowed_variables.update(lint.find_variables_from_file(init_file)[0])
+        self._linting_external_vars = allowed_variables
+
+    def set_default_config_files(self, config_files: Union[str, List[str]], /):
+        if isinstance(config_files, str):
+            config_files = [config_files]
+        self._default_config_files = config_files
+
+    def set_analysis_cell_prerun_hook(self, hook: Callable):
+        self._analysis_cell_prerun_hook = hook
+
+    def set_acquisition_cell_prerun_hook(self, hook: Callable):
+        self._acquisition_cell_prerun_hook = hook
 
 
 def get_current_cell(shell: Any) -> Optional[str]:

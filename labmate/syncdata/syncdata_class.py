@@ -20,18 +20,6 @@ def editing(func):
     return run_func_and_clean_precalculated_results
 
 
-def check_data_up_to_date(func):
-    """It will verify is the data was updated externally
-    and load the data if it was. Checks at most once a minute"""
-
-    def verify_file_modif_load_if_needed(self, *args, **kwargs):
-        self.pull(auto=True)
-        res = func(self, *args, **kwargs)
-        return res
-
-    return verify_file_modif_load_if_needed
-
-
 _T = TypeVar("_T")
 
 
@@ -483,38 +471,29 @@ class SyncData:
     def filepath(self):
         return None if self._filepath is None else self._filepath.rstrip('.h5')
 
+    @property
+    def save_on_edit(self):
+        return self._save_on_edit
+
     def _asdict(self):
         return self._data
 
-    # def h5nparray(self, data) -> H5NpArray:
-    #     return data.view(H5NpArray)
+    def asdict(self):
+        return self._data
 
-    # def create_item_as_instance(self, cls, key, *args, **kwds):
-    #     self[key] = cls(*args, **kwds)
-
-    def pull(self, force_pull: bool = False):
-        # if self._keep_up_to_data is False or self._file_modified_time == 0:
-        # return
-
+    def pull_available(self):
         if self.filepath is None:
             raise ValueError("Cannot pull from file if it's not been set")
+        file_modified = os.path.getmtime(self.filepath + '.h5')
+        return self._file_modified_time != file_modified
 
-        # if auto:
-        #     now = time.time()
-        #     if (now-self._last_time_data_checked) < 1:
-        #         return
-        #     self._last_time_data_checked = now
-
-        file_modified = os.path.getmtime(self.filepath + '.h5') if force_pull is False else 0
-
-        if self._file_modified_time != file_modified or force_pull:
+    def pull(self, force_pull: bool = False):
+        if force_pull or self.pull_available():
             logging.debug('File modified so it will be reloaded.')
-            # if key is None:
             self._data = {}
             self._keys = set()
             self._clean_precalculated_results()
             self._load_from_h5()
-
         return self
 
     def _update_data_from_file(self):

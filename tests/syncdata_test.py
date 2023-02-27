@@ -27,9 +27,9 @@ class WithoutSavingTest(unittest.TestCase):
         self.data_smart = SyncData()
         self.data_dict = {}
 
-    @staticmethod
-    def assertNpListEqual(d1, d2):
-        return np.all(d1 == d2)
+    # @staticmethod
+    def assertNpListEqual(self, d1, d2):
+        self.assertTrue(np.all(d1 == d2))
 
     @staticmethod
     def create_random_data(size=100):
@@ -58,6 +58,13 @@ class WithoutSavingTest(unittest.TestCase):
         data_dict = {'a': [1, 2, 3], 'b': [1, 2, 3]}
         data_smart = SyncData(data_dict)
         self.compare_dict(data_smart._asdict(), data_dict)  # noqa
+
+    def test_asdict(self):
+        data_dict = {'a': [1, 2, 3], 'b': [1, 2, 3]}
+        data_smart = SyncData(data_dict)
+        d = data_smart.asdict()
+        data_smart2 = SyncData(d)
+        self.compare_dict(data_smart.asdict(), data_smart2.asdict())
 
     def test_update_kwds(self):
         self.apply_func("update", a=self.create_random_data())
@@ -105,6 +112,26 @@ class WithoutSavingTest(unittest.TestCase):
         self.assertNpListEqual(
             self.data_smart['a3'], data)
 
+    def test_setitem_tuple_dict(self):
+        data = self.create_random_data()
+        self.data_smart['a3'] = {}
+        self.data_smart['a3', 'b'] = data
+
+        self.assertNpListEqual(
+            self.data_smart['a3']['b'], data)
+        self.assertNpListEqual(
+            self.data_smart['a3', 'b'], data)
+
+    def test_setitem_tuple_list(self):
+        data = self.create_random_data()
+        self.data_smart['a3'] = data.copy()
+        self.data_smart['a3'][0] = 5000
+        # print(data)
+        # print(self.data_smart['a3'])
+        data[0] = 5000
+        self.assertNpListEqual(
+            self.data_smart['a3'], data)
+
     def test_delitem(self):
         self.apply_func("update", a2=self.create_random_data())
         self.compare()
@@ -119,6 +146,16 @@ class WithoutSavingTest(unittest.TestCase):
         self.data_smart['a3'] = data
 
         self.assertNpListEqual(self.data_smart.a3, data)
+
+    def test_getattr_int(self):
+        data = self.create_random_data()
+        data2 = self.create_random_data()
+        self.data_smart['3'] = data
+
+        self.assertNpListEqual(self.data_smart.i3, data)
+        self.data_smart['i3'] = data2
+        self.assertNpListEqual(self.data_smart.i3, data2)
+        self.assertNpListEqual(self.data_smart['3'], data)
 
     def test_attributeError(self):
         with self.assertRaises(AttributeError):
@@ -177,11 +214,30 @@ class WithoutSavingTest(unittest.TestCase):
         self.apply_func("update", a1=self.create_random_data())
         self.apply_func("update", a2=self.create_random_data())
         self.apply_func("update", a3=self.create_random_data())
-
+        # print(np.all(np.array(list(self.data_dict.values())) == np.array(list(self.data_smart.values()))))
         self.assertNpListEqual(
-            np.array(self.data_dict.values()),
-            np.array(self.data_smart.values())
+            np.array(list(self.data_dict.values())),
+            np.array(list(self.data_smart.values()))
         )
+
+    def test_repr(self):
+        data = self.create_random_data()
+        self.data_smart['abc1234'] = data
+        self.data_smart['abc1235'] = data
+        rep = repr(self.data_smart)
+        self.assertIn('abc1234', rep)
+        self.assertIn('abc1235', rep)
+
+    def test_str(self):
+        str(self.data_smart)
+
+    def test_dir(self):
+        data = self.create_random_data()
+        self.data_smart['abc1234'] = data
+        self.data_smart['abc1235'] = data
+        d = dir(self.data_smart)
+        for k in self.data_smart.keys():
+            self.assertIn(k, d)
 
 
 class SavingOnEditTest(WithoutSavingTest):
@@ -301,7 +357,8 @@ class InitSetupTest(unittest.TestCase):
 
 
 class ReadModeTest(unittest.TestCase):
-    """Test that no pos"""
+    """Test that no changes can be made in the read mode.
+    And test the locking features"""
 
     def setUp(self):
         d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
@@ -509,15 +566,29 @@ class SavingOnSaveDifferentFormatTest(SavingOnEditDifferentFormatTest):
 class PullTest(unittest.TestCase):
     """Testing to open SyncData in write mode in 2 different kernel"""
 
-    def test_open_two_files(self):
+    def test_pull(self):
+        # from labmate.utils.async_utils import sleep
+        sd1 = SyncData(
+            DATA_FILE_PATH, save_on_edit=True, overwrite=True, read_only=False)
+        sd1['b'] = 3
+        sd2 = SyncData(
+            DATA_FILE_PATH, overwrite=False, read_only=True)
+
+        sd1['a'] = 1
+        sd2.pull()
+        self.assertTrue('a' in sd2)
+        self.assertEqual(sd2['a'], 1)
+
+    def test_force_pull(self):
         # from labmate.utils.async_utils import sleep
         sd1 = SyncData(
             DATA_FILE_PATH, save_on_edit=True, overwrite=True, read_only=False)
         sd1['a'] = 1
         sd2 = SyncData(
             DATA_FILE_PATH, overwrite=False, read_only=True)
+        sd2._data = {}
 
-        sd2.pull()
+        sd2.pull(force_pull=True)
         self.assertTrue('a' in sd2)
         self.assertEqual(sd2['a'], 1)
 

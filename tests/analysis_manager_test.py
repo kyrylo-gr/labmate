@@ -86,7 +86,7 @@ class AnalysisManagerTest(unittest.TestCase):
 
     def compare_config(self):
         self.ad = AnalysisData(self.aqm.current_filepath)
-        data = self.ad.parse_config("config.txt")
+        data = self.ad.parse_config_file("config.txt")
 
         self.assertEqual(data['int'], 123)
         self.assertEqual(data['int_underscore'], 213020)

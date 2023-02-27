@@ -401,19 +401,6 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
             shutil.rmtree(DATA_DIR)
 
 
-class AttrDict(dict):
-    def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
-
-
-def create_attr_dict(value: dict):
-    for k, v in value.items():
-        if isinstance(v, dict):
-            value[k] = AttrDict(create_attr_dict(v))
-    return AttrDict(value)
-
-
 class ShellEmulator:
     """This is emulation of a Figure class.
     The only goal of this class is to save something with savefig method."""
@@ -428,7 +415,8 @@ class ShellEmulator:
 
     @property
     def last_execution_result(self):
-        return create_attr_dict({'info': {'raw_cell': '', }, 'success': True})
+        from labmate.attrdict import AttrDict
+        return AttrDict({'info': {'raw_cell': '', }, 'success': True})
 
 
 if __name__ == '__main__':

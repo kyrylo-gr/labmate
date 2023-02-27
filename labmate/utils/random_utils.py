@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 
 def get_timestamp() -> str:
@@ -31,6 +31,48 @@ def parse_str(file: str, /) -> Dict[str, Union[str, int, float]]:
         parsed_values[param.strip()] = value
 
     return parsed_values
+
+
+def parse_get_format(key: str) -> Tuple[str, Optional[str], Optional[str]]:
+    """Convert a key into a key, units, format.
+    Example:
+        speed__km/s__2f -> (speed, km/s, 2f)
+        speed -> (speed, '', '')
+        speed__2f -> (speed, '', '2f')
+        speed__km/s -> (speed, 'km/s', '2f')
+    """
+    args = key.split("__")
+    if len(args) >= 3:
+        return args[0], args[1], args[2]
+    elif len(args) == 2 and len(args[1]) > 0 and args[1][0].isdigit():
+        return args[0], None, args[1]
+    elif len(args) == 2:
+        return args[0], args[1], None
+    return args[0], None, None
+
+
+class ValueForPrint(NamedTuple):
+    key: str
+    value: Any
+    units: Optional[str] = None
+    format: Optional[str] = None
+
+
+def format_title(values: List[ValueForPrint], max_length: Optional[int] = None):
+    max_length = max_length or 60
+    txt = ""
+    last_line_len = 0
+    for value in values:
+        units = f" ({value.units})" if value.units is not None else ""
+        value_str = value.value if value.format is None else value.value.__format__(f".{value.format}")
+        new_txt = f"{value.key} = {value_str}{units}"
+        if last_line_len + len(new_txt) < max_length:
+            txt += ("; " if txt != "" else "") + new_txt
+            last_line_len += len(new_txt) + 2
+        else:
+            last_line_len = len(new_txt)
+            txt += "\n" + new_txt
+    return txt
 
 
 def lstrip_int(line: str) -> Optional[Tuple[str, str]]:

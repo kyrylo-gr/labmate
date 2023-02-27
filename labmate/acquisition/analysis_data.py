@@ -1,11 +1,15 @@
 import logging
 import os
-from typing import Literal, Optional, Protocol, Union
+from typing import List, Literal, Optional, Protocol, Union
+
 
 from .analysis_loop import AnalysisLoop
 
 from ..syncdata import SyncData
+from ..attrdict import AttrDict
 from ..path import Path
+from .. import utils
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -54,11 +58,13 @@ class AnalysisData(SyncData):
         if filepath is None:
             raise ValueError("You must specify filepath")
 
-        super().__init__(filepath=str(filepath), overwrite=False, read_only=False, save_on_edit=save_on_edit)
+        super().__init__(filepath=str(filepath), overwrite=False,
+                         read_only=False, save_on_edit=save_on_edit)
         self.lock_data()
 
         self._save_files = save_files
         self._save_fig_inside_h5 = save_fig_inside_h5
+        self._default_config_files = []
 
         self.reset_am()
 
@@ -79,7 +85,10 @@ class AnalysisData(SyncData):
         self._figure_saved = False
         self._parsed_configs = {}
 
-    def save_analysis_cell(self, cell: Optional[Union[str, Literal['none']]] = None, cell_name: Optional[str] = None):
+    def save_analysis_cell(
+            self,
+            cell: Optional[Union[str, Literal['none']]] = None,
+            cell_name: Optional[str] = None):
         if cell == "none":
             return
         cell_name = cell_name or "default"
@@ -148,36 +157,81 @@ class AnalysisData(SyncData):
 
         return 'FIG' + name
 
-    def parse_config(self, config_name: str = "config"):
-        if config_name in self._parsed_configs:
-            return self._parsed_configs[config_name]
+    def parse_config(
+            self,
+            keys: List[str],
+            config_files: Optional[List[str]] = None
+    ) -> List[utils.ValueForPrint]:
+        if isinstance(keys, str):
+            logging.warning("""Function `parse_config` changed its behavior.
+                            Old parse_config function now calls `parse_config_file`.""")
+            return self.parse_config_file(keys)  # type: ignore
+
+        config_files = config_files or self._default_config_files
+
+        config_data = sum(
+            (self.parse_config_file(config_file) for config_file in config_files), AttrDict())
+
+        keys_with_values = []
+        for key in keys:
+            key_value, key_units, key_format = utils.parse_get_format(key)
+            if key_value in config_data:
+                keys_with_values.append(utils.ValueForPrint(
+                    key_value, config_data[key_value], key_units, key_format))
+            elif key_value in self:
+                keys_with_values.append(utils.ValueForPrint(
+                    key_value, self[key_value], key_units, key_format))
+            else:
+                logger.warning("key %s not found and cannot be parsed", key_value)
+
+        return keys_with_values
+
+    def parse_config_str(
+            self,
+            values: List[str],
+            max_length: Optional[int] = None,
+            config_files: Optional[List[str]] = None
+    ) -> str:
+        """ Parse the configuration files.
+        Returns: key1=value1, key2=value2, ..."""
+        keys_with_values = self.parse_config(values, config_files=config_files)
+        return utils.format_title(keys_with_values, max_length=max_length)
+
+    def parse_config_file(self, config_file_name: str, /) -> AttrDict:
+        if config_file_name in self._parsed_configs:
+            return self._parsed_configs[config_file_name]
 
         if 'configs' not in self:
             raise ValueError("The is no config files save within AnalysisManager")
 
-        if config_name not in self['configs']:
-            original_config_name = config_name
+        if config_file_name not in self['configs']:
+            original_config_name = config_file_name
             for possible_name in self['configs']:
-                if possible_name.startswith(config_name):
-                    config_name = possible_name
+                if possible_name.startswith(config_file_name):
+                    config_file_name = possible_name
                     break
             else:
-                raise ValueError(f"Cannot find config with name {config_name}. \
+                raise ValueError(f"Cannot find config with name {config_file_name}. \
                     Possible configs file are {self['configs'].keys()}")
 
-            if config_name in self._parsed_configs:
-                self._parsed_configs[original_config_name] = self._parsed_configs[config_name]
-                return self._parsed_configs[config_name]
+            if config_file_name in self._parsed_configs:
+                self._parsed_configs[original_config_name] = self._parsed_configs[config_file_name]
+                return self._parsed_configs[config_file_name]
         else:
             original_config_name = None
 
         from ..utils import parse_str
-        config_data = parse_str(self['configs'][config_name])
-        self._parsed_configs[config_name] = config_data
+        config_data = AttrDict(parse_str(self['configs'][config_file_name]))
+        self._parsed_configs[config_file_name] = config_data
         if original_config_name is not None:
             self._parsed_configs[original_config_name] = config_data
 
         return config_data
+
+    def set_default_config_files(self, config_files: Union[str, List[str]], /):
+        if isinstance(config_files, str):
+            config_files = [config_files]
+        self._default_config_files = config_files
 
     def get_analysis_code(self, update_code: bool = True) -> str:
         code = self.get('analysis_cell')
@@ -210,15 +264,15 @@ class AnalysisData(SyncData):
         self.reset_am()
         return super().pull(force_pull)
 
-    @property
+    @ property
     def figure_saved(self):
         return self._figure_saved
 
-    @property
+    @ property
     def figure_last_name(self) -> Optional[str]:
         return self._figure_last_name
 
-    @property
+    @ property
     def filepath(self) -> str:
         filepath = super().filepath
         assert filepath is not None

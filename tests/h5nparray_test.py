@@ -6,7 +6,8 @@ import unittest
 
 import numpy as np
 
-from labmate.syncdata import SyncData, SyncNp
+from labmate.syncdata import SyncData
+from labmate.syncdata_types import SyncNp
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")

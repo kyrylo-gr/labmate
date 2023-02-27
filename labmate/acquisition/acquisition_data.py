@@ -68,14 +68,17 @@ def read_config_files(config_files: List[str]) -> Dict[str, str]:
     configs: Dict[str, str] = {}
     # existed_names = set()
     for config_file in config_files:
-        if not os.path.isfile(config_file):
-            raise ValueError(f"Config file should be a file. Cannot save directory. \
-                             Path: {os.path.abspath(config_file)}")
-        with open(config_file, 'r', encoding="utf-8") as file:  # pylint: disable=W1514
-            config_file_name = os.path.basename(config_file)
-            if config_file_name in configs:
-                raise ValueError("Some of the files have the same name. So it cannot \
-                                 be pushed into dictionary to preserve unique key")
-            # existed_names.add(config_file_name)
-            configs[config_file_name] = file.read()
+        config_file_name = os.path.basename(config_file)
+        if config_file_name in configs:
+            raise ValueError("Some of the files have the same name. So it cannot \
+                                be pushed into dictionary to preserve unique key")
+        configs[config_file_name] = read_file(config_file)
     return configs
+
+
+def read_file(file: str) -> str:
+    if not os.path.isfile(file):
+        raise ValueError(f"Cannot read a file if it doesn't exist or it's not a file. \
+                        Path: {os.path.abspath(file)}")
+    with open(file, 'r', encoding="utf-8") as file_opened:
+        return file_opened.read()

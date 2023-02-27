@@ -35,45 +35,67 @@ class AcquisitionLoop:
         self.data_level = {}  # for each keyword, indicates at which loop_level it is scanned
         self._data_flatten = {}
 
-    @overload
-    def __call__(self, *arg) -> Iterator:
-        ...
+    # @overload
+    # def __call__(self, *arg) -> Iterator:
+    #     ...
 
     @overload
     def __call__(self, **kwds) -> None:
-        ...
+        """Saves the kwds.
+        Same as calling the function append_data(kwds)
+        """
 
     @overload
     def __call__(self, iterable: Iterable) -> Iterator:
-        ...
+        """Given an iterable returns an iterator"""
 
     @overload
     def __call__(self, stop: Union[int, float], /) -> Iterator:
-        ...
+        """Given a stop value returns np.arange(stop)"""
 
     @overload
     def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /
                  ) -> Iterator:
-        ...
+        """Given a start, stop and step returns np.arange(start, stop, step)"""
 
     def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Optional[Iterator]:
+        """ If kwds are provided then is same as calling append_data(kwds),
+        otherwise returns iterator over iterable or np.arange(*args)
+        """
         if iterable is None and len(args) == 0:
             self.append_data(**kwds)
             return None
 
         if iterable is None:
-            if isinstance(args[0], (int, float)):
+            if isinstance(args[0], (int, float, np.int_, np.float_)):  # type: ignore
                 iterable = np.arange(*args)
             else:
                 iterable = args[0]
 
         if iterable is None:
-            raise ValueError("You should provide iterable as an arg")
+            raise ValueError("You should provide an iterable")
 
         return self.iter(iterable)
 
-    def iter(self, iterable: Iterable) -> Iterator:
+    def append_data(self, level=0, **kwds):
+        current_loop = self.current_loop + level
 
+        for key, value in kwds.items():
+            if key not in self.data_level:  # if key was never scanned, notice that it is scanned at the current level
+                self.data_level[key] = current_loop
+            else:  # otherwise make sure that key was previously scanned at the current loop level
+                assert self.data_level[key] == current_loop
+
+            if key not in self._data_flatten:
+                self._data_flatten[key] = [value]
+            else:
+                # print()
+                self._data_flatten[key].append(value)
+
+        if self.__save_on_edit__:
+            self.save(just_update=True)
+
+    def iter(self, iterable: Iterable) -> Iterator:
         if not hasattr(iterable, "__len__"):
             iterable = list(iterable)
 
@@ -115,24 +137,6 @@ class AcquisitionLoop:
             data_reshape[key] = np.pad(data_flatten, (0, expected_len-len(data_flatten))).reshape(
                 self._reshape_tuple(key))
         return data_reshape
-
-    def append_data(self, level=0, **kwds):
-        current_loop = self.current_loop + level
-
-        for key, value in kwds.items():
-            if key not in self.data_level:  # if key was never scanned, notice that it is scanned at the current level
-                self.data_level[key] = current_loop
-            else:  # otherwise make sure that key was previously scanned at the current loop level
-                assert self.data_level[key] == current_loop
-
-            if key not in self._data_flatten:
-                self._data_flatten[key] = [value]
-            else:
-                # print()
-                self._data_flatten[key].append(value)
-
-        if self.__save_on_edit__:
-            self.save(just_update=True)
 
     def _asdict(self):
         data = self.data
