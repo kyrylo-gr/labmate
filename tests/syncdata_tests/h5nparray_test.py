@@ -43,6 +43,16 @@ class H5NpArraySaveOnEditTest(unittest.TestCase):
     def test_zeros(self):
         self.compare()
 
+    def test_new_from_list(self):
+        self.check = np.array([1, 2, 3])
+        self.sd['test'] = SyncNp([1, 2, 3])
+        self.compare()
+
+    def test_new_from_shape(self):
+        self.check = np.zeros((1, 2, 3))
+        self.sd['test'] = SyncNp((1, 2, 3))
+        self.compare()
+
     def test_horizontal_change(self):
         data = self.create_random_data(self.size[1])
         self.sd['test'][1, :] = data

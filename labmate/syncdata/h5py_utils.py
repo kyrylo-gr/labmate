@@ -11,15 +11,23 @@ class ClassWithAsdict(Protocol):
     `_asdict` class should return a dictionary with only list and dict.
     It should not be a dict of other classes"""
 
-    def _asdict(self) -> dict:
+    def asdict(self) -> dict:
         ...
+
+
+# class ClassWithSave(Protocol):
+#     """Class that can be save without passing by dict"""
+#     __should_not_be_converted__ = True
+
+#     def save(self):
+#         """Function that saves the object without converting to a dict"""
 
 
 class ClassWithAsarray(Protocol):
     """Any class with predefined `asarray` attribute.
     `asarray` class should return a np.ndarray."""
 
-    def asarray(self) -> np.ndarray:
+    def asarray(self) -> Union[np.ndarray, list]:
         ...
 
 
@@ -52,11 +60,12 @@ RIGHT_DATA_TYPE = Union[dict, np.ndarray, np.int_, np.float_, float, int]
 
 
 def transform_to_possible_formats(data: DICT_OR_LIST_LIKE) -> DICT_OR_LIST_LIKE:
-    if hasattr(data, '__should_not_be_converted__'):
-        if data.__should_not_be_converted__ is True:  # type: ignore
-            return data
-    if hasattr(data, '_asdict'):
-        data = data._asdict()  # type: ignore
+    if hasattr(data, '__should_not_be_converted__') \
+            and data.__should_not_be_converted__ is True:  # type: ignore
+        return data
+
+    if hasattr(data, 'asdict'):
+        data = data.asdict()  # type: ignore
 
     if hasattr(data, 'asarray'):
         data = data.asarray()  # type: ignore
@@ -84,8 +93,8 @@ def save_sub_dict(
     key: str,
     use_compression: Optional[Union[Literal[True], str]] = None
 ):
-    if hasattr(data, '_asdict'):
-        data = data._asdict()  # type: ignore
+    if hasattr(data, 'asdict'):
+        data = data.asdict()  # type: ignore
     if hasattr(data, 'asarray'):
         data = data.asarray()  # type: ignore
     if isinstance(data, dict):

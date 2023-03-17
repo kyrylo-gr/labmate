@@ -3,12 +3,17 @@ from typing import Optional, Tuple
 
 
 class NameVisitor(ast.NodeVisitor):
+    parent = None
+
     def __init__(self, ignore_var: Optional[set] = None):
         self.local_vars = ignore_var.copy() if ignore_var else set()
+        self.builtins = set(__builtins__.keys())
         self.external_vars = set()
         super().__init__()
 
-    def visit(self, node):
+    def visit(self, node, parent=None):
+        node.parent = parent  # type: ignore
+        # self.parent = parent
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             for name in node.names:
                 var = name.asname or name.name
@@ -19,10 +24,27 @@ class NameVisitor(ast.NodeVisitor):
             # print_node(child)
             if isinstance(node.ctx, ast.Store):
                 self.local_vars.add(node.id)
-            if isinstance(node.ctx, ast.Load) and node.id not in self.local_vars:
-                self.external_vars.add(node.id)
-        # print(node)
+            if (isinstance(node.ctx, ast.Load) and
+                    node.id not in self.local_vars and
+                    node.id not in self.builtins):
+                if not (
+                    isinstance(node.parent, ast.keyword) and  # type: ignore
+                    isinstance(node.parent.parent, ast.Call) and  # type: ignore
+                    node.parent.parent.func.attr == "save_acquisition"  # type: ignore
+                ):
+                    self.external_vars.add(node.id)
+                # print(ast.dump(node.parent.parent, indent=4))
+
         self.generic_visit(node)
+
+    def generic_visit(self, node):
+        for _, value in ast.iter_fields(node):
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, ast.AST):
+                        self.visit(item, parent=node)
+            elif isinstance(value, ast.AST):
+                self.visit(value, parent=node)
 
 
 def find_variables(node, ignore_var: Optional[set] = None) -> Tuple[set, set]:
@@ -39,7 +61,8 @@ def find_variables_from_code(code, ignore_var: Optional[set] = None) -> Tuple[se
     code = code.split("\n")
     for i, line in enumerate(code):
         if "# noqa" in line or "#noqa" in line:
-            code[i] = code[i][:len(code[i]) - len(code[i].lstrip())] + '""'
+            code[i] = ""
+            # code[i] = code[i][:len(code[i]) - len(code[i].lstrip())] + '""'
     node = ast.parse("\n".join(code))
     return find_variables(node, ignore_var)
 

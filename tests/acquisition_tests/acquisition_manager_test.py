@@ -18,7 +18,7 @@ class AcquisitionManagerTest(unittest.TestCase):
 
     def setUp(self):
         self.aqm = AcquisitionManager(DATA_DIR)
-        self.aqm.new_acquisition(self.experiment_name)
+        self.aqm.new_acquisition(self.experiment_name, cell="none")
 
     def load_data(self):
         return SyncData(self.aqm.aq.filepath)
@@ -31,7 +31,7 @@ class AcquisitionManagerTest(unittest.TestCase):
         os.environ['ACQUISITION_DIR'] = DATA_DIR
         self.aqm = AcquisitionManager()
         experiment_name = "abc1"
-        self.aqm.new_acquisition(experiment_name)
+        self.aqm.new_acquisition(experiment_name, cell="none")
         self.assertTrue(os.path.exists(
             os.path.join(DATA_DIR, experiment_name)))
         del os.environ['ACQUISITION_DIR']
@@ -46,7 +46,7 @@ class AcquisitionManagerTest(unittest.TestCase):
             file.write(self.acquisition_cell)
 
         self.aqm.set_init_analyse_file(os.path.join(DATA_DIR, "random.py"))
-        self.aqm.new_acquisition(self.experiment_name)
+        self.aqm.new_acquisition(self.experiment_name, cell="none")
         with open(os.path.join(DATA_DIR, self.experiment_name, "init_analyse.py"), 'r', encoding='utf-8') as file:
             code = file.read()
         self.assertEqual(code, self.acquisition_cell)
@@ -56,20 +56,24 @@ class AcquisitionManagerTest(unittest.TestCase):
         self.assertNotIn("acquisition_cell", sd)
 
     def test_cell_saved(self):
-        self.aqm.new_acquisition(self.experiment_name, self.acquisition_cell)
+        self.aqm.new_acquisition(self.experiment_name, cell=self.acquisition_cell)
         sd = self.load_data()
         self.assertEqual(sd.get("acquisition_cell"), self.acquisition_cell)
 
-    def test_cell_update(self):
-        self.aqm.aq.update(x=2)
+    def test_cell_file_created(self):
+        self.aqm._save_files = True  # pylint: disable=protected-access
+        self.aqm.new_acquisition(self.experiment_name, cell=self.acquisition_cell)
 
-        sd = self.load_data()
-        self.assertEqual(sd.get("x"), 2)
+        cell_filename = self.aqm.current_filepath + "_CELL.py"
+        self.assertTrue(os.path.exists(cell_filename))
+        with open(cell_filename, encoding="utf-8") as file:
+            line = file.readline()
+        self.assertEqual(line, self.acquisition_cell)
 
     def test_save_config(self):
         self.aqm.set_config_file(
             os.path.join(TEST_DIR, "data/line_config.txt"))
-        self.aqm.new_acquisition(self.experiment_name, self.acquisition_cell)
+        self.aqm.new_acquisition(self.experiment_name, cell=self.acquisition_cell)
 
         sd = self.load_data()
 
@@ -77,11 +81,49 @@ class AcquisitionManagerTest(unittest.TestCase):
             sd.get("configs", {}).get('line_config.txt'),
             "this is a config file")
 
+    def test_save_config_same_name(self):
+        file = os.path.join(TEST_DIR, "data/line_config.txt")
+        self.aqm.set_config_file([file, file])
+        with self.assertRaises(ValueError):
+            self.aqm.new_acquisition(self.experiment_name, cell="none")
+
+    def test_save_config_wrong_name(self):
+        with self.assertRaises(ValueError):
+            self.aqm.set_config_file("wrong_name.txt")
+
+    def test_save_config_file_created(self):
+        self.aqm._save_files = True  # pylint: disable=protected-access
+        self.aqm.set_config_file(
+            os.path.join(TEST_DIR, "data/line_config.txt"))
+        self.aqm.new_acquisition(self.experiment_name, cell=self.acquisition_cell)
+
+        config_filename = self.aqm.current_filepath + "_line_config.txt"
+        self.assertTrue(os.path.exists(config_filename))
+        with open(config_filename, encoding="utf-8") as file:
+            line = file.readline()
+        self.assertEqual(line, "this is a config file")
+
+    def test_save_additional_info(self):
+        self.aqm._save_files = True  # pylint: disable=protected-access
+        self.aqm.set_config_file(
+            os.path.join(TEST_DIR, "data/line_config.txt"))
+        self.aqm.new_acquisition(self.experiment_name, cell=self.acquisition_cell)
+
+        self.aqm.aq.save_additional_info()
+
+        config_filename = self.aqm.current_filepath + "_line_config.txt"
+        self.assertTrue(os.path.exists(config_filename))
+
+        cell_filename = self.aqm.current_filepath + "_CELL.py"
+        self.assertTrue(os.path.exists(cell_filename))
+
+        self.assertTrue(self.aqm.aq['useful'])
+
     def test_save_config2(self):
         self.aqm.set_config_file(
             [os.path.join(TEST_DIR, "data/line_config.txt"),
              os.path.join(TEST_DIR, "data/line_config2.txt")])
-        self.aqm.new_acquisition(self.experiment_name, self.acquisition_cell)
+        self.aqm.new_acquisition(self.experiment_name, cell=self.acquisition_cell)
 
         sd = self.load_data()
 
@@ -97,7 +139,7 @@ class AcquisitionManagerTest(unittest.TestCase):
         self.aqm = AcquisitionManager(DATA_DIR, config_files=[os.path.join(TEST_DIR, "data/line_config.txt"),
                                                               os.path.join(TEST_DIR, "data/line_config2.txt")])
 
-        self.aqm.new_acquisition(self.experiment_name)
+        self.aqm.new_acquisition(self.experiment_name, cell="none")
 
         sd = self.load_data()
 
@@ -134,6 +176,12 @@ class AcquisitionManagerTest(unittest.TestCase):
 
         sd = self.load_data()
         self.assertEqual(sd.get('useful'), True)
+
+    def test_update(self):
+        self.aqm.aq.update(x=2)
+
+        sd = self.load_data()
+        self.assertEqual(sd.get("x"), 2)
 
     def test_save_acquisition(self):
         self.aqm.save_acquisition(x=5, y=6)

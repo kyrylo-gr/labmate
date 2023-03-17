@@ -7,7 +7,7 @@ class AcquisitionMagic(Magics):
 
     def __init__(self, aqm: AcquisitionAnalysisManager, shell, **kwargs):
         if shell is None:
-            raise ValueError("Not shell specified")
+            raise ValueError("Cannot use magic cells if a shell is not found.")
         self.shell = shell
         self.aqm = aqm
         super().__init__(shell, **kwargs)

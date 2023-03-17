@@ -86,6 +86,9 @@ class AcquisitionManager:
         json_write(self.temp_file_path, dic.asdict())
         self._acquisition_tmp_data = dic
 
+    def __setitem__(self, __key: str, __value) -> None:
+        self.aq[__key] = __value
+
     def set_config_file(self, filename: Union[str, List[str]]) -> AcquisitionManager:
         """Set self.config_file to filename. Verify if exists.
         Only set config file for future acquisition and will not change current acquisition"""
@@ -126,7 +129,8 @@ class AcquisitionManager:
     def new_acquisition(self,
                         name: str,
                         cell: Optional[str] = None,
-                        save_on_edit: Optional[bool] = None):
+                        save_on_edit: Optional[bool] = None
+                        ) -> NotebookAcquisitionData:
         """Creates a new acquisition with the given experiment name"""
         self._current_acquisition = None
         self.cell = cell
@@ -171,6 +175,7 @@ class AcquisitionManager:
         acquisition_tmp_data = self.acquisition_tmp_data
         filepath = self.create_path_from_tmp_data(acquisition_tmp_data)
         configs = acquisition_tmp_data.configs
+        configs = configs if configs else None
         cell = self.cell
 
         save_on_edit = save_on_edit if save_on_edit is not None else self._save_on_edit

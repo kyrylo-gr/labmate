@@ -4,17 +4,26 @@ import numpy as np
 import h5py
 
 
-class SyncNp():
-    def __new__(cls, data):
-        return data.view(H5NpArray)
+# class SyncNp():
+#     def __new__(cls, data):
+#         return data.view(H5NpArray)
 
 
-class H5NpArray(np.ndarray):
+class SyncNp(np.ndarray):
     __filename__: Optional[str] = None
     __filekey__: Optional[str] = None
     __should_not_be_converted__ = True
     __save_on_edit__: bool = False
     __last_changes__: Optional[list] = None
+
+    def __new__(cls, data):
+        # if data is None:
+        # data = np.array([])
+        if isinstance(data, list):
+            data = np.array(data)
+        if isinstance(data, tuple):
+            data = np.zeros(shape=data)
+        return data.view(cls)
 
     def __init__filepath__(self, *, filepath: str, filekey: str, save_on_edit: bool = False, **_):
         # if not save_on_edit:
@@ -48,14 +57,21 @@ class H5NpArray(np.ndarray):
         if not self.__filename__ or not self.__filekey__:
             raise ValueError("Cannot save changes without filename and filekey provided")
 
-        if not os.path.exists(os.path.dirname(self.__filename__)):
+        if os.path.dirname(self.__filename__) and not os.path.exists(os.path.dirname(self.__filename__)):
             os.makedirs(os.path.dirname(self.__filename__), exist_ok=True)
 
         if not just_update:
             with h5py.File(self.__filename__, 'a') as file:
+                # if self.__filekey__ not in file.keys():
+                #     file.create_dataset(self.__filekey__, shape=self.data.shape)
+                # print()
+                # print(file[self.__filekey__].size)
+                # if file[self.__filekey__].size == self.data.shape:
+                if self.__filekey__ in file:
+                    del file[self.__filekey__]
                 file[self.__filekey__] = np.asarray(self)
                 # file.require_dataset(
-                # self.__filekey__, shape=self.shape, dtype=self.dtype, exact=True)[:] = np.asarray(self)
+                # self.__filekey__, shape=self.shape, dtype=self.dtype, exact=False)[:] = np.asarray(self)
 
         for key in self.__last_changes__:
             with h5py.File(self.__filename__, 'a') as file:
@@ -67,3 +83,6 @@ class H5NpArray(np.ndarray):
 
         self.__last_changes__ = []
         return self
+
+    def asarray(self):
+        return self.view(np.ndarray)

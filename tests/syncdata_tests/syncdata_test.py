@@ -29,14 +29,15 @@ class WithoutSavingTest(unittest.TestCase):
 
     # @staticmethod
     def assertNpListEqual(self, d1, d2):
-        self.assertTrue(np.all(d1 == d2))
+        self.assertTrue(np.all(d1 == d2),
+                        msg=f"Arrays are not equal.\n d1 = {d1}.\n d2 = {d2}")
 
     @staticmethod
     def create_random_data(size=100):
         return list(np.random.randint(0, 100, size))
 
     def compare(self):
-        self.compare_dict(self.data_smart._asdict(), self.data_dict)  # noqa
+        self.compare_dict(self.data_smart, self.data_dict)  # noqa
 
     def compare_dict(self, d1, d2):
         self.assertSetEqual(
@@ -52,19 +53,19 @@ class WithoutSavingTest(unittest.TestCase):
     def test_init_empty(self):
         data_dict = {}
         data_smart = SyncData({})
-        self.compare_dict(data_smart._asdict(), data_dict)  # noqa
+        self.compare_dict(data_smart, data_dict)  # noqa
 
     def test_init_dict(self):
         data_dict = {'a': [1, 2, 3], 'b': [1, 2, 3]}
         data_smart = SyncData(data_dict)
-        self.compare_dict(data_smart._asdict(), data_dict)  # noqa
+        self.compare_dict(data_smart, data_dict)  # noqa
 
     def test_asdict(self):
         data_dict = {'a': [1, 2, 3], 'b': [1, 2, 3]}
         data_smart = SyncData(data_dict)
         d = data_smart.asdict()
         data_smart2 = SyncData(d)
-        self.compare_dict(data_smart.asdict(), data_smart2.asdict())
+        self.compare_dict(data_smart, data_smart2)
 
     def test_update_kwds(self):
         self.apply_func("update", a=self.create_random_data())
@@ -97,6 +98,22 @@ class WithoutSavingTest(unittest.TestCase):
             self.data_smart.get("data_to_get"))  # type: ignore
         self.assertNpListEqual(
             self.data_dict.get("data_to_get"), data)  # type: ignore
+
+    def test_get_dict(self):
+        data = self.create_random_data()
+        self.apply_func("update", data_to_get=data)
+        self.assertNpListEqual(
+            self.data_dict.get("data_to_get"),  # type: ignore
+            self.data_smart.get_dict("data_to_get"))  # type: ignore
+        self.assertNpListEqual(
+            self.data_dict.get("data_to_get"), data)  # type: ignore
+
+        data = {'a': 1, 'b': 2}
+        self.data_smart['dict'] = data
+        self.assertIsInstance(
+            self.data_smart.get_dict("dict"), dict)
+        self.assertDictEqual(
+            self.data_smart.get_dict("dict", {}), data)
 
     def test_getitem(self):
         data = self.create_random_data()
@@ -134,6 +151,7 @@ class WithoutSavingTest(unittest.TestCase):
 
     def test_delitem(self):
         self.apply_func("update", a2=self.create_random_data())
+        self.apply_func("update", a1=self.create_random_data())
         self.compare()
 
         del self.data_dict['a2']
@@ -169,6 +187,7 @@ class WithoutSavingTest(unittest.TestCase):
 
     def test_delattr(self):
         self.apply_func("update", a2=self.create_random_data())
+        self.apply_func("update", a1=self.create_random_data())
         self.compare()
 
         del self.data_dict['a2']
@@ -190,7 +209,7 @@ class WithoutSavingTest(unittest.TestCase):
         data_dict = self.data_dict
 
         for k, v in self.data_smart.items():
-            self.assertTrue(k in ('a1', 'a2'))
+            # self.assertTrue(k in ('a1', 'a2'))
             self.assertTrue(np.all(data_dict[k] == v))
 
     def test_keys(self):
@@ -207,8 +226,10 @@ class WithoutSavingTest(unittest.TestCase):
         self.apply_func("update", a1=self.create_random_data())
         self.apply_func("update", a2=self.create_random_data())
 
-        for k in self.data_smart:
-            self.assertTrue(k in ('a1', 'a2'))
+        keys = [k for k in self.data_smart]
+
+        for k in ('a1', 'a2'):
+            self.assertTrue(k in keys)
 
     def test_values(self):
         self.apply_func("update", a1=self.create_random_data())
@@ -221,15 +242,43 @@ class WithoutSavingTest(unittest.TestCase):
         )
 
     def test_repr(self):
+        class Test:
+            """Random class"""
+            __should_not_be_converted__ = True
+
+            def asdict(self):
+                return {}
+
         data = self.create_random_data()
-        self.data_smart['abc1234'] = data
-        self.data_smart['abc1235'] = data
+        self.data_smart['ab1'] = data
+        self.data_smart['ab2'] = 123
+        self.data_smart['ab3'] = 123.45
+        self.data_smart['ab4'] = {"a": 567, "b": {"c": {"d": {"e": {"f": "g"}}}}}
+        self.data_smart['ab5'] = Test()
         rep = repr(self.data_smart)
-        self.assertIn('abc1234', rep)
-        self.assertIn('abc1235', rep)
+        for key in ['ab1', 'ab2', 'ab3', 'ab4', 'ab5']:
+            self.assertIn(key, rep)
+
+        self.assertIn('Test', rep)
+
+    def test_keys_tree(self):
+        data = self.create_random_data()
+        self.data_smart['ab1'] = data
+        self.data_smart['ab2'] = 123
+        self.data_smart['ab2'] = {"a": 567, "b": {"c": "d"}}
+        rep = self.data_smart.keys_tree()
+        self.assertIn('ab1', rep)
+        self.assertIn('ab2', rep)
+        self.assertIn('a', rep.get('ab2', {}))  # type: ignore
+        self.assertIn('b', rep.get('ab2', {}))  # type: ignore
+        self.assertIn('c', rep.get('ab2', {}).get('b', {}))  # type: ignore
 
     def test_str(self):
-        str(self.data_smart)
+        self.data_smart['ab1'] = 1
+        self.data_smart['ab2'] = 2
+        string = str(self.data_smart)
+        self.assertIn('ab1', string)
+        self.assertIn('ab2', string)
 
     def test_dir(self):
         data = self.create_random_data()
@@ -247,18 +296,10 @@ class SavingOnEditTest(WithoutSavingTest):
     def setUp(self):
         self.data_smart = SyncData(
             filepath=DATA_FILE_PATH, overwrite=True, save_on_edit=True)
-        # self.data_dict = {}
 
     @property
     def data_dict(self):
         return h5py_utils.open_h5(DATA_FILE_PATH)
-
-    def compare_dict(self, d1, d2):
-        self.assertSetEqual(
-            set(d1.keys()), set(d2.keys()))
-
-        for key in d1.keys():
-            self.assertTrue(np.all(d1[key] == d2[key]))
 
     def apply_func(self, func, *args, **kwds):
         getattr(self.data_smart, func)(*args, **kwds)
@@ -270,6 +311,38 @@ class SavingOnEditTest(WithoutSavingTest):
         if os.path.exists(DATA_DIR):
             shutil.rmtree(DATA_DIR)
         return super().tearDownClass()
+
+
+class SavingManualTest(SavingOnEditTest):
+    """Testing that SyncData saves the data after save function runs."""
+
+    def setUp(self):
+        self.data_smart = SyncData(
+            filepath=DATA_FILE_PATH, overwrite=True, save_on_edit=False)
+
+    @property
+    def data_dict(self):
+        self.data_smart.save(just_update=False)
+        return h5py_utils.open_h5(DATA_FILE_PATH)
+
+
+class SavingManualJustUpdateTest(SavingManualTest):
+    """Testing that SyncData saves the data after save(just_update=True) function runs."""
+
+    @property
+    def data_dict(self):
+        self.data_smart.save(just_update=True)
+        return h5py_utils.open_h5(DATA_FILE_PATH)
+
+
+class SavingOnEditWithReadonlyFieldTest(SavingOnEditTest):
+    """Testing that SyncData saves the data after save(just_update=True) function runs."""
+
+    def setUp(self):
+        self.data_smart = SyncData(
+            filepath=DATA_FILE_PATH, overwrite=True, save_on_edit=True)
+        self.data_smart['a0'] = self.create_random_data()
+        self.data_smart.lock_data('a0')
 
 
 class InitSetupTest(unittest.TestCase):
@@ -363,6 +436,28 @@ class ReadModeTest(unittest.TestCase):
     def setUp(self):
         d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
         d['t'] = 3
+
+    def test_global_readonly(self):
+        # from labmate.utils.async_utils import sleep
+        d = SyncData(DATA_FILE_PATH, read_only=True)
+
+        with self.assertRaises(ValueError):
+            d.lock_data()
+
+        with self.assertRaises(ValueError):
+            d.lock_data('t')
+
+        with self.assertRaises(ValueError):
+            d.unlock_data()
+
+        with self.assertRaises(ValueError):
+            d.unlock_data('t')
+
+        with self.assertRaises(ValueError):
+            d.save(just_update=True)
+
+        with self.assertRaises(ValueError):
+            d.save(just_update=False)
 
     def test_cannot_change_in_read_mode(self):
         d = SyncData(DATA_FILE_PATH)
@@ -511,38 +606,81 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
 
     def test_save_asdict_class(self):
         class Test:
-            def _asdict(self):
+            def asdict(self):
                 return {'a': 5, 'b': 4}
 
         d = self.create_file()
         d['t'] = Test()
 
-        self.assertEqual(d['t', 'a'], 5)
-        self.assertEqual(d['t', 'b'], 4)
+        self.assertEqual(d['t']['a'], 5)
+        self.assertEqual(d['t']['b'], 4)
 
         d = self.read_file(d)
 
         self.assertEqual(d['t', 'a'], 5)
         self.assertEqual(d['t', 'b'], 4)
 
-    def test_save_not_converting_class(self):
+    def test_save_asarray(self):
+        class Test:
+            def asarray(self):
+                return [1, 2, 3]
+
+        d = self.create_file()
+        d['t'] = Test()
+
+        self.assertTrue(np.all(d['t'] == np.array([1, 2, 3])))
+
+        d = self.read_file(d)
+
+        self.assertTrue(np.all(d['t'] == np.array([1, 2, 3])))
+
+    def test_save_tuple(self):
+        d = self.create_file()
+        d['t'] = (1, 2, 3)  # type: ignore
+
+        self.assertTrue(np.all(d['t'] == np.array([1, 2, 3])))
+
+        d = self.read_file(d)
+
+        self.assertTrue(np.all(d['t'] == np.array([1, 2, 3])))
+
+    def test_init__filepath(self):
         class Test:
             __should_not_be_converted__ = True
-            a = 7
+            inited = False
 
-            def _asdict(self):
+            def __init__filepath__(
+                    self, *,
+                    filepath: str,
+                    filekey: str,
+                    save_on_edit: bool = False, **_):
+                del filepath, filekey, save_on_edit
+                self.inited = True
+
+            def asdict(self):
                 return {'a': 5}
 
         d = self.create_file()
         d['t'] = Test()
 
-        self.assertEqual(d['t'].a, 7)  # type: ignore  # pylint: disable=E1101
+        self.assertTrue(d['t'].inited)  # type: ignore  # pylint: disable=E1101
 
-        d = self.read_file(d)
+    def test_init_filepath_local(self):
+        class Test:
+            __should_not_be_converted__ = True
+            inited = False
 
-        self.assertEqual(d['t', 'a'], 5)
+            def __init__filepath__(self, *args, **kwds):
+                """should not be run"""
 
-    @classmethod
+            def asdict(self):
+                return {}
+
+        d = SyncData()
+        with self.assertRaises(ValueError):
+            d['t'] = Test()
+
+    @ classmethod
     def tearDownClass(cls):
         """Remove tmp_test_data directory ones all test finished."""
         # data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)
@@ -551,7 +689,7 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
         return super().tearDownClass()
 
 
-class SavingOnSaveDifferentFormatTest(SavingOnEditDifferentFormatTest):
+class SavingManualDifferentFormatTest(SavingOnEditDifferentFormatTest):
     """Test to save different formats of data, when save_on_edit is False"""
 
     def create_file(self):
@@ -576,7 +714,7 @@ class PullTest(unittest.TestCase):
 
         sd1['a'] = 1
         import time
-        time.sleep(1)
+        time.sleep(.5)
         sd2.pull()
         self.assertTrue('a' in sd2)
         self.assertEqual(sd2['a'], 1)
@@ -588,13 +726,25 @@ class PullTest(unittest.TestCase):
         sd1['a'] = 1
         sd2 = SyncData(
             DATA_FILE_PATH, overwrite=False, read_only=True)
-        sd2._data = {}
+        sd2._data = {}  # pylint: disable=protected-access
 
         sd2.pull(force_pull=True)
         self.assertTrue('a' in sd2)
         self.assertEqual(sd2['a'], 1)
 
-    @classmethod
+    def test_pull_with_local(self):
+        # from labmate.utils.async_utils import sleep
+        sd1 = SyncData()
+        with self.assertRaises(ValueError):
+            sd1.pull()
+
+        with self.assertRaises(ValueError):
+            sd1.pull(force_pull=True)
+
+        with self.assertRaises(ValueError):
+            sd1.pull_available()
+
+    @ classmethod
     def tearDownClass(cls):
         """Remove tmp_test_data directory ones all test finished."""
         # data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)
@@ -610,7 +760,7 @@ class OpenOnInitTest(WithoutSavingTest):
         self.data_smart = SyncData(
             filepath=DATA_FILE_PATH, overwrite=False, save_on_edit=True, open_on_init=False)
 
-    @property
+    @ property
     def data_dict(self):
         return SyncData(DATA_FILE_PATH, open_on_init=False)
 
@@ -635,7 +785,7 @@ class OpenOnInitTest(WithoutSavingTest):
         self.data_smart['a'] = data
 
         sd = SyncData(DATA_FILE_PATH, open_on_init=False)
-        self.assertDictEqual(sd._data, {})
+        self.assertDictEqual(sd._data, {})  # pylint: disable=protected-access
         self.assertSetEqual(sd.keys(), set(['a']))
         self.assertTrue(np.all(sd.get('a') == data))
 
@@ -653,7 +803,55 @@ class OpenOnInitTest(WithoutSavingTest):
         sd = SyncData(DATA_FILE_PATH, open_on_init=False)
         self.assertTrue(np.all(sd.get('a') == data))
 
-    @classmethod
+    @ classmethod
+    def tearDownClass(cls):
+        """Remove tmp_test_data directory ones all test finished."""
+        # data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)
+        if os.path.exists(DATA_DIR):
+            shutil.rmtree(DATA_DIR)
+        return super().tearDownClass()
+
+
+class RandomCasesTest(unittest.TestCase):
+    """Testing to open SyncData in write mode in 2 different kernel"""
+
+    def test_lockfile(self):
+        # from labmate.utils.async_utils import sleep
+        sd1 = SyncData(
+            DATA_FILE_PATH, save_on_edit=True, overwrite=True)
+        sd1['b'] = 3
+
+        with self.assertRaises(h5py_utils.FileLockedError):
+            sd1._retry_on_file_locked_error = 1  # pylint: disable=W0212
+            with h5py_utils.LockFile(DATA_FILE_PATH):
+                sd1['a'] = 2
+
+        with self.assertRaises(h5py_utils.FileLockedError):
+            sd1._raise_file_locked_error = True  # pylint: disable=W0212
+            with h5py_utils.LockFile(DATA_FILE_PATH):
+                sd1['a'] = 2
+
+    def test_filename_without_extension(self):
+        sd1 = SyncData(
+            DATA_FILE_PATH[:-3], save_on_edit=True, overwrite=True)
+        sd1['b'] = 3
+
+        self.assertTrue(os.path.exists(DATA_FILE_PATH))
+
+    def test_change_filename(self):
+        sd1 = SyncData(
+            DATA_FILE_PATH[:-3], save_on_edit=True, overwrite=True)
+        sd1['b'] = 3
+
+        sd1.filepath = DATA_FILE_PATH[:-3] + '2'
+        sd1.save()
+
+        sd1['c'] = 4
+        sd2 = SyncData(DATA_FILE_PATH[:-3] + '2')
+        self.assertEqual(sd2['b'], 3)
+        self.assertEqual(sd2['c'], 4)
+
+    @ classmethod
     def tearDownClass(cls):
         """Remove tmp_test_data directory ones all test finished."""
         # data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)

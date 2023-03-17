@@ -12,7 +12,10 @@ from typing import Union
 import unittest
 import numpy as np
 
-from labmate.acquisition import AcquisitionLoop, AcquisitionManager, AnalysisData
+from labmate.acquisition import AcquisitionManager, AnalysisData
+
+from labmate.acquisition.acquisition_loop \
+    import AcquisitionLoopOld as AcquisitionLoop
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
@@ -136,6 +139,29 @@ class AcquisitionLoopTest(unittest.TestCase):
         # Verification
         self.data_verification_for_simple_loop()
 
+    def test_classical_loop_call(self):
+        """Save and load the simplest list.
+
+        Protocol:
+
+        for freq in freqs:
+            x, y = ...
+            push_to_save(y, freq)
+        push_to_save(x)
+        save()
+
+        """
+        # Protocol
+        loop = AcquisitionLoop()
+        for freq in loop(self.freqs):
+            x, y = self.acquire_sine(freq, self.points)
+            loop(y=y, freq=freq)
+        loop(x=x)  # type: ignore
+        self.aqm.save_acquisition(loop_freq=loop)
+
+        # Verification
+        self.data_verification_for_simple_loop()
+
     def test_classical_loop_with_level(self):
         """Save and load the same list as the previous one,
         but we put push_to_save(x) inside loop with parameter level=-1,
@@ -223,13 +249,20 @@ class AnalysisLoopTest(AcquisitionLoopTest):
 
         assert data is not None
 
-        loop_freq = data.get("loop_freq")
+        loop_freq: dict = data.get("loop_freq")  # type: ignore
         assert loop_freq is not None, "Cannot get LoopData from saved data."
 
         for i, d in enumerate(loop_freq):
             self.assertAlmostEqual(self.data['freq'][i], d.freq)
             self.assertAlmostEqual(compare_np_array(self.data['y'][i], d.y), 0)
             self.assertAlmostEqual(compare_np_array(self.data['x'], d.x), 0)  # type: ignore
+
+        # print(loop_freq['freq'][5])
+        self.assertAlmostEqual(self.data['freq'][5], loop_freq['freq'][5])  # pylint: disable=E1136
+        self.assertAlmostEqual(
+            compare_np_array(self.data['y'][5], loop_freq[4:7]['y'][1]), 0)  # pylint: disable=E1136
+
+        self.assertEqual(len(loop_freq), len(self.data['freq']))
 
 
 class MultiAnalysisLoopTest(unittest.TestCase):

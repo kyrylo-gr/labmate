@@ -3,9 +3,148 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Union, overloa
 import numpy as np
 
 from ..syncdata import h5py_utils
+from ..syncdata_types.h5_np_array import SyncNp
+from ..syncdata.syncdata_class import SyncData
+from ..utils.errors import MultiLineValueError
 
 
-class AcquisitionLoop:
+class AcquisitionLoop(SyncData):
+    _level = 0
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._level = 0
+        self._shape = []
+        self._iteration = []
+
+    @ overload
+    def __call__(self, **kwds) -> None:
+        """Saves the kwds.
+        Same as calling the function append_data(kwds)
+        """
+
+    @ overload
+    def __call__(self, iterable: Iterable) -> Iterator:
+        """Given an iterable returns an iterator"""
+
+    @ overload
+    def __call__(self, stop: Union[int, float], /) -> Iterator:
+        """Given a stop value returns np.arange(stop)"""
+
+    @ overload
+    def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /
+                 ) -> Iterator:
+        """Given a start, stop and step returns np.arange(start, stop, step)"""
+
+    def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Optional[Iterator]:
+        """ If kwds are provided then is same as calling append_data(kwds),
+        otherwise returns iterator over iterable or np.arange(*args)
+        """
+        if iterable is None and len(args) == 0:
+            self.append(**kwds)
+            return None
+
+        if iterable is None:
+            if isinstance(args[0], (int, float, np.int_, np.float_)):  # type: ignore
+                iterable = np.arange(*args)
+            else:
+                iterable = args[0]
+
+        if iterable is None:
+            raise ValueError("You should provide an iterable")
+
+        return self.iter(iterable)
+
+    def append(self, level=None, **kwds):
+        if len(kwds) == 0:
+            raise ValueError("You should provide keywords and values to save")
+
+        level = level if level is not None else self._level
+        shape = tuple(self._shape[:self._level])
+
+        iteration = tuple(self._iteration[:self._level])
+        for key, value in kwds.items():
+            if isinstance(value, (np.ndarray, )):
+                key_shape = (*shape, *value.shape)
+            else:
+                key_shape = shape
+
+            if key in self:
+                # if self.data[key].shape == shape:
+                # print(self.data[key].shape, shape)
+                if self[key].shape == key_shape:
+                    self[key][iteration] = value
+                    # pass
+                else:
+                    # print("app",list(i-j for i, j in zip(shape, self.data[key].shape)))
+                    if len(key_shape) < len(self[key].shape):
+                        raise MultiLineValueError(
+                            f"""Object {key} hasn't the same shape as before. Now it's
+                             {key_shape[len(shape):]}, but before it was {self[key].shape[len(shape):]}""")
+
+                    elif len(key_shape) > len(self[key].shape):
+                        raise MultiLineValueError(
+                            f"""Object {key} cannot be save as the shape is not compatible. Before the shape was
+                            {self[key].shape}, but now it is {key_shape}""")
+
+                    # print(self[key].shape)
+                    # print(f"{key_shape=}")
+                    # print(tuple((0, i-j) for i, j in zip(
+                    #             key_shape,
+                    #             self[key].shape)))
+                    self[key] = SyncNp(
+                        np.pad(
+                            self[key],
+                            pad_width=tuple((0, i-j) for i, j in zip(
+                                key_shape,
+                                self[key].shape)))
+                    )
+                    self[key][iteration] = value
+                    # data = self.data[key]
+                    # self.data[key] = np.zeros(shape)
+                    # self.data[key][:, :data.shape[-1]] = data
+            else:
+                self[key] = SyncNp(np.zeros(key_shape))
+                self[key][iteration] = value
+
+    def iter(self, iterable: Iterable, level=None):
+        if not hasattr(iterable, "__len__"):
+            iterable = list(iterable)
+
+        length = len(iterable)  # type: ignore
+
+        def loop_iter(array, level):
+            array = list(array)
+            level = level if level is not None else self._level
+            length = len(array)
+            # self.iteration[-1]=0
+            if len(self._iteration) <= level:
+                self._iteration.append(0)
+
+            # print(self.shape, level)
+            if len(self._shape) <= level:
+                self._shape.append(length)
+                self['__loop_shape__'] = self._shape
+            elif self._iteration[level] != 0 and \
+                    (len(self._iteration) == 1 or self._iteration[level-1] == 0):
+                self._shape[level] = self._shape[level]+length
+                self['__loop_shape__'] = self._shape
+
+            self._level += 1
+            for a in array:
+                yield a
+                if len(self._iteration)-1 > level:
+                    self._iteration[-1] = 0
+                self._iteration[self._level-1] += 1
+            if len(self._iteration)-1 > level:
+                self._iteration.pop()
+            self._level -= 1
+
+        return GenerToIter(
+            loop_iter(iterable, level=level), length)
+
+
+class AcquisitionLoopOld:
     """Acquisition loop alow to save data during for loops.
 
     - Example 1 that saves list of squares till 10:
@@ -39,21 +178,21 @@ class AcquisitionLoop:
     # def __call__(self, *arg) -> Iterator:
     #     ...
 
-    @overload
+    @ overload
     def __call__(self, **kwds) -> None:
         """Saves the kwds.
         Same as calling the function append_data(kwds)
         """
 
-    @overload
+    @ overload
     def __call__(self, iterable: Iterable) -> Iterator:
         """Given an iterable returns an iterator"""
 
-    @overload
+    @ overload
     def __call__(self, stop: Union[int, float], /) -> Iterator:
         """Given a stop value returns np.arange(stop)"""
 
-    @overload
+    @ overload
     def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /
                  ) -> Iterator:
         """Given a start, stop and step returns np.arange(start, stop, step)"""
@@ -138,7 +277,7 @@ class AcquisitionLoop:
                 self._reshape_tuple(key))
         return data_reshape
 
-    def _asdict(self):
+    def asdict(self):
         data = self.data
         data['__loop_shape__'] = self.loop_shape
         return data
@@ -156,7 +295,7 @@ class AcquisitionLoop:
 
         h5py_utils.save_dict(
             filename=self.__filename__,
-            data={self.__filekey__: self._asdict()})
+            data={self.__filekey__: self.asdict()})
 
 
 class GenerToIter:
