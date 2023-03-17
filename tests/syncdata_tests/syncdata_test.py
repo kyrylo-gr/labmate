@@ -714,7 +714,7 @@ class PullTest(unittest.TestCase):
 
         sd1['a'] = 1
         import time
-        time.sleep(1)
+        time.sleep(2)
         sd2.pull()
         self.assertTrue('a' in sd2)
         self.assertEqual(sd2['a'], 1)
