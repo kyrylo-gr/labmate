@@ -21,7 +21,7 @@ DATA_FILE_PATH = os.path.join(DATA_DIR, "some_data.h5")
 
 
 class WithoutSavingTest(unittest.TestCase):
-    """Test that AcquisitionData should perform as dictionary"""
+    """Test that AcquisitionData should perform as dictionary."""
 
     def setUp(self):
         self.data_smart = SyncData()
@@ -243,7 +243,8 @@ class WithoutSavingTest(unittest.TestCase):
 
     def test_repr(self):
         class Test:
-            """Random class"""
+            """Random class."""
+
             __should_not_be_converted__ = True
 
             def asdict(self):
@@ -346,7 +347,7 @@ class SavingOnEditWithReadonlyFieldTest(SavingOnEditTest):
 
 
 class InitSetupTest(unittest.TestCase):
-    """Tests mode and internal variable depending on different init setup"""
+    """Tests mode and internal variable depending on different init setup."""
 
     def setUp(self):
         d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
@@ -552,7 +553,7 @@ class ReadModeTest(unittest.TestCase):
 
 
 class SavingOnEditDifferentFormatTest(unittest.TestCase):
-    """Saving different type of variables inside h5"""
+    """Save different type of variables inside h5."""
 
     def setUp(self):
         d = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
@@ -593,7 +594,7 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
 
     def test_save_random_class(self):
         class Test:
-            """Random class that cannot be saved"""
+            """Random class that cannot be saved."""
 
         d = self.create_file()
 
@@ -671,14 +672,15 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
             inited = False
 
             def __init__filepath__(self, *args, **kwds):
-                """should not be run"""
+                """Raise error as this function should not be run."""
+                raise ValueError()
 
             def asdict(self):
                 return {}
 
         d = SyncData()
-        with self.assertRaises(ValueError):
-            d['t'] = Test()
+        # with self.assertRaises(ValueError):
+        d['t'] = Test()
 
     @ classmethod
     def tearDownClass(cls):
@@ -690,7 +692,7 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
 
 
 class SavingManualDifferentFormatTest(SavingOnEditDifferentFormatTest):
-    """Test to save different formats of data, when save_on_edit is False"""
+    """Test to save different formats of data, when save_on_edit is False."""
 
     def create_file(self):
         return SyncData(
@@ -702,7 +704,7 @@ class SavingManualDifferentFormatTest(SavingOnEditDifferentFormatTest):
 
 
 class PullTest(unittest.TestCase):
-    """Testing to open SyncData in write mode in 2 different kernel"""
+    """Testing to open SyncData in write mode in 2 different kernel."""
 
     def test_pull(self):
         # from labmate.utils.async_utils import sleep
@@ -813,7 +815,7 @@ class OpenOnInitTest(WithoutSavingTest):
 
 
 class RandomCasesTest(unittest.TestCase):
-    """Testing to open SyncData in write mode in 2 different kernel"""
+    """Testing to open SyncData in write mode in 2 different kernel."""
 
     def test_lockfile(self):
         # from labmate.utils.async_utils import sleep

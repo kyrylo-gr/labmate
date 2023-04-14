@@ -5,14 +5,15 @@ from typing import Dict, List, NamedTuple, Optional, Union
 from ..path import Path
 # import logging
 
-from .acquisition_data import NotebookAcquisitionData, read_config_files, read_file
+from .acquisition_data import NotebookAcquisitionData, read_config_files, read_file, eval_config_files
 
 from ..utils import get_timestamp
 from ..json_utils import json_read, json_write
 
 
 class AcquisitionTmpData(NamedTuple):
-    """Temporary data that stores inside temp.json"""
+    """Temporary data that stores inside temp.json."""
+
     experiment_name: str
     time_stamp: str
     configs: Dict[str, str] = {}
@@ -23,10 +24,11 @@ class AcquisitionTmpData(NamedTuple):
 
 
 class AcquisitionManager:
-    """AcquisitionManager"""
+    """AcquisitionManager."""
 
     _data_directory: Path
     config_files = []
+    config_files_eval = {}
 
     _current_acquisition = None
     _current_filepath = None
@@ -103,6 +105,12 @@ class AcquisitionManager:
 
         return self
 
+    def set_config_evaluation_module(self, file, module):
+        if file not in self.config_files:
+            raise ValueError(
+                "Configuration file should be specified before with set_config_file function")
+        self.config_files_eval[os.path.basename(file)] = module
+
     def set_init_analyse_file(self, filename: Union[str, Path]) -> None:
         if not isinstance(filename, Path):
             filename = Path(filename)
@@ -131,10 +139,12 @@ class AcquisitionManager:
                         cell: Optional[str] = None,
                         save_on_edit: Optional[bool] = None
                         ) -> NotebookAcquisitionData:
-        """Creates a new acquisition with the given experiment name"""
+        """Create a new acquisition with the given experiment name."""
         self._current_acquisition = None
         self.cell = cell
         configs = read_config_files(self.config_files)
+        if self.config_files_eval:
+            configs = eval_config_files(configs, self.config_files_eval)
 
         dic = AcquisitionTmpData(experiment_name=name,
                                  time_stamp=get_timestamp(),

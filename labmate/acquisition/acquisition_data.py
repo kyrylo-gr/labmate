@@ -3,7 +3,7 @@ import os
 from typing import Dict, List, Optional, Union
 
 from ..syncdata import SyncData
-from ..utils.errors import MultiLineValueError
+from ..utils.parse import parse_str
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -85,18 +85,42 @@ def read_config_files(config_files: List[str]) -> Dict[str, str]:
     for config_file in config_files:
         config_file_name = os.path.basename(config_file)
         if config_file_name in configs:
-            raise MultiLineValueError(
-                """Some of the files have the same name. So it cannot
-                 be pushed into dictionary to preserve unique key""")
+            raise ValueError(
+                "Some of the files have the same name. So it cannot "
+                "be pushed into dictionary to preserve unique key")
         configs[config_file_name] = read_file(config_file)
     return configs
 
 
+def eval_config_files(configs: Dict[str, str], evals_modules: dict) -> Dict[str, str]:
+    # print(configs)
+    for file, module in evals_modules.items():
+        configs[file] = eval_config_file(configs[file], module)
+    return configs
+
+
+def eval_config_file(body, module):
+    variables = vars(module)
+    lines = body.split('\n')
+    for i, line in enumerate(lines):
+        for key, val in parse_str(line).items():
+            real_val = variables.get(key, "")
+            if ((isinstance(val, str) and
+                isinstance(real_val, str) and
+                real_val != val.strip('"\'')) or
+                    (isinstance(val, str) and
+                     isinstance(real_val, (float, int, complex)))):
+                lines[i] += f"  # value: {real_val}"
+                # print(f"{val}!={real_val}")
+
+    return "\n".join(lines)
+
+
 def read_file(file: str) -> str:
     if not os.path.isfile(file):
-        raise MultiLineValueError(
-            f"""Cannot read a file if it doesn't exist or it's not a file.
-             Path: {os.path.abspath(file)}""")
+        raise ValueError(
+            "Cannot read a file if it doesn't exist or it's not a file. "
+            f"Path: {os.path.abspath(file)}")
 
     with open(file, 'r', encoding="utf-8") as file_opened:
         return file_opened.read()

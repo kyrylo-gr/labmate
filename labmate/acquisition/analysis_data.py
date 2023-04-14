@@ -9,7 +9,6 @@ from ..syncdata import SyncData
 from ..attrdict import AttrDict
 from ..path import Path
 from .. import utils
-from ..utils.errors import MultiLineValueError
 
 
 logger = logging.getLogger(__name__)
@@ -18,11 +17,12 @@ logger.setLevel(logging.WARNING)
 
 class FigureProtocol(Protocol):
     def savefig(self, fname, **kwds):
-        """Saves the figure to a file"""
+        """Save the figure to a file."""
 
 
 class AnalysisData(SyncData):
     """AnalysisManager is subclass of SyncData.
+
     It opens the filepath and immediately looks every existing keys.
     So that you can add and modify a new key, but cannot change old keys.
 
@@ -38,8 +38,8 @@ class AnalysisData(SyncData):
     print(data.x)
     data.fit_results = [1,2,3]
     ```
-
     """
+
     _figure_last_name = None
     _figure_saved = False
     _fig_index = 0
@@ -115,10 +115,11 @@ class AnalysisData(SyncData):
                  name: Optional[Union[str, int]] = None,
                  tight_layout: bool = True,
                  **kwargs):
-        """saves the figure with the filename (...)_FIG_name
-          If name is None, use (...)_FIG1, (...)_FIG2.
-          pdf is used by default if no extension is provided in name"""
+        """Save the figure with the filename (...)_FIG_name.
 
+        If name is None, use (...)_FIG1, (...)_FIG2.
+        pdf is used by default if no extension is provided in name
+        """
         self._figure_last_name = str(name).lstrip('_') if name is not None else None
 
         fig_name = self.get_fig_name(name)
@@ -146,10 +147,12 @@ class AnalysisData(SyncData):
         self._figure_saved = True
 
     def get_fig_name(self, name: Optional[Union[str, int]] = None) -> str:
-        """
+        """Get the name of the figure depending on the suffix.
+
         If name is not specified, suffix is `FIG1.pdf`, `FIG2.pdf`, etc.
         If name like `123`, the suffix is `FIG123.pdf`.
-        If name like `abc`, the suffix is `FIG_abc.pdf` """
+        If name like `abc`, the suffix is `FIG_abc.pdf`
+        """
         assert self.filepath, "You must set self.filepath before saving"
 
         if name is None:
@@ -198,7 +201,11 @@ class AnalysisData(SyncData):
         keys_with_values = []
         for key in keys:
             key_value, key_units, key_format = utils.parse.parse_get_format(key)
-            if key_value in config_data:
+            if key_value == "filename" or key_value == "file" or key_value == "f":
+                filename = os.path.split(self.filepath)[-1]
+                keys_with_values.append(utils.parse.ValueForPrint(
+                    key_value, filename, key_units, key_format))
+            elif key_value in config_data:
                 keys_with_values.append(utils.parse.ValueForPrint(
                     key_value, config_data[key_value], key_units, key_format))
             elif key_value in self:
@@ -215,8 +222,10 @@ class AnalysisData(SyncData):
             max_length: Optional[int] = None,
             config_files: Optional[Tuple[str, ...]] = None
     ) -> str:
-        """ Parse the configuration files.
-        Returns: key1=value1, key2=value2, ..."""
+        """Parse the configuration files.
+
+        Returns: key1=value1, key2=value2, ...
+        """
         keys_with_values = self.parse_config_values(values, config_files=config_files)
         return utils.parse.format_title(keys_with_values, max_length=max_length)
 
@@ -234,9 +243,9 @@ class AnalysisData(SyncData):
                     config_file_name = possible_name
                     break
             else:
-                raise MultiLineValueError(
-                    f"""Cannot find config with name '{config_file_name}'.
-                    Possible configs file are {tuple(self['configs'].keys())}""")
+                raise ValueError(
+                    f"Cannot find config with name '{config_file_name}'. "
+                    f"Possible configs file are {tuple(self['configs'].keys())}")
 
             if config_file_name in self._parsed_configs:
                 self._parsed_configs[original_config_name] = self._parsed_configs[config_file_name]
@@ -263,9 +272,9 @@ class AnalysisData(SyncData):
 
         code: Optional[dict] = self.get('analysis_cells')
         if code is None:
-            raise MultiLineValueError(
-                f"""There is no field 'analysis_cells' inside the data file.
-                Possible keys are {tuple(self.keys())}""")
+            raise ValueError(
+                f"There is no field 'analysis_cells' inside the data file. "
+                f"Possible keys are {tuple(self.keys())}.")
 
         # if isinstance(code, bytes):
         #     code = code.decode()

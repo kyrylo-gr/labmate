@@ -2,14 +2,15 @@ import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional, Set, TypeVar, Union, overload
+from functools import wraps
 from . import h5py_utils
-from ..utils.errors import MultiLineValueError
-# from .h5_np_array import H5NpArray
 
 
 def editing(func):
-    """If a function changes the data it should be saved. It's a wrapper for such function"""
-
+    """If a function changes the data it should be saved.
+    It's a wrapper for such function.
+    """
+    @wraps(func)
     def run_func_and_clean_precalculated_results(self, *args, **kwargs):
         self._last_data_saved = False  # pylint: disable=W0212
         res = func(self, *args, **kwargs)
@@ -25,7 +26,7 @@ _T = TypeVar("_T")
 
 
 class NotLoaded(object):
-    """Internal class for data that has not been loaded yet"""
+    """Internal class for data that has not been loaded yet."""
 
     def __init__(self):
         pass
@@ -39,7 +40,8 @@ class NotLoaded(object):
 
 
 class SyncData:
-    """
+    """Dict that is synchronized with .h5 file.
+
     This object is obtained by loading a dataset contained in a .h5 file.
     Datasets can be obtained as in a dictionary: e.g.
     data[freqs]
@@ -47,6 +49,7 @@ class SyncData:
     This class should not contain any not local attributes.
     Look in __setattr__() to see why it would not work.
     """
+
     _repr: Optional[str] = None
     _default_attr = ['get', 'items', 'keys', 'pop', 'update', 'values', 'save']
     _last_data_saved: bool = False
@@ -67,7 +70,7 @@ class SyncData:
                  data: Optional[dict] = None,
                  open_on_init: Optional[bool] = None,
                  **kwds):
-        """_summary_
+        """SyncData.
 
         Args:
             filepath_or_data (str|dict, optional): either filepath, either data as dict.
@@ -122,11 +125,10 @@ class SyncData:
 
             if os.path.exists(filepath):
                 if overwrite is None and not read_only:
-                    raise MultiLineValueError(
-                        """File with the same name already exists. So you
-                         should explicitly provide what to do with it. Set `overwrite=True`
-                         to replace file. Set `overwrite=False` if you want to open existing
-                         file and work with it.""")
+                    raise ValueError(
+                        "File with the same name already exists. So you should explicitly "
+                        "provide what to do with it. Set `overwrite=True` to replace file. "
+                        "Set `overwrite=False` if you want to open existing file and work with it.")
 
                 if overwrite and not read_only:
                     os.remove(filepath)
@@ -244,22 +246,22 @@ class SyncData:
 
     @overload
     def get_dict(self, __key: str) -> Optional[Any]:
-        """Default value by default is None"""
+        """Return element as a dict. Return None if not found."""
 
     @overload
     def get_dict(self, __key: str, __default: _T) -> Union[Any, _T]:
-        """With default value provided"""
+        """With default value provided."""
 
     def get_dict(self, key: str, default: Optional[Any] = None):
         return self.__get_data__(key, default)
 
     @overload
     def get(self, __key: str) -> Optional[Any]:
-        """Default value by default is None"""
+        """Return element as a SyncData class if it's dict. Return None if not found."""
 
     @overload
     def get(self, __key: str, __default: _T) -> Union[Any, _T]:
-        """With default value provided"""
+        """With default value provided."""
 
     def get(self, key: str, default: Optional[Any] = None):
         data = self.__get_data__(key, default)
@@ -291,7 +293,7 @@ class SyncData:
             if hasattr(__value, "save"):
                 self._classes_should_be_saved_internally.add(__key)
 
-            if hasattr(__value, "__init__filepath__"):
+            if hasattr(__value, "__init__filepath__") and self._filepath:
                 if self._filepath is None:
                     raise ValueError("Cannot run __init__filepath__ with file unspecified")
                 key = __key if self._key_prefix is None else f"{self._key_prefix}/{__key}"
@@ -303,7 +305,7 @@ class SyncData:
         self.pop(key)
 
     def __getattr__(self, __name: str):
-        """Will be called if __getattribute__ does not work"""
+        """Call if __getattribute__ does not work."""
         if len(__name) > 1 and __name[0] == 'i' and \
                 __name[1:].isdigit() and __name not in self:
             __name = __name[1:]
@@ -330,11 +332,11 @@ class SyncData:
 
     @overload
     def __get_data__(self, __key: str) -> Optional[None]:
-        """Return None if the data doesn't contain key"""
+        """Return None if the data doesn't contain key."""
 
     @overload
     def __get_data__(self, __key: str, __default: _T) -> Union[Any, _T]:
-        """Return default value if the data doesn't contain key"""
+        """Return default value if the data doesn't contain key."""
 
     def __get_data__(self, __key: str, __default: Optional[Any] = None):
         if __key in self._unopened_keys:
@@ -475,8 +477,7 @@ class SyncData:
 
     @staticmethod
     def _check_if_filepath_was_set(filepath: Optional[str], filepath2: Optional[str]) -> str:
-        """
-        Returns path to the file with filename, but without extension."""
+        """Return path to the file with filename, but without extension."""
         filepath = filepath or filepath2
         if filepath is None:
             raise ValueError("Should provide filepath or set self.filepath before saving")

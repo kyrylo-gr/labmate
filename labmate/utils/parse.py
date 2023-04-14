@@ -2,19 +2,26 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 
 def parse_str(file: str, /) -> Dict[str, Union[str, int, float]]:
-    """Parsing a str.
+    """Parse strings.
     Return a dictionary of int or float if conversion is possible otherwise str"""
     parsed_values = {}
     for line in file.split('\n'):
         if len(line) == 0 or not line[0].isalpha() or '=' not in line:
             continue
         param, value = line.split('=')[:2]
-        value = value.split('#')[0].replace("_", "").strip()
+
+        if "# value: " in value:
+            value = value[value.find("# value: ") + 9:]
+
+        value = value.split('#')[0].strip()
+        value_without_underscores = value.replace("_", "")
+
         try:
-            if value.isdigit() or (value[0] == '-' and value[1:].isdigit()):
+            if value_without_underscores.isdigit() or \
+                    (value_without_underscores[0] == '-' and value[1:].isdigit()):
                 value = int(value)
-            elif value.replace('.', '').isdigit() or \
-                    (value[0] == '-' and value[1:].replace('.', '').isdigit()):
+            elif value_without_underscores.replace('.', '').isdigit() or \
+                    (value[0] == '-' and value_without_underscores[1:].replace('.', '').isdigit()):
                 value = float(value)
             elif (value[0].isdigit() or (value[0] == "-" and value[1].isdigit())) \
                     and value[-1].isdigit() and 'e' in value:

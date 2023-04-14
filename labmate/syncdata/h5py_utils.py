@@ -2,6 +2,7 @@ import json
 import os
 import h5py
 from typing import Dict, Literal, Optional, Protocol, Set, Union
+from ..utils.errors import FileLockedError
 
 import numpy as np
 
@@ -29,10 +30,6 @@ class ClassWithAsarray(Protocol):
 
     def asarray(self) -> Union[np.ndarray, list]:
         ...
-
-
-class FileLockedError(Exception):
-    """Exception raised when a file is locked"""
 
 
 class LockFile:
@@ -198,7 +195,7 @@ def output_dict_structure(
 
 
 def dict_to_json_format_str(data: dict) -> str:
-    """" Outputs a dictionary structure """
+    """Output a dictionary structure."""
     return json.dumps(data, sort_keys=True, indent=4)
 
 

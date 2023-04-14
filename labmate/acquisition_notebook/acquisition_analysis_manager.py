@@ -9,7 +9,6 @@ from ..acquisition import AcquisitionManager, AnalysisData, FigureProtocol
 from ..attrdict import AttrDict
 from .. import utils
 from ..path import Path
-from ..utils.errors import MultiLineValueError
 
 # from ..syncdata import SyncData
 
@@ -26,8 +25,7 @@ _CallableWithNoArgs = Callable[[], Any]
 
 
 class AcquisitionAnalysisManager(AcquisitionManager):
-    """
-    AcquisitionAnalysisManager
+    """AcquisitionAnalysisManager.
 
     # Init:
     ```
@@ -50,6 +48,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     ```
 
     """
+
     _analysis_data: Optional[AnalysisData] = None
     _analysis_cell_str = None
     _is_old_data = False
@@ -188,13 +187,15 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def __setitem__(self, __key: str, __value: Any) -> None:
         if self._analysis_data is not None:
-            raise MultiLineValueError("This is the way to save acquisition data. But analysis data was loaded.\
-                So you possibly run it inside analysis_cell")
+            raise ValueError(
+                "This is the way to save acquisition data. But analysis data was loaded."
+                "So you possibly run it inside analysis_cell")
         acq_data = self.current_acquisition
         if acq_data is None:
-            raise MultiLineValueError("Cannot save data to acquisition as current acquisition is None.\
-                Possibly because you have never run `acquisition_cell(..)` or it's an old data""")
-        acq_data.update({__key: __value})
+            raise ValueError(
+                "Cannot save data to acquisition as current acquisition is None."
+                "Possibly because you have never run `acquisition_cell(..)` or it's an old data")
+        acq_data[__key] = __value
 
     def save_acquisition(self, **kwds) -> AcquisitionAnalysisManager:
         acquisition_finished = time.time()
@@ -207,8 +208,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         filepath = filepath or str(self.current_filepath)
 
         if not os.path.exists(filepath if filepath.endswith('.h5') else filepath + '.h5'):
-            raise MultiLineValueError(
-                f"""Cannot load data from {filepath}. As file does not exist.""")
+            raise ValueError(
+                f"Cannot load data from {filepath}. As file does not exist.")
 
         self._analysis_data = AnalysisData(
             filepath=filepath,
@@ -219,6 +220,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         if self._save_on_edit_analysis is False:
             self._analysis_data.save()
+
+        if self._default_config_files:
+            self._analysis_data.set_default_config_files(self._default_config_files)
 
         return self._analysis_data
 
@@ -280,19 +284,19 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                     (acquisition_name[0] != r"^" and acquisition_name != self.current_experiment_name) or
                     (acquisition_name[0] == r"^" and re.match(acquisition_name, self.current_experiment_name) is None)
                 ):
-                    raise MultiLineValueError(
-                        f"""current acquisition ('{self.current_experiment_name}')
-                         isn't the one expected ('{acquisition_name}') for this analysis""")
+                    raise ValueError(
+                        f"Current acquisition ('{self.current_experiment_name}') "
+                        f"isn't the one expected ('{acquisition_name}') for this analysis")
 
             filename = str(self.current_filepath)  # without h5
         logger.info(os.path.basename(filename))
 
         if not self._is_old_data and self.shell is not None:
-            if ('acquisition_cell' in self.shell.last_execution_result.info.raw_cell and
+            if ('acquisition_cell(' in self.shell.last_execution_result.info.raw_cell and
                     not self.shell.last_execution_result.success):
                 raise ChildProcessError(
-                    """Last executed cell was probably an `acquisition_cell` and failed to run.
-                    Check if everything is ok and executive again""")
+                    "Last executed cell was probably an `acquisition_cell` and failed to run. "
+                    "Check if everything is ok and executive again")
 
         if os.path.exists(filename + '.h5'):
             self.load_analysis_data(filename)

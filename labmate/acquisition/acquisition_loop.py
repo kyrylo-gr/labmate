@@ -5,7 +5,6 @@ import numpy as np
 from ..syncdata import h5py_utils
 from ..syncdata_types.h5_np_array import SyncNp
 from ..syncdata.syncdata_class import SyncData
-from ..utils.errors import MultiLineValueError
 
 
 class AcquisitionLoop(SyncData):
@@ -17,24 +16,24 @@ class AcquisitionLoop(SyncData):
         self._shape = []
         self._iteration = []
 
-    @ overload
+    @overload
     def __call__(self, **kwds) -> None:
-        """Saves the kwds.
+        """Save the kwds.
         Same as calling the function append_data(kwds)
         """
 
-    @ overload
+    @overload
     def __call__(self, iterable: Iterable) -> Iterator:
-        """Given an iterable returns an iterator"""
+        """Return an iterator given an iterable"""
 
-    @ overload
+    @overload
     def __call__(self, stop: Union[int, float], /) -> Iterator:
-        """Given a stop value returns np.arange(stop)"""
+        """Returns np.arange(stop) given a stop value"""
 
-    @ overload
+    @overload
     def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /
                  ) -> Iterator:
-        """Given a start, stop and step returns np.arange(start, stop, step)"""
+        """Return np.arange(start, stop, step) given a start, stop and step"""
 
     def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Optional[Iterator]:
         """ If kwds are provided then is same as calling append_data(kwds),
@@ -57,7 +56,7 @@ class AcquisitionLoop(SyncData):
 
     def append(self, level=None, **kwds):
         if len(kwds) == 0:
-            raise ValueError("You should provide keywords and values to save")
+            raise ValueError("You should provide keywords and values to save.")
 
         level = level if level is not None else self._level
         shape = tuple(self._shape[:self._level])
@@ -78,14 +77,14 @@ class AcquisitionLoop(SyncData):
                 else:
                     # print("app",list(i-j for i, j in zip(shape, self.data[key].shape)))
                     if len(key_shape) < len(self[key].shape):
-                        raise MultiLineValueError(
-                            f"""Object {key} hasn't the same shape as before. Now it's
-                             {key_shape[len(shape):]}, but before it was {self[key].shape[len(shape):]}""")
+                        raise ValueError(
+                            f"Object {key} hasn't the same shape as before. Now it's "
+                            f"{key_shape[len(shape):]}, but before it was {self[key].shape[len(shape):]}.")
 
                     elif len(key_shape) > len(self[key].shape):
-                        raise MultiLineValueError(
-                            f"""Object {key} cannot be save as the shape is not compatible. Before the shape was
-                            {self[key].shape}, but now it is {key_shape}""")
+                        raise ValueError(
+                            f"Object {key} cannot be save as the shape is not compatible. "
+                            f"Before the shape was {self[key].shape}, but now it is {key_shape}.")
 
                     # print(self[key].shape)
                     # print(f"{key_shape=}")
@@ -178,21 +177,21 @@ class AcquisitionLoopOld:
     # def __call__(self, *arg) -> Iterator:
     #     ...
 
-    @ overload
+    @overload
     def __call__(self, **kwds) -> None:
         """Saves the kwds.
         Same as calling the function append_data(kwds)
         """
 
-    @ overload
+    @overload
     def __call__(self, iterable: Iterable) -> Iterator:
         """Given an iterable returns an iterator"""
 
-    @ overload
+    @overload
     def __call__(self, stop: Union[int, float], /) -> Iterator:
         """Given a stop value returns np.arange(stop)"""
 
-    @ overload
+    @overload
     def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /
                  ) -> Iterator:
         """Given a start, stop and step returns np.arange(start, stop, step)"""

@@ -79,8 +79,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.data_verification()
 
     def test_classical_loop_call(self):
-        """Save and load the simplest list.
-        """
+        """Save and load the simplest list."""
         # Protocol
         self.aqm.aq.loop = loop = AcquisitionLoop()
         self.data = {"freq": [], "y": [], "x": []}
@@ -95,6 +94,44 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.data['x'].append(x)  # type: ignore
         loop(x=x)  # type: ignore
 
+        # Verification
+        self.data_verification()
+
+    def test_classical_loop_2(self):
+        """Save and load the simplest list."""
+        # Protocol
+        self.aqm['loop'] = loop = AcquisitionLoop()
+        self.data = {"freq": [], "y": [], "x": []}
+
+        for freq in loop(10):
+            x, y = self.get_some_data(freq, self.points)
+            loop(y=y, freq=freq)
+
+            self.data['y'].append(y)
+            self.data['freq'].append(freq)
+
+        self.data['x'].append(x)  # type: ignore
+        loop(x=x)  # type: ignore
+
+        # Verification
+        self.data_verification()
+
+    def test_classical_loop_saved_in_end(self):
+        """Save and load the simplest list."""
+        # Protocol
+        loop = AcquisitionLoop()
+        self.data = {"freq": [], "y": [], "x": []}
+
+        for freq in loop(10):
+            x, y = self.get_some_data(freq, self.points)
+            loop(y=y, freq=freq)
+
+            self.data['y'].append(y)
+            self.data['freq'].append(freq)
+
+        self.data['x'].append(x)  # type: ignore
+        loop(x=x)  # type: ignore
+        self.aqm.save_acquisition(loop=loop)
         # Verification
         self.data_verification()
 

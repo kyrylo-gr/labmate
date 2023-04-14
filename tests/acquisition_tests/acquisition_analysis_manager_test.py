@@ -24,7 +24,9 @@ aqm_logger.setLevel(logging.WARNING)
 
 class AcquisitionAnalysisManagerTest(unittest.TestCase):
     """Test of AcquisitionAnalysisManager.
-    It mainly checks what acquisition_cell and analysis_cell do"""
+
+    It mainly checks what acquisition_cell and analysis_cell do
+    """
 
     cell_text = "this is a analysis cell"
     experiment_name = "abc"
@@ -620,7 +622,7 @@ class LintingTest(unittest.TestCase):
         logs = self.run_test(code)
         self.assert_logs(logs.records)
 
-    def test_lint_fetch_inside_simple(self):
+    def test_lint_save_acquisition_simple(self):
         code = """\
         aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")    
         if aqm.current_acquisition is not None:
@@ -630,7 +632,7 @@ class LintingTest(unittest.TestCase):
         logs = self.run_test(code)
         self.assert_logs(logs.records)
 
-    def test_lint_fetch_inside_wrong(self):
+    def test_lint_save_acquisition_wrong(self):
         code = """\
         aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")    
         if aqm.current_acquisition is not None:
@@ -641,12 +643,23 @@ class LintingTest(unittest.TestCase):
         logs = self.run_test(code)
         self.assert_logs(logs.records, ['x', 'y'], 30)
 
-    def test_lint_fetch_inside_right(self):
+    def test_lint_save_acquisition_right(self):
         code = """\
         aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")    
         if aqm.current_acquisition is not None:
             x, y = fetch_new_data() # noqa
             aqm.save_acquisition(x=x, y=y, const=const)
+        plt.plot(aqm.d.x, aqm.d.y)
+        """
+        logs = self.run_test(code)
+        self.assert_logs(logs.records)
+
+    def test_lint_save_acquisition_class(self):
+        code = """\
+        aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")    
+        if aqm.current_acquisition is not None:
+            x, y = fetch_new_data() # noqa
+            aqm.save_acquisition(x=x, cls1=cls.func1(), cls2=cls.func2, cls3=cls.func3.func4())
         plt.plot(aqm.d.x, aqm.d.y)
         """
         logs = self.run_test(code)
@@ -678,6 +691,36 @@ class LintingTest(unittest.TestCase):
         """
         logs = self.run_test(code)
         self.assert_logs(logs.records)
+
+    def test_lint_def_function(self):
+        code = """\
+        aqm.analysis_cell()
+        def abc1(p1, /, p2, p3=2, *, p4=3, p5: int=4) -> int:
+            return p1 + p2 + p3 + p4 + p5
+        def abc2(p1, p2):
+            return p1
+        def abc3(p1=3):
+            return p1
+        def abc4():
+            return 0
+        """
+        logs = self.run_test(code)
+        self.assert_logs(logs.records)
+
+    def test_lint_def_function_wrong(self):
+        code = """\
+        aqm.analysis_cell()
+        def abc1(p1, /, p2, p3=2, *, p4=3, p5: int=4) -> int:
+            return p1 + p2 + p3 + p4 + p5*x1
+        def abc2(p1, p2):
+            return p1*x2
+        def abc3(p1=3):
+            return p1*x3
+        def abc4():
+            return x4
+        """
+        logs = self.run_test(code)
+        self.assert_logs(logs.records, ['x1', 'x2', 'x3', 'x4'])
 
     @classmethod
     def tearDownClass(cls):
@@ -721,7 +764,9 @@ class AcquisitionAnalysisManagerParceTest(AnalysisDataParceTest):
 
     def test_parse_config(self):
         """This right way to save configuration files.
-        They should be set before creating a new acquisition."""
+
+        They should be set before creating a new acquisition.
+        """
         self.aqm.set_default_config_files(("config.txt",))
         data = self.aqm.cfg
         self.compare_config(data=data)
@@ -729,7 +774,9 @@ class AcquisitionAnalysisManagerParceTest(AnalysisDataParceTest):
 
 class ShellEmulator:
     """This is emulation of a Figure class.
-    The only goal of this class is to save something with savefig method."""
+
+    The only goal of this class is to save something with savefig method.
+    """
 
     last_success = True
     last_cell = "aqm.acquisition_cell('abc')"

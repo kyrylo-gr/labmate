@@ -1,3 +1,4 @@
+"""Import Labmate."""
 import setuptools
 
 with open("README.md", "r", encoding='utf-8') as fh:
@@ -5,7 +6,7 @@ with open("README.md", "r", encoding='utf-8') as fh:
 
 setuptools.setup(
     name='labmate',
-    version="0.5.0",
+    version="0.6.0",
     author="LKB-OMQ",
     author_email="cryo.paris.su@gmail.com",
     description="Data management library to save data and plots to hdf5 files",
