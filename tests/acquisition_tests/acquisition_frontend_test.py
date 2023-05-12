@@ -93,8 +93,7 @@ class AcquisitionLoopTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        """This setUp method runs ones of LoopTest.
-        It creates a dictionary to verify with."""
+        """Create a dictionary to verify with."""
         cls.name = "LoopTest"
         cls.aqm = AcquisitionManager(DATA_DIR)
         cls.aqm.new_acquisition(cls.name)
@@ -163,8 +162,9 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.data_verification_for_simple_loop()
 
     def test_classical_loop_with_level(self):
-        """Save and load the same list as the previous one,
-        but we put push_to_save(x) inside loop with parameter level=-1,
+        """Save and load the same list as the previous one.
+
+        But we put push_to_save(x) inside loop with parameter level=-1,
         so it should give as the same result.
 
         Protocol:
@@ -188,8 +188,9 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.data_verification_for_simple_loop()
 
     def test_classical_loop_multisave(self):
-        """Save and load the same list as previous one,
-        but now we save on every iteration of cycle.
+        """Save and load the same list as previous one.
+
+        But now we save on every iteration of cycle.
 
         Protocol:
 
@@ -241,8 +242,11 @@ class AcquisitionLoopTest(unittest.TestCase):
 
 
 class AnalysisLoopTest(AcquisitionLoopTest):
-    """Test for the AnalysisLoop. Take the same preparation that for
-    the AcquisitionLoopTest but has different data_verification function."""
+    """Test for the AnalysisLoop.
+
+    Take the same preparation that for the AcquisitionLoopTest,
+    but has different data_verification function.
+    """
 
     def data_verification_for_simple_loop(self):
         data = AnalysisData(self.aqm.current_filepath)
@@ -277,8 +281,7 @@ class MultiAnalysisLoopTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        """This setUp method runs ones of LoopTest.
-        It creates a dictionary to verify with."""
+        """Create a dictionary to verify with."""
         cls.aqm = AcquisitionManager(DATA_DIR)
         cls.aqm.new_acquisition("MultiLoopTest2")
 

@@ -1,7 +1,7 @@
+from typing import Any, Dict, Iterable, Optional, Set, TypeVar, Union, overload
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional, Set, TypeVar, Union, overload
 from functools import wraps
 from . import h5py_utils
 

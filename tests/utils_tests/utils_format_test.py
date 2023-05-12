@@ -5,7 +5,7 @@ import labmate.utils.parse as utils_format
 
 
 class UtilsFormatTest(unittest.TestCase):
-    """Test utils format function"""
+    """Test utils format function."""
 
     def test_parse_get_format_3args(self):
         self.assertTupleEqual(

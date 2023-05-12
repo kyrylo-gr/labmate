@@ -18,26 +18,26 @@ class AcquisitionLoop(SyncData):
 
     @overload
     def __call__(self, **kwds) -> None:
-        """Save the kwds.
-        Same as calling the function append_data(kwds)
-        """
+        """Save the kwds. Same as calling the function append_data(kwds)."""
 
     @overload
     def __call__(self, iterable: Iterable) -> Iterator:
-        """Return an iterator given an iterable"""
+        """Return an iterator given an iterable."""
 
     @overload
     def __call__(self, stop: Union[int, float], /) -> Iterator:
-        """Returns np.arange(stop) given a stop value"""
+        """Return np.arange(stop) given a stop value."""
 
     @overload
     def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /
                  ) -> Iterator:
-        """Return np.arange(start, stop, step) given a start, stop and step"""
+        """Return np.arange(start, stop, step) given a start, stop and step."""
 
     def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Optional[Iterator]:
-        """ If kwds are provided then is same as calling append_data(kwds),
-        otherwise returns iterator over iterable or np.arange(*args)
+        """Append_data or arange.
+
+        If kwds are provided then is same as calling append_data(kwds),
+        otherwise returns iterator over iterable or np.arange(*args).
         """
         if iterable is None and len(args) == 0:
             self.append(**kwds)
@@ -144,7 +144,7 @@ class AcquisitionLoop(SyncData):
 
 
 class AcquisitionLoopOld:
-    """Acquisition loop alow to save data during for loops.
+    """Acquisition loop allow to save data during for loops.
 
     - Example 1 that saves list of squares till 10:
     ```
@@ -160,8 +160,8 @@ class AcquisitionLoopOld:
         loop.append_data(x=i**2)
     sd.update(test_loop = loop)
     ```
-
     """
+
     __filename__: Optional[str] = None
     __filekey__: Optional[str] = None
     __should_not_be_converted__ = True
@@ -179,25 +179,25 @@ class AcquisitionLoopOld:
 
     @overload
     def __call__(self, **kwds) -> None:
-        """Saves the kwds.
-        Same as calling the function append_data(kwds)
-        """
+        """Save the kwds. Same as calling the function append_data(kwds)."""
 
     @overload
     def __call__(self, iterable: Iterable) -> Iterator:
-        """Given an iterable returns an iterator"""
+        """Given an iterable returns an iterator."""
 
     @overload
     def __call__(self, stop: Union[int, float], /) -> Iterator:
-        """Given a stop value returns np.arange(stop)"""
+        """Given a stop value returns np.arange(stop)."""
 
     @overload
     def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /
                  ) -> Iterator:
-        """Given a start, stop and step returns np.arange(start, stop, step)"""
+        """Given a start, stop and step returns np.arange(start, stop, step)."""
 
     def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Optional[Iterator]:
-        """ If kwds are provided then is same as calling append_data(kwds),
+        """Append_data or arange.
+
+        If kwds are provided then is same as calling append_data(kwds),
         otherwise returns iterator over iterable or np.arange(*args)
         """
         if iterable is None and len(args) == 0:

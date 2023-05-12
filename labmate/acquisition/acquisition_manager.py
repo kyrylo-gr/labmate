@@ -1,14 +1,12 @@
-from __future__ import annotations
 import os
 
 from typing import Dict, List, NamedTuple, Optional, Union
 from ..path import Path
-# import logging
 
 from .acquisition_data import NotebookAcquisitionData, read_config_files, read_file, eval_config_files
 
 from ..utils import get_timestamp
-from ..json_utils import json_read, json_write
+from .. import json as jsn
 
 
 class AcquisitionTmpData(NamedTuple):
@@ -85,13 +83,13 @@ class AcquisitionManager:
 
     @acquisition_tmp_data.setter
     def acquisition_tmp_data(self, dic: AcquisitionTmpData) -> None:
-        json_write(self.temp_file_path, dic.asdict())
+        jsn.write(self.temp_file_path, dic.asdict())
         self._acquisition_tmp_data = dic
 
     def __setitem__(self, __key: str, __value) -> None:
         self.aq[__key] = __value
 
-    def set_config_file(self, filename: Union[str, List[str]]) -> AcquisitionManager:
+    def set_config_file(self, filename: Union[str, List[str]]) -> 'AcquisitionManager':
         """Set self.config_file to filename. Verify if exists.
         Only set config file for future acquisition and will not change current acquisition"""
         if isinstance(filename, str):
@@ -118,9 +116,9 @@ class AcquisitionManager:
         if init:
             self._init_code = init
 
-    def create_path_from_tmp_data(self, dic: AcquisitionTmpData) -> Path:
+    def create_path_from_tmp_data(self, dic: AcquisitionTmpData) -> 'Path':
         data_directory = dic.directory or self.data_directory
-        experiment_path = (Path(data_directory)/dic.experiment_name)
+        experiment_path = (Path(data_directory)/str(dic.experiment_name))
         if not experiment_path.exists():
             experiment_path.makedirs()
         if self._init_code and not os.path.exists(experiment_path/"init_analyse.py"):
@@ -132,7 +130,7 @@ class AcquisitionManager:
     def get_temp_data(path: Path) -> Optional[AcquisitionTmpData]:
         if not os.path.exists(path):
             return None
-        return AcquisitionTmpData(**json_read(path))
+        return AcquisitionTmpData(**jsn.read(path))
 
     def new_acquisition(self,
                         name: str,
@@ -198,7 +196,7 @@ class AcquisitionManager:
             save_on_edit=save_on_edit,
             save_files=self._save_files)
 
-    def save_acquisition(self, **kwds) -> AcquisitionManager:
+    def save_acquisition(self, **kwds) -> 'AcquisitionManager':
         acq_data = self.current_acquisition
         if acq_data is None:
             raise ValueError("Cannot save data to acquisition as current acquisition is None. \n\

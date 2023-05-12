@@ -1,14 +1,13 @@
-from __future__ import annotations
-
+from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple, Union, TYPE_CHECKING
 import os
 import logging
 import time
-from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple, Union
-from ..utils import lstrip_int
-from ..acquisition import AcquisitionManager, AnalysisData, FigureProtocol
-from ..attrdict import AttrDict
+from ..acquisition import AcquisitionManager, AnalysisData
 from .. import utils
-from ..path import Path
+if TYPE_CHECKING:
+    from ..acquisition import FigureProtocol
+    from ..attrdict import AttrDict
+    from ..path import Path
 
 # from ..syncdata import SyncData
 
@@ -135,9 +134,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def save_fig_only(
             self,
-            fig: Optional[FigureProtocol] = None,
+            fig: Optional['FigureProtocol'] = None,
             name: Optional[Union[str, int]] = None, **kwds
-    ) -> AcquisitionAnalysisManager:
+    ) -> 'AcquisitionAnalysisManager':
         """
         Save the fig as a file.
 
@@ -160,7 +159,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             self,
             name: Optional[Union[str, int]] = None,
             cell: Optional[Union[str, Literal['none']]] = None
-    ) -> AcquisitionAnalysisManager:
+    ) -> 'AcquisitionAnalysisManager':
         if name is None:
             name = self.data.figure_last_name
 
@@ -175,11 +174,11 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def save_fig(
             self,
-            fig: Optional[FigureProtocol] = None,
+            fig: Optional['FigureProtocol'] = None,
             name: Optional[Union[str, int]] = None,
             cell: Optional[str] = None,
             **kwds
-    ) -> AcquisitionAnalysisManager:
+    ) -> 'AcquisitionAnalysisManager':
 
         self.save_fig_only(fig=fig, name=name, **kwds)
         self.save_analysis_cell(name=name, cell=cell)
@@ -197,7 +196,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 "Possibly because you have never run `acquisition_cell(..)` or it's an old data")
         acq_data[__key] = __value
 
-    def save_acquisition(self, **kwds) -> AcquisitionAnalysisManager:
+    def save_acquisition(self, **kwds) -> 'AcquisitionAnalysisManager':
         acquisition_finished = time.time()
         kwds.update({"info": {"acquisition_duration": acquisition_finished-self._acquisition_started}})
         super().save_acquisition(**kwds)
@@ -232,7 +231,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             cell: Optional[str] = None,
             prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
             save_on_edit: Optional[bool] = None
-    ) -> AcquisitionAnalysisManager:
+    ) -> 'AcquisitionAnalysisManager':
         self._analysis_cell_str = None
         self._analysis_data = None
         self._is_old_data = False
@@ -242,7 +241,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         self.new_acquisition(name=name, cell=cell, save_on_edit=save_on_edit)
 
-        logger.info(os.path.basename(self.current_filepath))
+        logger.info(self.current_filepath.basename)
 
         utils.run_functions(self._acquisition_cell_prerun_hook)
         utils.run_functions(prerun)
@@ -251,12 +250,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def analysis_cell(
             self,
-            filename: Optional[Union[str, Path]] = None, *,
+            filename: Optional[Union[str, 'Path']] = None, *,
             acquisition_name=None,
             cell: Optional[str] = None,
-            filepath: Optional[Union[str, Path]] = None,
+            filepath: Optional[Union[str, 'Path']] = None,
             prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
-    ) -> AcquisitionAnalysisManager:
+    ) -> 'AcquisitionAnalysisManager':
         # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
 
         self._analysis_cell_str = cell or get_current_cell(self.shell)
@@ -337,22 +336,22 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         filename = (filename.rsplit('.h5', 1)[0]) if filename.endswith('.h5') else filename
 
-        name_with_prefix = lstrip_int(filename)
+        name_with_prefix = utils.lstrip_int(filename)
         if name_with_prefix:
             suffix = name_with_prefix[1]
             return os.path.join(self.data_directory, suffix, filename)
         return filename
 
-    def parse_config_file(self, config_file_name: str, /) -> AttrDict:
+    def parse_config_file(self, config_file_name: str, /) -> 'AttrDict':
         return self.data.parse_config_file(config_file_name)
 
     def parse_config(
             self,
-            config_files: Optional[Tuple[str, ...]] = None) -> AttrDict:
+            config_files: Optional[Tuple[str, ...]] = None) -> 'AttrDict':
         return self.data.parse_config(config_files=(config_files or self._default_config_files))
 
     @property
-    def cfg(self) -> AttrDict:
+    def cfg(self) -> 'AttrDict':
         return self.parse_config()
 
     def parse_config_str(

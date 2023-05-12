@@ -105,13 +105,18 @@ def eval_config_file(body, module):
     for i, line in enumerate(lines):
         for key, val in parse_str(line).items():
             real_val = variables.get(key, "")
-            if ((isinstance(val, str) and
-                isinstance(real_val, str) and
-                real_val != val.strip('"\'')) or
+            if (
                     (isinstance(val, str) and
-                     isinstance(real_val, (float, int, complex)))):
+                     isinstance(real_val, str) and
+                     real_val != val.strip('"\'')) or
+                    (isinstance(val, str) and
+                        isinstance(real_val, (float, int, complex)) and
+                        not isinstance(real_val, bool))
+            ):
                 lines[i] += f"  # value: {real_val}"
+
                 # print(f"{val}!={real_val}")
+                # print(f"{type(val)}!={type(real_val)}")
 
     return "\n".join(lines)
 

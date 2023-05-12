@@ -17,7 +17,9 @@ def parse_str(file: str, /) -> Dict[str, Union[str, int, float]]:
         value_without_underscores = value.replace("_", "")
 
         try:
-            if value_without_underscores.isdigit() or \
+            if len(value_without_underscores) == 0:
+                pass
+            elif value_without_underscores.isdigit() or \
                     (value_without_underscores[0] == '-' and value[1:].isdigit()):
                 value = int(value)
             elif value_without_underscores.replace('.', '').isdigit() or \
