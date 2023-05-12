@@ -18,6 +18,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TestingOn: GitHub
+
     strategy:
       fail-fast: false
       matrix:
