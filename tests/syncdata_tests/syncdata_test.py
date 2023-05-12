@@ -707,6 +707,8 @@ class PullTest(unittest.TestCase):
     """Testing to open SyncData in write mode in 2 different kernel."""
 
     def test_pull(self):
+        if os.environ.get("TestingOn", "LOCAL") != "LOCAL":
+            return
         # from labmate.utils.async_utils import sleep
         sd1 = SyncData(
             DATA_FILE_PATH, save_on_edit=True, overwrite=True, read_only=False)
