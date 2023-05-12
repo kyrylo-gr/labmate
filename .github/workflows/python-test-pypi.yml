@@ -38,4 +38,4 @@ jobs:
       - name: Test with pytest
         run: |
           rm -R labmate
-          pytest --import-mode=importlib
+          pytest .
