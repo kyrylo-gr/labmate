@@ -103,7 +103,11 @@ class AcquisitionLoop(SyncData):
                     # self.data[key] = np.zeros(shape)
                     # self.data[key][:, :data.shape[-1]] = data
             else:
-                self[key] = SyncNp(np.zeros(key_shape))
+                if isinstance(value, (complex, np.complex_)):  # type: ignore
+                    self[key] = SyncNp(np.zeros(key_shape, dtype=np.complex128))
+                else:
+                    self[key] = SyncNp(np.zeros(key_shape))
+
                 self[key][iteration] = value
 
     def iter(self, iterable: Iterable, level=None):
@@ -141,6 +145,10 @@ class AcquisitionLoop(SyncData):
 
         return GenerToIter(
             loop_iter(iterable, level=level), length)
+
+    def enum(self, iterable: Iterable, level=None):
+        return enumerate(self.iter(
+            iterable=iterable, level=level))
 
 
 class AcquisitionLoopOld:

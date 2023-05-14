@@ -645,6 +645,28 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
 
         self.assertTrue(np.all(d['t'] == np.array([1, 2, 3])))
 
+    def test_save_str_list(self):
+        d = self.create_file()
+        lst = ['a', 'b', 'c']
+        d['t'] = lst
+
+        self.assertTrue(d['t'] == lst)
+
+        d = self.read_file(d)
+
+        self.assertTrue(d['t'] == lst)
+
+    def test_save_str_obj(self):
+        d = self.create_file()
+        lst = ['a', 1, {'b': 2}]
+        d['t'] = lst
+
+        self.assertTrue(d['t'] == lst)
+
+        d = self.read_file(d)
+
+        self.assertTrue(d['t'] == lst)
+
     def test_init__filepath(self):
         class Test:
             __should_not_be_converted__ = True

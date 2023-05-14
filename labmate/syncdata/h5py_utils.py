@@ -74,14 +74,29 @@ def transform_to_possible_formats(data: DICT_OR_LIST_LIKE) -> DICT_OR_LIST_LIKE:
     if isinstance(data, (tuple, set)):
         data = list(data)
     if isinstance(data, list):
-        return np.array(data)
+        data_array = np.array(data)
+        if 'U' in str(data_array.dtype) or \
+                'object' in str(data_array.dtype):
+            return data
+        return data_array
     return data
 
 
 def transform_on_open(value):
     if isinstance(value, bytes):
-        return value.decode()
+        value = value.decode()
+    if isinstance(value, str) and value.startswith('__json__'):
+        return json.loads(value[8:])
+
     return value
+
+
+def transform_list_on_save(value):
+    value_np = np.array(value)
+    if 'U' in str(value_np.dtype) or \
+            'object' in str(value_np.dtype):
+        return '__json__' + json.dumps(value)
+    return value_np
 
 
 def save_sub_dict(
@@ -101,6 +116,7 @@ def save_sub_dict(
     elif (key is not None) and (data is not None):
         if isinstance(data, (np.ndarray, list)):
             use_compression = "gzip" if use_compression is True else use_compression
+            data = transform_list_on_save(data)  # type: ignore
             group.create_dataset(key, data=data, compression=use_compression)  # compression="gzip"
         else:
             group.create_dataset(key, data=data)
@@ -214,8 +230,8 @@ def get_dict_structure(data: dict, level: int = 3) -> dict:
             structure[k] = f"shape: {np.shape(v)} (type: {type(v).__name__})"
         elif isinstance(v, (int, np.int_)):  # type: ignore
             structure[k] = f"{v:.0f} (type : {type(v).__name__})"
-        elif isinstance(v, (float, np.float_)):  # type: ignore
-            str_value = f"{v:.3f}" if .1 <= v <= 100. else f"{v:.3e}"
+        elif isinstance(v, (float, np.float_, complex, np.complex_)):  # type: ignore
+            str_value = f"{v:.3f}" if .1 <= abs(v) <= 100. else f"{v:.3e}"
             structure[k] = f"{str_value} (type : {type(v).__name__})"
         else:
             structure[k] = f"variable of type {type(v).__name__}"
