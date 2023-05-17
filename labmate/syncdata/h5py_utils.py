@@ -1,7 +1,7 @@
 import json
 import os
 import h5py
-from typing import Dict, Literal, Optional, Protocol, Set, Union
+from typing import Callable, Dict, Literal, Optional, Protocol, Set, Union
 from ..utils.errors import FileLockedError
 
 import numpy as np
@@ -52,7 +52,7 @@ class LockFile:
 
 
 DICT_OR_LIST_LIKE = Optional[Union[dict, list, np.ndarray, ClassWithAsdict, ClassWithAsarray,
-                                   np.int_, np.float_, float, int, str]]
+                                   np.int_, np.float_, float, int, str, Callable]]
 RIGHT_DATA_TYPE = Union[dict, np.ndarray, np.int_, np.float_, float, int]
 
 
@@ -71,8 +71,10 @@ def transform_to_possible_formats(data: DICT_OR_LIST_LIKE) -> DICT_OR_LIST_LIKE:
         for key, value in data.items():
             data[key] = transform_to_possible_formats(value)
         return data
+
     if isinstance(data, (tuple, set)):
         data = list(data)
+
     if isinstance(data, list):
         data_array = np.array(data)
         if 'U' in str(data_array.dtype) or \
@@ -87,16 +89,25 @@ def transform_on_open(value):
         value = value.decode()
     if isinstance(value, str) and value.startswith('__json__'):
         return json.loads(value[8:])
-
+    if isinstance(value, str) and value.startswith('__function__'):
+        from . import function_save
+        return function_save.Function(value[12:])
     return value
 
 
 def transform_list_on_save(value):
-    value_np = np.array(value)
-    if 'U' in str(value_np.dtype) or \
-            'object' in str(value_np.dtype):
-        return '__json__' + json.dumps(value)
-    return value_np
+    if isinstance(value, (list, np.ndarray)):
+        value_np = np.array(value)
+        if 'U' in str(value_np.dtype) or \
+                'object' in str(value_np.dtype):
+            return '__json__' + json.dumps(value)
+        return value_np
+
+    if isinstance(value, Callable):
+        from . import function_save
+        return '__function__' + function_save.function_to_str(value)
+
+    return value
 
 
 def save_sub_dict(
@@ -114,9 +125,9 @@ def save_sub_dict(
         for k, v in data.items():
             save_sub_dict(g, v, k, use_compression=use_compression)
     elif (key is not None) and (data is not None):
+        data = transform_list_on_save(data)  # type: ignore
         if isinstance(data, (np.ndarray, list)):
             use_compression = "gzip" if use_compression is True else use_compression
-            data = transform_list_on_save(data)  # type: ignore
             group.create_dataset(key, data=data, compression=use_compression)  # compression="gzip"
         else:
             group.create_dataset(key, data=data)

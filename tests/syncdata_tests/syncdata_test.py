@@ -645,7 +645,7 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
 
         self.assertTrue(np.all(d['t'] == np.array([1, 2, 3])))
 
-    def test_save_str_list(self):
+    def test_save_json_str(self):
         d = self.create_file()
         lst = ['a', 'b', 'c']
         d['t'] = lst
@@ -656,9 +656,9 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
 
         self.assertTrue(d['t'] == lst)
 
-    def test_save_str_obj(self):
+    def test_save_json_dict(self):
         d = self.create_file()
-        lst = ['a', 1, {'b': 2}]
+        lst = ['a', 'b', {'p1': 'c', 'p2': 'd'}]
         d['t'] = lst
 
         self.assertTrue(d['t'] == lst)
@@ -666,6 +666,33 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
         d = self.read_file(d)
 
         self.assertTrue(d['t'] == lst)
+
+    def test_save_json_nested_list(self):
+        d = self.create_file()
+        lst = ['a', 'b', [1, 2, 3]]
+        d['t'] = lst
+
+        self.assertTrue(d['t'] == lst)
+
+        d = self.read_file(d)
+
+        self.assertTrue(d['t'] == lst)
+
+    def test_save_func(self):
+        def abc(a, b=2):
+            return a + b
+        d = self.create_file()
+        d['t'] = abc
+
+        self.assertEqual(d['t'](1), 3)
+        self.assertEqual(d['t'](1, 5), 6)
+        self.assertEqual(d['t'](1, b=3), 4)
+
+        d = self.read_file(d)
+
+        self.assertEqual(d['t'](1), 3)
+        self.assertEqual(d['t'](1, 5), 6)
+        self.assertEqual(d['t'](1, b=3), 4)
 
     def test_init__filepath(self):
         class Test:

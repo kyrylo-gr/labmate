@@ -56,7 +56,7 @@ class AnalysisLoop(SyncData):
 
                 # if not isinstance(value, Iterable) or isinstance(value, (str, bytes)):
                 if not hasattr(value, "__getitem__") or \
-                        isinstance(value, (str, bytes, int, float)):
+                        isinstance(value, (str, bytes, int, float, complex)):
                     child_kwds[key] = value
                 elif len(value) == 1:
                     child_kwds[key] = value[0]

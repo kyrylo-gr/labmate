@@ -30,8 +30,7 @@ class AcquisitionLoopTest(unittest.TestCase):
 
     # @classmethod
     def setUp(self) -> None:
-        """This setUp method runs ones of LoopTest.
-        It creates a dictionary to verify with."""
+        """Create a dictionary to verify with."""
         self.name = "LoopTest"
         self.aqm = AcquisitionManager(DATA_DIR, save_on_edit=True)
         self.aqm.new_acquisition(self.name)
@@ -136,8 +135,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.data_verification()
 
     def test_classical_loop_range(self):
-        """Save and load the simplest list.
-        """
+        """Save and load the simplest list."""
         # Protocol
         self.aqm.aq.loop = loop = AcquisitionLoop()
         self.data = {"freq": []}
@@ -150,8 +148,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.data_verification()
 
     def test_classical_loop_iterator(self):
-        """Save and load the simplest list.
-        """
+        """Save and load the simplest list."""
         def iterator():
             for i in range(10):
                 yield i
@@ -167,7 +164,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.data_verification()
 
     def test_classical_loop_call_nothing(self):
-        """ Raise an exception when no args given to loop"""
+        """Raise an exception when no args given to loop."""
         self.aqm.aq.loop = loop = AcquisitionLoop()
         with self.assertRaises(ValueError):
             loop(iterable=None)
@@ -260,6 +257,34 @@ class AcquisitionLoopTest(unittest.TestCase):
         # Verification
         self.data_verification()
 
+    def test_enum_lst(self):
+        """Test enum on iterable."""
+        # Protocol
+        self.aqm.aq.loop = loop = AcquisitionLoop()
+        self.data = {"freqs": [], "i": []}
+
+        for i, freq in loop.enum(self.freqs):
+            loop.append(i=i**2, freqs=freq)
+            self.data['i'].append(i**2)
+            self.data['freqs'].append(freq)
+
+        # Verification
+        self.data_verification()
+
+    def test_enum_range(self):
+        """Test enum on iterable."""
+        # Protocol
+        self.aqm.aq.loop = loop = AcquisitionLoop()
+        self.data = {"freqs": [], "i": []}
+
+        for i, freq in loop.enum(1, 5, .5):
+            loop.append(i=i**2, freqs=freq)
+            self.data['i'].append(i**2)
+            self.data['freqs'].append(freq)
+
+        # Verification
+        self.data_verification()
+
     def data_verification(self):
         loop_freq = SyncData(self.aqm.current_filepath).get("loop")
         assert loop_freq is not None, "Cannot get LoopData from saved data."
@@ -284,8 +309,7 @@ def compare_np_array(array1: Union[list, np.ndarray],
 
 class AcquisitionLoopWithoutSaveOnEditTest(AcquisitionLoopTest):
     def setUp(self) -> None:
-        """This setUp method runs ones of LoopTest.
-        It creates a dictionary to verify with."""
+        """Create a dictionary to verify with."""
         super().setUp()
         self.aqm = AcquisitionManager(DATA_DIR, save_on_edit=False)
         self.aqm.new_acquisition(self.name)

@@ -146,9 +146,8 @@ class AcquisitionLoop(SyncData):
         return GenerToIter(
             loop_iter(iterable, level=level), length)
 
-    def enum(self, iterable: Iterable, level=None):
-        return enumerate(self.iter(
-            iterable=iterable, level=level))
+    def enum(self, *args, iterable: Optional[Iterable] = None):
+        return enumerate(self(*args, iterable=iterable))  # type: ignore
 
 
 class AcquisitionLoopOld:

@@ -6,7 +6,7 @@ with open("README.md", "r", encoding='utf-8') as fh:
 
 setuptools.setup(
     name='labmate',
-    version="0.6.1",
+    version="0.7.0",
     author="LKB-OMQ",
     author_email="cryo.paris.su@gmail.com",
     description="Data management library to save data and plots to hdf5 files",
@@ -28,6 +28,8 @@ setuptools.setup(
             "matplotlib",
             "pytest",
             "check-manifest",
+            "sphinx",
+            "sphinx_rtd_theme"
         ]
     }
 )
