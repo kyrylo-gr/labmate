@@ -56,6 +56,22 @@ DICT_OR_LIST_LIKE = Optional[Union[dict, list, np.ndarray, ClassWithAsdict, Clas
 RIGHT_DATA_TYPE = Union[dict, np.ndarray, np.int_, np.float_, float, int]
 
 
+def np_array_check(lst, size: Optional[int] = None) -> int:
+    if isinstance(lst, (list, np.ndarray)):
+        if size is not None and size != len(lst):
+            return -1
+        for lst_elm in lst:
+            check = np_array_check(lst_elm, size)
+            if check >= 0:
+                size = check
+            else:
+                return -1
+        return len(lst)
+    if isinstance(lst, (np.number)):
+        return 0
+    return -1
+
+
 def transform_to_possible_formats(data: DICT_OR_LIST_LIKE) -> DICT_OR_LIST_LIKE:
     if hasattr(data, '__should_not_be_converted__') \
             and data.__should_not_be_converted__ is True:  # type: ignore
@@ -76,11 +92,8 @@ def transform_to_possible_formats(data: DICT_OR_LIST_LIKE) -> DICT_OR_LIST_LIKE:
         data = list(data)
 
     if isinstance(data, list):
-        data_array = np.array(data)
-        if 'U' in str(data_array.dtype) or \
-                'object' in str(data_array.dtype):
+        if np_array_check(data) < 0:
             return data
-        return data_array
     return data
 
 
@@ -95,13 +108,19 @@ def transform_on_open(value):
     return value
 
 
-def transform_list_on_save(value):
-    if isinstance(value, (list, np.ndarray)):
-        value_np = np.array(value)
-        if 'U' in str(value_np.dtype) or \
-                'object' in str(value_np.dtype):
-            return '__json__' + json.dumps(value)
-        return value_np
+def transform_list_on_save(value, level=0):
+    if isinstance(value, np.ndarray):
+        if level == 0:
+            return value
+        return value.tolist()
+
+    if isinstance(value, (list)):
+        if np_array_check(value) < 0:
+            try:
+                return '__json__' + json.dumps(value)
+            except TypeError:
+                value_transformed = [transform_list_on_save(v) for v in value]
+                return '__json__' + json.dumps(value_transformed)
 
     if isinstance(value, Callable):
         from . import function_save

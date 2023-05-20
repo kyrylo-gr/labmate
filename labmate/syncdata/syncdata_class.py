@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Optional, Set, TypeVar, Union, overload
+from typing import Any, Dict, Iterable, Literal, Optional, Set, TypeVar, Union, overload
 import logging
 import os
 from pathlib import Path
@@ -62,7 +62,8 @@ class SyncData:
     __should_not_be_converted__ = True
 
     def __init__(self,
-                 filepath_or_data: Optional[Union[str, dict, Path]] = None, /, *,
+                 filepath_or_data: Optional[Union[str, dict, Path]] = None, /,
+                 mode: Optional[Literal['r', 'w', 'a']] = None, *,
                  filepath: Optional[Union[str, Path]] = None,
                  save_on_edit: bool = False,
                  read_only: Optional[Union[bool, Set[str]]] = None,
@@ -86,6 +87,15 @@ class SyncData:
             open_on_init (Optional[bool], optional): open_on_init. Defaults to True.
 
         """
+        if mode == 'w':
+            read_only = False
+            overwrite = True
+        elif mode == 'a':
+            read_only = False
+            overwrite = False
+        elif mode == 'r':
+            read_only = True
+
         if filepath_or_data is not None and hasattr(filepath_or_data, "keys"):
             if not isinstance(filepath_or_data, dict):
                 filepath_or_data = {key: filepath_or_data[key] for key in filepath_or_data.keys()}  # type: ignore
