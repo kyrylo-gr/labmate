@@ -24,12 +24,15 @@ setuptools.setup(
         "h5py",
     ],
     extras_require={
+        "all": [
+            "matplotlib",
+        ],
         "dev": [
             "matplotlib",
             "pytest",
             "check-manifest",
             "sphinx",
-            "sphinx_rtd_theme"
+            "sphinx_rtd_theme",
         ]
     }
 )

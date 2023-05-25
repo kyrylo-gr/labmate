@@ -219,7 +219,7 @@ class AnalysisData(SyncData):
     def parse_config_str(
             self,
             values: List[str],
-            max_length: Optional[int] = None,
+            max_length: Optional[int] = 60,
             config_files: Optional[Tuple[str, ...]] = None
     ) -> str:
         """Parse the configuration files.

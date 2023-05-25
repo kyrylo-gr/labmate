@@ -62,14 +62,16 @@ class ValueForPrint(NamedTuple):
 
 
 def format_title(values: List[ValueForPrint], max_length: Optional[int] = None):
-    max_length = max_length or 60
+    # max_length = max_length or 60
     txt = ""
     last_line_len = 0
     for value in values:
         units = f" ({value.units})" if value.units is not None else ""
         value_str = value.value if value.format is None else value.value.__format__(f".{value.format}")
         new_txt = f"{value.key} = {value_str}{units}"
-        if last_line_len + len(new_txt) < max_length:
+        if not max_length or \
+                ((last_line_len + len(new_txt) < max_length) or
+                 last_line_len == 0):
             txt += ("; " if txt != "" else "") + new_txt
             last_line_len += len(new_txt) + 2
         else:
