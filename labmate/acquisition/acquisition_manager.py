@@ -156,6 +156,34 @@ class AcquisitionManager:
 
         return self.current_acquisition
 
+    def create_acquisition(self,
+                           name: str,
+                           cell: Optional[str] = None,
+                           save_on_edit: Optional[bool] = None
+                           ) -> NotebookAcquisitionData:
+        """Create a new acquisition with the given experiment name."""
+        configs = read_config_files(self.config_files)
+
+        if self.config_files_eval:
+            configs = eval_config_files(configs, self.config_files_eval)
+
+        dic = AcquisitionTmpData(experiment_name=name,
+                                 time_stamp=get_timestamp(),
+                                 configs=configs,
+                                 directory=self.data_directory)
+
+        filepath = self.create_path_from_tmp_data(dic)
+        configs = configs if configs else None
+        save_on_edit = save_on_edit if save_on_edit is not None else self._save_on_edit
+
+        return NotebookAcquisitionData(
+            filepath=str(filepath),
+            configs=configs,
+            cell=cell or self.cell,
+            overwrite=False,
+            save_on_edit=save_on_edit,
+            save_files=self._save_files)
+
     @ property
     def current_acquisition(self) -> NotebookAcquisitionData:
         if self._current_acquisition is None:

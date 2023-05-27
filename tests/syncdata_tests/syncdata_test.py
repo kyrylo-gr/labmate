@@ -690,7 +690,7 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
 
         d = self.read_file(d)
 
-        self.assertEqual(d['t'](1), 3)
+        self.assertEqual(d['t'].eval(1), 3)
         self.assertEqual(d['t'](1, 5), 6)
         self.assertEqual(d['t'](1, b=3), 4)
 

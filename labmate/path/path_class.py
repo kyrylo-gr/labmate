@@ -14,7 +14,7 @@ class Path(type(pathlib.Path())):
     - basename
     """
 
-    def __add__(self, other: str):
+    def __add__(self, other: Union['Path', str]):
         """Sum 2 str."""
         if not isinstance(other, str):
             other = str(other)
@@ -54,6 +54,10 @@ class Path(type(pathlib.Path())):
     @property
     def basename(self) -> 'Path':
         return type(self)(os.path.basename(self))
+
+    @property
+    def str(self) -> str:
+        return str(self)
 
 
 def get_file_path(file_name: Union[str, Path], *,

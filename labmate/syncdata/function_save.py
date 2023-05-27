@@ -1,4 +1,5 @@
 import inspect
+from typing import Any
 
 
 class Function:
@@ -23,12 +24,19 @@ class Function:
             print(f"Function {self.original_name} cannot be loaded.")
         self.func = locals().get('current_func', None)  # type: ignore
 
-    def __call__(self, *args, **kwargs):
+    def eval(self, *args, **kwds):
         if self.func is None:
             self.def_func()
         if self.func is None:
             raise ValueError(f"Cannot call run a function defined by:\n{self.code}")
-        return self.func(*args, **kwargs)  # type: ignore
+        return self.func(*args, **kwds)  # type: ignore
+
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        if self.func is None:
+            raise TypeError(
+                "Function was never evaluated. "
+                "On the first run use the eval(...) method instead.")
+        return self.func(*args, **kwds)  # type: ignore
 
 
 def function_to_str(func):

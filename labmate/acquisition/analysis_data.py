@@ -6,7 +6,7 @@ from typing import List, Literal, Optional, Protocol, Tuple, Union
 from .analysis_loop import AnalysisLoop
 
 from ..syncdata import SyncData
-from ..attrdict import AttrDict
+from .config_file import ConfigFile
 from ..path import Path
 from .. import utils
 
@@ -171,7 +171,7 @@ class AnalysisData(SyncData):
     def parse_config(
             self,
             config_files: Optional[Tuple[str, ...]] = None
-    ) -> AttrDict:
+    ) -> ConfigFile:
         # if isinstance(config_files, str):
         #     logging.warning("""Function `parse_config` changed its behavior.
         #                     Old parse_config function now calls `parse_config_file`.""")
@@ -185,11 +185,16 @@ class AnalysisData(SyncData):
             return self._parsed_configs[hash(config_files)]
 
         config_data = sum(
-            (self.parse_config_file(config_file) for config_file in config_files), AttrDict())
+            (self.parse_config_file(config_file) for config_file in config_files),
+            ConfigFile())
 
         self._parsed_configs[hash(config_files)] = config_data
 
         return config_data
+
+    @property
+    def cfg(self) -> 'ConfigFile':
+        return self.parse_config()
 
     def parse_config_values(
             self,
@@ -198,6 +203,8 @@ class AnalysisData(SyncData):
     ) -> List[utils.parse.ValueForPrint]:
 
         config_data = self.parse_config(config_files=config_files)
+        if not isinstance(keys, (list, tuple)):
+            raise ValueError("Keys must be a list of strings.")
         keys_with_values = []
         for key in keys:
             key_value, key_units, key_format = utils.parse.parse_get_format(key)
@@ -229,7 +236,7 @@ class AnalysisData(SyncData):
         keys_with_values = self.parse_config_values(values, config_files=config_files)
         return utils.parse.format_title(keys_with_values, max_length=max_length)
 
-    def parse_config_file(self, config_file_name: str, /) -> AttrDict:
+    def parse_config_file(self, config_file_name: str, /) -> ConfigFile:
         if config_file_name in self._parsed_configs:
             return self._parsed_configs[config_file_name]
 
@@ -255,7 +262,8 @@ class AnalysisData(SyncData):
             original_config_name = None
 
         from ..utils.parse import parse_str
-        config_data = AttrDict(parse_str(self['configs'][config_file_name]))
+        file_content = self['configs'][config_file_name]
+        config_data = ConfigFile(parse_str(file_content), file_content)
         self._parsed_configs[config_file_name] = config_data
         if original_config_name is not None:
             self._parsed_configs[original_config_name] = config_data

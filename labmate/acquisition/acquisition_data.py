@@ -79,6 +79,13 @@ class NotebookAcquisitionData(SyncData):
         self.save_cell()
         self.save_configs()
 
+    def save_acquisition(self, **kwds) -> 'NotebookAcquisitionData':
+        self.update(**kwds)
+        self.save_additional_info()
+        if self.save_on_edit is False:
+            self.save()
+        return self
+
 
 def read_config_files(config_files: List[str]) -> Dict[str, str]:
     configs: Dict[str, str] = {}

@@ -506,6 +506,13 @@ class SyncData:
         self._filepath = value if value.endswith('.h5') else value + '.h5'
 
     @property
+    def filename(self) -> Optional[str]:
+        filepath = self.filepath
+        if filepath is None:
+            return None
+        return os.path.basename(filepath)
+
+    @property
     def save_on_edit(self):
         return self._save_on_edit
 

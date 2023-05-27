@@ -6,7 +6,7 @@ from ..acquisition import AcquisitionManager, AnalysisData
 from .. import utils
 if TYPE_CHECKING:
     from ..acquisition import FigureProtocol
-    from ..attrdict import AttrDict
+    from ..acquisition.config_file import ConfigFile
     from ..path import Path
 
 # from ..syncdata import SyncData
@@ -187,8 +187,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def __setitem__(self, __key: str, __value: Any) -> None:
         if self._analysis_data is not None:
             raise ValueError(
-                "This is the way to save acquisition data. But analysis data was loaded."
-                "So you possibly run it inside analysis_cell")
+                "This is the way to save acquisition data. But analysis data was loaded. "
+                "So you possibly run it outside of acquisition_cell")
         acq_data = self.current_acquisition
         if acq_data is None:
             raise ValueError(
@@ -200,30 +200,36 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         acquisition_finished = time.time()
         kwds.update({"info": {"acquisition_duration": acquisition_finished-self._acquisition_started}})
         super().save_acquisition(**kwds)
-        self.load_analysis_data()
+        self._load_analysis_data()
         return self
 
-    def load_analysis_data(self, filepath: Optional[str] = None):
+    def _load_analysis_data(self, filepath: Optional[str] = None):
         filepath = filepath or str(self.current_filepath)
 
-        if not os.path.exists(filepath if filepath.endswith('.h5') else filepath + '.h5'):
-            raise ValueError(
-                f"Cannot load data from {filepath}. As file does not exist.")
-
-        self._analysis_data = AnalysisData(
-            filepath=filepath,
-            save_files=self._save_files, save_on_edit=self._save_on_edit_analysis,
-            save_fig_inside_h5=self._save_fig_inside_h5)
-
-        self._analysis_data.unlock_data('useful').update(**{'useful': True}).lock_data('useful')
+        self._analysis_data = self.load_file(filepath)
 
         if self._save_on_edit_analysis is False:
             self._analysis_data.save()
 
-        if self._default_config_files:
-            self._analysis_data.set_default_config_files(self._default_config_files)
-
         return self._analysis_data
+
+    def load_file(self, filename) -> 'AnalysisData':
+        filename = self.get_full_filename(str(filename))
+        if not os.path.exists(filename if filename.endswith('.h5') else filename + '.h5'):
+            raise ValueError(f"File {filename} cannot be found")
+
+        data = AnalysisData(
+            filepath=filename,
+            save_files=self._save_files, save_on_edit=self._save_on_edit_analysis,
+            save_fig_inside_h5=self._save_fig_inside_h5)
+
+        if not data.get('useful', True):
+            data.unlock_data('useful').update(**{'useful': True}).lock_data('useful')
+
+        if self._default_config_files:
+            data.set_default_config_files(self._default_config_files)
+
+        return data
 
     def acquisition_cell(
             self,
@@ -298,7 +304,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                     "Check if everything is ok and executive again")
 
         if os.path.exists(filename + '.h5'):
-            self.load_analysis_data(filename)
+            self._load_analysis_data(filename)
         else:
             if self._is_old_data:
                 raise ValueError(f"Cannot load data from {filename}")
@@ -342,16 +348,16 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             return os.path.join(self.data_directory, suffix, filename)
         return filename
 
-    def parse_config_file(self, config_file_name: str, /) -> 'AttrDict':
+    def parse_config_file(self, config_file_name: str, /) -> 'ConfigFile':
         return self.data.parse_config_file(config_file_name)
 
     def parse_config(
             self,
-            config_files: Optional[Tuple[str, ...]] = None) -> 'AttrDict':
+            config_files: Optional[Tuple[str, ...]] = None) -> 'ConfigFile':
         return self.data.parse_config(config_files=(config_files or self._default_config_files))
 
     @property
-    def cfg(self) -> 'AttrDict':
+    def cfg(self) -> 'ConfigFile':
         return self.parse_config()
 
     def parse_config_str(
