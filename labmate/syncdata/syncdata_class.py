@@ -255,25 +255,25 @@ class SyncData:
             return self
 
     @overload
-    def get_dict(self, __key: str) -> Optional[Any]:
+    def get_dict(self, __key: str) -> Any:
         """Return element as a dict. Return None if not found."""
 
     @overload
     def get_dict(self, __key: str, __default: _T) -> Union[Any, _T]:
         """With default value provided."""
 
-    def get_dict(self, key: str, default: Optional[Any] = None):
+    def get_dict(self, key: str, default: Any = None):
         return self.__get_data__(key, default)
 
     @overload
-    def get(self, __key: str) -> Optional[Any]:
+    def get(self, __key: str) -> Any:
         """Return element as a SyncData class if it's dict. Return None if not found."""
 
     @overload
     def get(self, __key: str, __default: _T) -> Union[Any, _T]:
         """With default value provided."""
 
-    def get(self, key: str, default: Optional[Any] = None):
+    def get(self, key: str, default: Any = None):
         data = self.__get_data__(key, default)
         if isinstance(data, dict) and data:
             return SyncData(filepath=self._filepath, data=data, key_prefix=key)
@@ -348,7 +348,7 @@ class SyncData:
     def __get_data__(self, __key: str, __default: _T) -> Union[Any, _T]:
         """Return default value if the data doesn't contain key."""
 
-    def __get_data__(self, __key: str, __default: Optional[Any] = None):
+    def __get_data__(self, __key: str, __default: Any = None):
         if __key in self._unopened_keys:
             self._load_from_h5(key=__key)
         data = self._data.get(__key, __default)
@@ -424,7 +424,12 @@ class SyncData:
     def __dir__(self) -> Iterable[str]:
         return list(self._keys) + self._default_attr
 
-    def save(self, just_update: Union[bool, Iterable[str]] = False, filepath: Optional[str] = None):
+    def save(self,
+             just_update: Union[bool, Iterable[str]] = False,
+             filepath: Optional[str] = None,
+             force: Optional[bool] = None):
+        if just_update is False and force is True:
+            just_update = False
         # print(f"saving globally with {just_update=}")
         if self._read_only is True:
             raise ValueError("Cannot save opened in a read-only mode. Should reopen the file")

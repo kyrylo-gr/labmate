@@ -60,10 +60,10 @@ class AnalysisData(SyncData):
 
         self._save_files = save_files
 
-        if save_fig_inside_h5 is True:
-            raise NotImplementedError(
-                """We stop using pickle as it's not consistent between systems.
-                before the better solution found this functionality is deprecated.""")
+        # if save_fig_inside_h5 is True:
+        #     raise NotImplementedError(
+        #         """We stop using pickle as it's not consistent between systems.
+        #         before the better solution found this functionality is deprecated.""")
         self._save_fig_inside_h5 = save_fig_inside_h5
 
         self._default_config_files: Tuple[str, ...] = tuple()
@@ -124,25 +124,25 @@ class AnalysisData(SyncData):
 
         fig_name = self.get_fig_name(name)
         full_fig_name = f'{self.filepath}_{fig_name}'
-
-        if fig is not None:
-            # if self._save_fig_inside_h5 and kwargs.get("pickle", True):
-            #     try:
-            #         import pickle
-            #         import codecs
-            #         pickled = codecs.encode(pickle.dumps(fig), "base64").decode()
-            #         self[f"figures/{fig_name}"] = pickled
-            #         self.save([f"figures/{fig_name}"])
-            #     except Exception as error:
-            #         logger.warning("Failed to pickle the figure due to %s", error)
-            if tight_layout and hasattr(fig, "tight_layout"):
-                fig.tight_layout()  # type: ignore
-            fig.savefig(full_fig_name, **kwargs)
-        else:
+        if fig is None:
             from matplotlib import pyplot as plt
-            if tight_layout:
-                plt.tight_layout()
-            plt.savefig(full_fig_name, **kwargs)
+            fig = plt.gcf()
+
+        if (self._save_fig_inside_h5 and kwargs.get("inside_h5", True)) or \
+                kwargs.get("inside_h5", False):
+            try:
+                # import pickle
+                # import codecs
+                # pickled = codecs.encode(pickle.dumps(fig), "base64").decode()
+                import pltsave
+                data = pltsave.dumps(fig).to_json()
+                self[f"figures/{fig_name}"] = data
+                self.save([f"figures/{fig_name}"])
+            except Exception as error:
+                logger.exception("Failed to save the figure inside h5 file due to %s", error)
+        if tight_layout and hasattr(fig, "tight_layout"):
+            fig.tight_layout()  # type: ignore
+        fig.savefig(full_fig_name, **kwargs)
 
         self._figure_saved = True
 
@@ -287,7 +287,7 @@ class AnalysisData(SyncData):
         # if isinstance(code, bytes):
         #     code = code.decode()
         if name not in code:
-            raise KeyError(f"Cannot get cell '{name}'. Possible cells are: {tuple(code.key())}")
+            raise KeyError(f"Cannot get cell '{name}'. Possible cells are: {tuple(code.keys())}")
 
         code_str: str = code[name]
         if update_code:
@@ -295,8 +295,17 @@ class AnalysisData(SyncData):
         return code_str
 
     def open_figs(self) -> list:
-        raise NotImplementedError(
-            "Not implemented for the moment. If you want to open an old figure. Use open_old_figs function")
+        figures = []
+
+        for figure_key in self.get("figures", []):
+            import pltsave
+            figure_code = self['figures'][figure_key]
+            figure = pltsave.loads(figure_code)
+            figures.append(figure)
+        return figures
+
+        # raise NotImplementedError(
+        # "Not implemented for the moment. If you want to open an old figure. Use open_old_figs function")
 
     def open_old_figs(self) -> list:
         figures = []

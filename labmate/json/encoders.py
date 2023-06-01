@@ -6,5 +6,5 @@ class StringEncoder(json.JSONEncoder):
 
     def default(self, o):
         if hasattr(o, "__iter__"):
-            return list(iter(o))
+            return [self.default(obj) for obj in iter(o)]
         return str(o)

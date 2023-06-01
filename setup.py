@@ -26,6 +26,7 @@ setuptools.setup(
     extras_require={
         "all": [
             "matplotlib",
+            "pltsave"
         ],
         "dev": [
             "matplotlib",
