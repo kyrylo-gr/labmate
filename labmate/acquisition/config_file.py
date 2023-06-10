@@ -16,3 +16,9 @@ class ConfigFile(attrdict.AttrDict):
         cc = compile(self.content, '<string>', 'exec')
         eval(cc, module.__dict__)  # pylint: disable=W0123
         return module
+
+    def eval_key(self, key):
+        val = self.get(key)
+        if val:
+            return eval(val)  # pylint: disable=W0123
+        return None

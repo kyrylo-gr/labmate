@@ -1,14 +1,38 @@
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 
+class BracketsScore:
+    def __init__(self) -> None:
+        self.round = 0
+        self.curly = 0
+        self.square = 0
+
+    def is_zero(self):
+        return self.round == 0 and self.curly == 0 and self.square == 0
+
+    def update_from_str(self, text: str):
+        self.round += text.count('(') - text.count(')')
+        self.curly += text.count('{') - text.count('}')
+        self.square += text.count('[') - text.count(']')
+
+
 def parse_str(file: str, /) -> Dict[str, Union[str, int, float]]:
     """Parse strings.
     Return a dictionary of int or float if conversion is possible otherwise str"""
     parsed_values = {}
+    brackets = BracketsScore()
+    param, value = "", ""
     for line in file.split('\n'):
-        if len(line) == 0 or not line[0].isalpha() or '=' not in line:
+        if not brackets.is_zero():
+            value += f"{line.split('#')[0].strip()}\n"  # type: ignore
+        elif len(line) == 0 or not line[0].isalpha() or '=' not in line:
             continue
-        param, value = line.split('=')[:2]
+        else:
+            param, value = line.split('=')[:2]
+
+        brackets.update_from_str(line)
+        if not brackets.is_zero():
+            continue
 
         if "# value: " in value:
             value = value[value.find("# value: ") + 9:]

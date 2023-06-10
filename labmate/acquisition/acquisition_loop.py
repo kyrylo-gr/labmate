@@ -279,7 +279,7 @@ class AcquisitionLoopOld:
                 # print(key, expected_len, len(data_flatten))
                 data_flatten = data_flatten[-expected_len:]
 
-            data_reshape[key] = np.pad(data_flatten, (0, expected_len-len(data_flatten))).reshape(
+            data_reshape[key] = np.pad(data_flatten, (0, expected_len-len(data_flatten))).reshape(  # type: ignore
                 self._reshape_tuple(key))
         return data_reshape
 

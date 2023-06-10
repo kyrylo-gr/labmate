@@ -89,7 +89,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         """
         if shell is False or shell is True:  # behavior by default shell
             try:
-                from IPython import get_ipython
+                from IPython.core.getipython import get_ipython
                 self.shell = get_ipython()
             except ImportError:
                 self.shell = None
@@ -273,7 +273,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                     html = """<div style="
                     background-color:#ec7413; padding: .5em; text-align:center"
                     >Old data analysis</div>"""
-                    display.display(display.HTML(str(html)))
+                    display.display(display.HTML(str(html)))  # type: ignore
                 except ImportError:
                     logger.warning("Old data analysis")
             filename = str(filepath or self.get_full_filename(str(filename)))  # type: ignore
