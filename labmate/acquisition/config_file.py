@@ -1,3 +1,4 @@
+from typing import Any
 from .. import attrdict
 
 
@@ -17,8 +18,8 @@ class ConfigFile(attrdict.AttrDict):
         eval(cc, module.__dict__)  # pylint: disable=W0123
         return module
 
-    def eval_key(self, key):
+    def eval_key(self, key) -> Any:
         val = self.get(key)
-        if val:
-            return eval(val)  # pylint: disable=W0123
+        if val and val.value:
+            return eval(val.value)  # pylint: disable=W0123
         return None

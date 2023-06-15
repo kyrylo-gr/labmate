@@ -7,7 +7,7 @@ def get_timestamp() -> str:
     return x.strftime("%Y_%m_%d__%H_%M_%S")
 
 
-def lstrip_int(line: str) -> Optional[Tuple[str, str]]:
+def lstrip_int(line: str) -> Optional[Tuple[str, str, str]]:
     """Find whether timestamp ends.
     Returns timestamp and rest of the line, if possible.
     """
@@ -15,15 +15,24 @@ def lstrip_int(line: str) -> Optional[Tuple[str, str]]:
 
     import re
 
-    suffix = re.search("_[A-Za-z]", line)
-    if suffix is None:
+    main = re.search("_[A-Za-z]", line)
+    if main is None:
         return None
-    prefix, suffix = line[:suffix.start()], line[suffix.start()+1:]
+    prefix, main = line[:main.start()], line[main.start()+1:]
+    if '__' in main:
+        suffix_index = main.rfind('__')
+        suffix = main[suffix_index+2:]
+        if suffix.isdecimal():
+            main = main[:suffix_index]
+        else:
+            suffix = ''
+    else:
+        suffix = ''
 
     if not prefix.replace('_', '').replace('-', '').isdigit():
         return None
 
-    return prefix, suffix
+    return prefix, main, suffix
 
 
 def get_var_name_from_def():

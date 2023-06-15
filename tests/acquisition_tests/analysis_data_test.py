@@ -114,57 +114,13 @@ class AnalysisDataParceTest(unittest.TestCase):
     experiment_name = "abc"
 
     def setUp(self):
-        self.config = (os.path.join(TEST_DIR, "data/config.txt"))
+        self.config = (os.path.join(TEST_DIR, "data/config.txt",),
+                       os.path.join(TEST_DIR, "data/imported_config.py",))
         self.aqm = AcquisitionManager(DATA_DIR)
         self.aqm.set_config_file(self.config)
         self.aqm.new_acquisition(self.experiment_name)
         self.aqm.aq.update(x=[1, 2, 3], y=[[1, 2], [3, 4], [4, 5]])
         self.ad = AnalysisData(self.aqm.current_filepath, cell=self.analysis_cell)
-
-    def test_parse_file(self):
-        """This is no an obvious way to save config files."""
-        self.aqm = AcquisitionManager(DATA_DIR)
-        self.aqm.new_acquisition(self.experiment_name)
-        self.aqm.aq['configs'] = read_config_files([self.config])
-
-        self.ad = AnalysisData(self.aqm.current_filepath)
-        # print(self.ad.parse_config("config.txt"))
-        self.compare_config()
-
-    def test_parse_file_error_name(self):
-        """Error if the name of the config file is wrong."""
-        with self.assertRaises(ValueError):
-            self.ad.parse_config_file("abc")
-
-    def test_parse_file_error_file(self):
-        """Error when there is no config file."""
-        self.aqm = AcquisitionManager(DATA_DIR)
-        self.aqm.new_acquisition(self.experiment_name+"2")
-
-        self.ad = AnalysisData(self.aqm.current_filepath)
-
-        with self.assertRaises((ValueError, KeyError)):
-            self.ad.parse_config_file("abc")
-
-    def test_parse_file_pushing_from_begging(self):
-        """This right way to save configuration files.
-        They should be set before creating a new acquisition."""
-        # print(self.ad.parse_config("config.txt"))
-        self.compare_config()
-
-    def test_parse_file_pushing_from_begging_small_name(self):
-        """Name of the config file no full but begging is right."""
-        self.compare_config("conf")
-
-    def test_parse_file_the_same_name(self):
-        """Name of the config file no full but begging is right."""
-        self.compare_config("config.txt")
-        self.compare_config("config.txt")
-
-    def test_parse_file_with_second_short_name(self):
-        """Name of the config file no full but begging is right."""
-        self.compare_config("config.txt")
-        self.compare_config("conf")
 
     def compare_config(self, file="config.txt", data=None):
         # self.ad = AnalysisData(self.aqm.current_filepath)
@@ -187,6 +143,50 @@ class AnalysisDataParceTest(unittest.TestCase):
         self.assertEqual(data['int_with_comment'], 123)
         self.assertFalse('commented_value' in data)
         self.assertFalse('tab_variable' in data)
+
+    def test_parse_file(self):
+        """This is no an obvious way to save config files."""
+        self.aqm = AcquisitionManager(DATA_DIR)
+        self.aqm.new_acquisition(self.experiment_name)
+        self.aqm.aq['configs'] = read_config_files([self.config[0]])
+
+        self.ad = AnalysisData(self.aqm.current_filepath)
+        # print(self.ad.parse_config("config.txt"))
+        self.compare_config()
+
+    def test_parse_file_error_name(self):
+        """Error if the name of the config file is wrong."""
+        with self.assertRaises(ValueError):
+            self.ad.parse_config_file("abc")
+
+    def test_parse_file_error_file(self):
+        """Error when there are no config files."""
+        self.aqm = AcquisitionManager(DATA_DIR)
+        self.aqm.new_acquisition(self.experiment_name+"2")
+
+        self.ad = AnalysisData(self.aqm.current_filepath)
+
+        with self.assertRaises((ValueError, KeyError)):
+            self.ad.parse_config_file("abc")
+
+    def test_parse_file_pushing_from_begging(self):
+        """This right way to save configuration files.
+        They should be set before creating a new acquisition."""
+        self.compare_config()
+
+    def test_parse_file_pushing_from_begging_small_name(self):
+        """Name of the config file no full but begging is right."""
+        self.compare_config("conf")
+
+    def test_parse_file_the_same_name(self):
+        """Name of the config file no full but begging is right."""
+        self.compare_config("config.txt")
+        self.compare_config("config.txt")
+
+    def test_parse_file_with_second_short_name(self):
+        """Name of the config file no full but begging is right."""
+        self.compare_config("config.txt")
+        self.compare_config("conf")
 
     def test_parse_config(self):
         """This right way to save configuration files.
@@ -235,6 +235,27 @@ class AnalysisDataParceTest(unittest.TestCase):
 
         self.assertIn("in_self_data", data)
         self.assertIn("789", data)
+
+    def test_eval_key(self):
+        cfg = self.ad.parse_config_file('imported_config.py')
+
+        self.assertDictEqual(
+            cfg.eval_key('param_dict'),
+            {'1': "123", '2': "456"})
+
+    def test_eval_as_module(self):
+        cfg = self.ad.parse_config_file('imported_config.py')
+        self.assertEqual(cfg['param_int'], 1)
+        self.assertEqual(cfg['param_float'], 2.5)
+        self.assertEqual(cfg['param_float_link'], 'param_float')
+        cfg_module = cfg.eval_as_module()
+
+        self.assertEqual(cfg_module.param_int, 1)
+        self.assertEqual(cfg_module.param_float, 2.5)
+        self.assertEqual(cfg_module.param_float_link, 2.5)
+
+        self.assertDictEqual(cfg_module.param_dict,
+                             {'1': "123", '2': "456"})
 
     def test_parse_config_str_filename(self):
         """This right way to save configuration files.

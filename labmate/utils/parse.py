@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import Any, Dict, List, NamedTuple, \
+    Optional, Tuple, Union
 
 
 class BracketsScore:
@@ -16,8 +17,86 @@ class BracketsScore:
         self.square += text.count('[') - text.count(']')
 
 
-def parse_str(file: str, /) -> Dict[str, Union[str, int, float]]:
+class ParsedValue(NamedTuple):
+    original: Union[str, int, float]
+    value: Union[str, int, float]
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __format__(self, __format_spec: str) -> str:
+        return self.value.__format__(__format_spec)
+
+    def __eq__(self, __value: object) -> bool:
+        return self.value.__eq__(__value)
+
+    def __abs__(self) -> float:
+        return self.value.__abs__()  # type: ignore
+
+    def __add__(self, other):
+        return self.value.__add__(other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        return self.value.__sub__(other)  # type: ignore
+
+    def __rsub__(self, other):
+        return self.__sub__(other)
+
+    def __mul__(self, other):
+        return self.value.__mul__(other)
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __truediv__(self, other):
+        return self.value.__truediv__(other)  # type: ignore
+
+    def __lt__(self, other):
+        return self.value.__lt__(other)
+
+    def __gt__(self, other):
+        return self.value.__gt__(other)
+
+    def __le__(self, other):
+        return self.value.__le__(other)
+
+    def __ge__(self, other):
+        return self.value.__ge__(other)
+
+    def __ne__(self, other):
+        return self.value.__ne__(other)
+
+
+def parse_value(value: str) -> Union[str, int, float]:
+    """Convert str to int or float if possible."""
+    if not isinstance(value, str):
+        return value
+
+    value_without_underscores = value.replace("_", "")
+    try:
+        if len(value_without_underscores) == 0:
+            pass
+        elif value_without_underscores.isdigit() or \
+                (value_without_underscores[0] == '-' and value[1:].isdigit()):
+            return int(value)
+        elif value_without_underscores.replace('.', '').isdigit() or \
+                (value[0] == '-' and value_without_underscores[1:].replace('.', '').isdigit()):
+            return float(value)
+        elif (value[0].isdigit() or (value[0] == "-" and value[1].isdigit())) \
+                and value[-1].isdigit() and 'e' in value:
+            return float(value)
+    except ValueError:
+        pass
+
+    return value
+
+
+def parse_str(file: str, /) -> Dict[str, ParsedValue]:
     """Parse strings.
+
     Return a dictionary of int or float if conversion is possible otherwise str"""
     parsed_values = {}
     brackets = BracketsScore()
@@ -35,33 +114,24 @@ def parse_str(file: str, /) -> Dict[str, Union[str, int, float]]:
             continue
 
         if "# value: " in value:
-            value = value[value.find("# value: ") + 9:]
+            value_eval = value[value.rfind("# value: ") + 9:]
+            value_eval = parse_value(value_eval)
+        else:
+            value_eval = None
 
-        value = value.split('#')[0].strip()
-        value_without_underscores = value.replace("_", "")
+        value = parse_value(value.split('#')[0].strip())
 
-        try:
-            if len(value_without_underscores) == 0:
-                pass
-            elif value_without_underscores.isdigit() or \
-                    (value_without_underscores[0] == '-' and value[1:].isdigit()):
-                value = int(value)
-            elif value_without_underscores.replace('.', '').isdigit() or \
-                    (value[0] == '-' and value_without_underscores[1:].replace('.', '').isdigit()):
-                value = float(value)
-            elif (value[0].isdigit() or (value[0] == "-" and value[1].isdigit())) \
-                    and value[-1].isdigit() and 'e' in value:
-                value = float(value)
-        except ValueError:
-            pass
+        if value_eval is None:
+            value_eval = value
 
-        parsed_values[param.strip()] = value
+        parsed_values[param.strip()] = ParsedValue(value, value_eval)
 
     return parsed_values
 
 
 def parse_get_format(key: str) -> Tuple[str, Optional[str], Optional[str]]:
     """Convert a key into a key, units, format.
+
     Example:
         speed__km/s__2f -> (speed, km/s, 2f)
         speed -> (speed, None, None)

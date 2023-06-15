@@ -751,7 +751,9 @@ class AcquisitionAnalysisManagerParceTest(AnalysisDataParceTest):
             save_on_edit=True,
             shell=shell)  # type: ignore
 
-        self.config = (os.path.join(TEST_DIR, "data/config.txt"))
+        # self.config = (os.path.join(TEST_DIR, "data/config.txt"))
+        self.config = (os.path.join(TEST_DIR, "data/config.txt",),
+                       os.path.join(TEST_DIR, "data/imported_config.py",))
         self.aqm.set_config_file(self.config)
         self.aqm.new_acquisition(self.experiment_name)
         self.aqm.aq.update(x=[1, 2, 3], y=[[1, 2], [3, 4], [4, 5]])
@@ -807,6 +809,110 @@ class LocalFig:
     def savefig(self, fname, **kwds):
         del fname, kwds
         self.fig_saved = True
+
+
+class LoadCreateIndependentFilesTest(unittest.TestCase):
+    """Test load_file, create_acquisition.."""
+
+    cell_text = "this is a analysis cell"
+    experiment_name = "abc"
+
+    x, y = [1, 2, 3], [4, 5, 6]
+
+    def setUp(self):
+        shell = ShellEmulator(self.cell_text)
+        self.aqm = AcquisitionAnalysisManager(
+            DATA_DIR, use_magic=False, save_files=False,
+            save_on_edit=True,
+            shell=shell)  # type: ignore
+
+    def check_xy_values(self, file=None):
+        if file is None:
+            file = self.aqm.aq.filepath
+        sd = SyncData(file)
+        self.check_2_list(sd['x'], self.x)
+        self.check_2_list(sd['y'], self.y)
+
+    def check_2_list(self, lst1, lst2):
+        self.assertEqual(len(lst1), len(lst2))
+        for v1, v2 in zip(lst1, lst2):
+            self.assertEqual(v1, v2)
+
+    def create_acquisition_cell(self):
+        self.aqm.acquisition_cell(self.experiment_name)
+
+    def create_analysis_cell(self):
+        self.aqm.analysis_cell()
+
+    def test_create_acquisition_with_name(self):
+        self.create_acquisition_cell()
+        aq = self.aqm.create_acquisition('test_item')
+        aq['x'], aq['y'] = self.x, self.y
+        self.check_xy_values(aq.filepath)
+
+    def test_create_acquisition_without_name(self):
+        self.create_acquisition_cell()
+        aq = self.aqm.create_acquisition()
+        aq['x'], aq['y'] = self.x, self.y
+        self.check_xy_values(aq.filepath)
+
+    def test_load_file_by_filename(self):
+        self.create_acquisition_cell()
+        aq = self.aqm.create_acquisition()
+        aq['x'], aq['y'] = self.x, self.y
+
+        data = self.aqm.load_file(aq.filename)
+        self.check_2_list(data['x'], self.x)
+        self.check_2_list(data['y'], self.y)
+
+    def test_load_file_by_filepath(self):
+        self.create_acquisition_cell()
+        aq = self.aqm.create_acquisition()
+        aq['x'], aq['y'] = self.x, self.y
+
+        data = self.aqm.load_file(aq.filepath)
+        self.check_2_list(data['x'], self.x)
+        self.check_2_list(data['y'], self.y)
+
+    def test_for_loop(self):
+        self.create_acquisition_cell()
+        files = []
+        for i in range(5):
+            aq = self.aqm.create_acquisition('list_item')
+            aq.save_acquisition(
+                x=self.x, y=self.y, i=i,
+                parent=self.aqm.current_filepath.str)  # optional, but good to keep a trace of the files
+
+            files.append(aq.filepath)
+            self.aqm['files'] = files
+
+        self.create_analysis_cell()
+        for i, file in enumerate(self.aqm.data.files):
+            data = self.aqm.load_file(file)
+            self.check_2_list(data['x'], self.x)
+            self.check_2_list(data['y'], self.y)
+            self.assertEqual(data['i'], i)
+
+    def test_for_loop_without_name(self):
+        self.create_acquisition_cell()
+        files = []
+        for i in range(5):
+            aq = self.aqm.create_acquisition()
+            aq.save_acquisition(
+                x=self.x, y=self.y, i=i,
+                parent=self.aqm.current_filepath.str)  # optional, but good to keep a trace of the files
+
+            files.append(aq.filepath)
+            self.aqm['files'] = files
+
+        self.aqm.save_acquisition()
+
+        self.create_analysis_cell()
+        for i, file in enumerate(self.aqm.data.files):
+            data = self.aqm.load_file(file)
+            self.check_2_list(data['x'], self.x)
+            self.check_2_list(data['y'], self.y)
+            self.assertEqual(data['i'], i)
 
 
 class FunctionToRun():

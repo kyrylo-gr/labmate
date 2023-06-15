@@ -343,6 +343,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         filename = (filename.rsplit('.h5', 1)[0]) if filename.endswith('.h5') else filename
 
         name_with_prefix = utils.lstrip_int(filename)
+
         if name_with_prefix:
             suffix = name_with_prefix[1]
             return os.path.join(self.data_directory, suffix, filename)

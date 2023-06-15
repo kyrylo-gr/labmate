@@ -1,6 +1,6 @@
 import os
 
-from typing import Dict, List, NamedTuple, Optional, Union
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 from ..path import Path
 
 from .acquisition_data import NotebookAcquisitionData, read_config_files, read_file, eval_config_files
@@ -89,7 +89,9 @@ class AcquisitionManager:
     def __setitem__(self, __key: str, __value) -> None:
         self.aq[__key] = __value
 
-    def set_config_file(self, filename: Union[str, List[str]]) -> 'AcquisitionManager':
+    def set_config_file(self,
+                        filename: Union[str, List[str], Tuple[str, ...]]
+                        ) -> 'AcquisitionManager':
         """Set self.config_file to filename. Verify if exists.
         Only set config file for future acquisition and will not change current acquisition"""
         if isinstance(filename, str):
@@ -116,7 +118,9 @@ class AcquisitionManager:
         if init:
             self._init_code = init
 
-    def create_path_from_tmp_data(self, dic: AcquisitionTmpData) -> 'Path':
+    def create_path_from_tmp_data(self,
+                                  dic: AcquisitionTmpData,
+                                  ignore_existence: bool = False) -> 'Path':
         data_directory = dic.directory or self.data_directory
         experiment_path = (Path(data_directory)/str(dic.experiment_name))
         if not experiment_path.exists():
@@ -124,7 +128,16 @@ class AcquisitionManager:
         if self._init_code and not os.path.exists(experiment_path/"init_analyse.py"):
             with open(experiment_path/"init_analyse.py", "w", encoding="utf-8") as file:
                 file.write(self._init_code)
-        return experiment_path/f'{dic.time_stamp}__{dic.experiment_name}'
+        filepath_original = filepath = experiment_path/f'{dic.time_stamp}__{dic.experiment_name}'
+        if ignore_existence:
+            return filepath
+
+        index = 0
+        while os.path.exists(filepath+'.h5'):
+            filepath = filepath_original + f'__{index}'
+            index += 1
+
+        return filepath
 
     @ staticmethod
     def get_temp_data(path: Path) -> Optional[AcquisitionTmpData]:
@@ -157,7 +170,7 @@ class AcquisitionManager:
         return self.current_acquisition
 
     def create_acquisition(self,
-                           name: str,
+                           name: Optional[str] = None,
                            cell: Optional[str] = None,
                            save_on_edit: Optional[bool] = None
                            ) -> NotebookAcquisitionData:
@@ -166,6 +179,9 @@ class AcquisitionManager:
 
         if self.config_files_eval:
             configs = eval_config_files(configs, self.config_files_eval)
+
+        if name is None:
+            name = self.current_experiment_name + '_item'
 
         dic = AcquisitionTmpData(experiment_name=name,
                                  time_stamp=get_timestamp(),
@@ -209,7 +225,8 @@ class AcquisitionManager:
                         replace: Optional[bool] = False,
                         save_on_edit: Optional[bool] = None) -> NotebookAcquisitionData:
         acquisition_tmp_data = self.acquisition_tmp_data
-        filepath = self.create_path_from_tmp_data(acquisition_tmp_data)
+        filepath = self.create_path_from_tmp_data(acquisition_tmp_data,
+                                                  ignore_existence=True)
         configs = acquisition_tmp_data.configs
         configs = configs if configs else None
         cell = self.cell
@@ -222,7 +239,8 @@ class AcquisitionManager:
             cell=cell,
             overwrite=replace,
             save_on_edit=save_on_edit,
-            save_files=self._save_files)
+            save_files=self._save_files,
+            experiment_name=acquisition_tmp_data.experiment_name)
 
     def save_acquisition(self, **kwds) -> 'AcquisitionManager':
         acq_data = self.current_acquisition

@@ -21,7 +21,8 @@ class NotebookAcquisitionData(SyncData):
                  cell: Optional[str] = "none",
                  overwrite: Optional[bool] = True,
                  save_on_edit: bool = True,
-                 save_files: bool = True):
+                 save_files: bool = True,
+                 experiment_name: Optional[str] = None):
 
         super().__init__(filepath=filepath, save_on_edit=save_on_edit, read_only=False, overwrite=overwrite)
 
@@ -35,6 +36,8 @@ class NotebookAcquisitionData(SyncData):
 
         self._cell = cell
         self.save_cell(cell=cell)
+
+        self.experiment_name = experiment_name
 
         self['useful'] = False
 
@@ -100,7 +103,6 @@ def read_config_files(config_files: List[str]) -> Dict[str, str]:
 
 
 def eval_config_files(configs: Dict[str, str], evals_modules: dict) -> Dict[str, str]:
-    # print(configs)
     for file, module in evals_modules.items():
         configs[file] = eval_config_file(configs[file], module)
     return configs
@@ -110,15 +112,15 @@ def eval_config_file(body, module):
     variables = vars(module)
     lines = body.split('\n')
     for i, line in enumerate(lines):
-        for key, val in parse_str(line).items():
+        for key, (val, _) in parse_str(line).items():
             real_val = variables.get(key, "")
             if (
-                    (isinstance(val, str) and
-                     isinstance(real_val, str) and
-                     real_val != val.strip('"\'')) or
-                    (isinstance(val, str) and
-                        isinstance(real_val, (float, int, complex)) and
-                        not isinstance(real_val, bool))
+                (isinstance(val, str) and
+                 isinstance(real_val, str) and
+                 real_val != val.strip('"\'')) or
+                (isinstance(val, str) and
+                 isinstance(real_val, (float, int, complex)) and
+                 not isinstance(real_val, bool))
             ):
                 lines[i] += f"  # value: {real_val}"
 
