@@ -30,7 +30,7 @@ class AnalysisDataTest(unittest.TestCase):
 
     def test_open_read_mode(self):
         self.assertEqual(self.ad.get('x', [])[0], 1)  # pylint: disable=E1136
-        with self.assertRaises(TypeError, msg="Data is not locked"):
+        with self.assertRaises(KeyError, msg="Data is not locked"):
             self.ad['x'] = 2
 
         self.ad['z'] = 3
@@ -43,19 +43,18 @@ class AnalysisDataTest(unittest.TestCase):
         analysis_cell = sd.get("analysis_cells", {}).get("default")
         # if isinstance(analysis_cell, bytes):
         #     analysis_cell = analysis_cell.decode()
-        self.assertEqual(
-            analysis_cell, self.analysis_cell)
+        self.assertEqual(analysis_cell, self.analysis_cell)
 
     def test_get_analysis_code(self):
         self.ad = AnalysisData(self.aqm.current_filepath, cell="none")
         code = self.ad.get_analysis_code()
-        self.assertEqual(
-            code, self.analysis_cell)
+        self.assertEqual(code, self.analysis_cell)
 
     def test_analysis_cell_file(self):
-        self.ad = AnalysisData(self.aqm.current_filepath,
-                               cell=self.analysis_cell, save_files=True)
-        with open(self.aqm.current_filepath+"_ANALYSIS_CELL_default.py", encoding="utf-8") as file:
+        self.ad = AnalysisData(self.aqm.current_filepath, cell=self.analysis_cell, save_files=True)
+        with open(
+            self.aqm.current_filepath + "_ANALYSIS_CELL_default.py", encoding="utf-8"
+        ) as file:
             code = file.readline()
         self.assertEqual(code, self.analysis_cell)
 
@@ -63,29 +62,49 @@ class AnalysisDataTest(unittest.TestCase):
         fig = SimpleSaveFig()
         self.ad.save_fig(fig)  # type: ignore
 
-        self.assertTrue(os.path.exists(
-            os.path.join(DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG1.pdf')))
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(
+                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG1.pdf'
+                )
+            )
+        )
 
     def test_save_fig_given_number(self):
         fig = SimpleSaveFig()
         self.ad.save_fig(fig, 123)  # type: ignore
 
-        self.assertTrue(os.path.exists(
-            os.path.join(DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG123.pdf')))
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(
+                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG123.pdf'
+                )
+            )
+        )
 
     def test_save_fig_given_name(self):
         fig = SimpleSaveFig()
         self.ad.save_fig(fig, "abc")  # type: ignore
 
-        self.assertTrue(os.path.exists(
-            os.path.join(DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG_abc.pdf')))
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(
+                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG_abc.pdf'
+                )
+            )
+        )
 
     def test_save_fig_tight_layout(self):
         fig = SimpleSaveFigWithTightLayout()
         self.ad.save_fig(fig, 'a')  # type: ignore
 
-        self.assertTrue(os.path.exists(
-            os.path.join(DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG_a.pdf')))
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(
+                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG_a.pdf'
+                )
+            )
+        )
 
         self.assertTrue(fig.tighted_layout)
 
@@ -93,8 +112,13 @@ class AnalysisDataTest(unittest.TestCase):
         fig = SimpleSaveFigWithTightLayout()
         self.ad.save_fig(fig, 'a', tight_layout=False)  # type: ignore
 
-        self.assertTrue(os.path.exists(
-            os.path.join(DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG_a.pdf')))
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(
+                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG_a.pdf'
+                )
+            )
+        )
 
         self.assertFalse(fig.tighted_layout)
 
@@ -114,8 +138,16 @@ class AnalysisDataParceTest(unittest.TestCase):
     experiment_name = "abc"
 
     def setUp(self):
-        self.config = (os.path.join(TEST_DIR, "data/config.txt",),
-                       os.path.join(TEST_DIR, "data/imported_config.py",))
+        self.config = (
+            os.path.join(
+                TEST_DIR,
+                "data/config.txt",
+            ),
+            os.path.join(
+                TEST_DIR,
+                "data/imported_config.py",
+            ),
+        )
         self.aqm = AcquisitionManager(DATA_DIR)
         self.aqm.set_config_file(self.config)
         self.aqm.new_acquisition(self.experiment_name)
@@ -162,7 +194,7 @@ class AnalysisDataParceTest(unittest.TestCase):
     def test_parse_file_error_file(self):
         """Error when there are no config files."""
         self.aqm = AcquisitionManager(DATA_DIR)
-        self.aqm.new_acquisition(self.experiment_name+"2")
+        self.aqm.new_acquisition(self.experiment_name + "2")
 
         self.ad = AnalysisData(self.aqm.current_filepath)
 
@@ -239,9 +271,7 @@ class AnalysisDataParceTest(unittest.TestCase):
     def test_eval_key(self):
         cfg = self.ad.parse_config_file('imported_config.py')
 
-        self.assertDictEqual(
-            cfg.eval_key('param_dict'),
-            {'1': "123", '2': "456"})
+        self.assertDictEqual(cfg.eval_key('param_dict'), {'1': "123", '2': "456"})
 
     def test_eval_as_module(self):
         cfg = self.ad.parse_config_file('imported_config.py')
@@ -254,20 +284,16 @@ class AnalysisDataParceTest(unittest.TestCase):
         self.assertEqual(cfg_module.param_float, 2.5)
         self.assertEqual(cfg_module.param_float_link, 2.5)
 
-        self.assertDictEqual(cfg_module.param_dict,
-                             {'1': "123", '2': "456"})
+        self.assertDictEqual(cfg_module.param_dict, {'1': "123", '2': "456"})
 
     def test_parse_config_str_filename(self):
         """This right way to save configuration files.
         They should be set before creating a new acquisition."""
         self.ad.set_default_config_files(("config.txt",))
         data = self.ad.parse_config_str(["filename", "f", "file"])
-        self.assertIn(
-            f"file = {os.path.basename(self.aqm.current_filepath)}", data)
-        self.assertIn(
-            f"filename = {os.path.basename(self.aqm.current_filepath)}", data)
-        self.assertIn(
-            f"f = {os.path.basename(self.aqm.current_filepath)}", data)
+        self.assertIn(f"file = {os.path.basename(self.aqm.current_filepath)}", data)
+        self.assertIn(f"filename = {os.path.basename(self.aqm.current_filepath)}", data)
+        self.assertIn(f"f = {os.path.basename(self.aqm.current_filepath)}", data)
 
     @classmethod
     def tearDownClass(cls):

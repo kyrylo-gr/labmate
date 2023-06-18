@@ -6,6 +6,7 @@ import unittest
 
 from labmate.acquisition_notebook import AcquisitionAnalysisManager
 from labmate.acquisition_notebook.acquisition_analysis_manager import logger as aqm_logger
+
 # from quanalys.acquisition import AcquisitionManager, AnalysisManager
 from labmate.syncdata import SyncData
 from .analysis_data_test import AnalysisDataParceTest
@@ -35,9 +36,8 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
     def setUp(self):
         shell = ShellEmulator(self.cell_text)
         self.aqm = AcquisitionAnalysisManager(
-            DATA_DIR, use_magic=False, save_files=False,
-            save_on_edit=True,
-            shell=shell)  # type: ignore
+            DATA_DIR, use_magic=False, save_files=False, save_on_edit=True, shell=shell
+        )  # type: ignore
 
     def check_xy_values(self):
         sd = SyncData(self.aqm.aq.filepath)
@@ -99,8 +99,7 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
         self.create_acquisition_cell()
 
         sd = SyncData(self.aqm.aq.filepath)
-        self.assertEqual(
-            sd.get("acquisition_cell"), self.cell_text)
+        self.assertEqual(sd.get("acquisition_cell"), self.cell_text)
 
     def test_analysis_cell_saved(self):
         self.create_acquisition_cell()
@@ -108,8 +107,7 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
         self.aqm.save_analysis_cell()
 
         sd = SyncData(self.aqm.aq.filepath)
-        self.assertEqual(
-            sd.get("analysis_cells", {}).get('default'), self.cell_text)
+        self.assertEqual(sd.get("analysis_cells", {}).get('default'), self.cell_text)
 
     def test_analysis_cell_fig_saved(self):
         self.create_acquisition_cell()
@@ -118,8 +116,7 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
         self.aqm.save_fig(fig)
 
         sd = SyncData(self.aqm.aq.filepath)
-        self.assertEqual(
-            sd.get("analysis_cells", {}).get('default'), self.cell_text)
+        self.assertEqual(sd.get("analysis_cells", {}).get('default'), self.cell_text)
         self.assertTrue(fig.fig_saved)
 
     def test_fig_only_saved(self):
@@ -294,9 +291,8 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
     def setUp(self):
         shell = ShellEmulator(self.cell_text)
         self.aqm = AcquisitionAnalysisManager(
-            DATA_DIR, use_magic=False, save_files=False,
-            save_on_edit=False,
-            shell=shell)  # type: ignore
+            DATA_DIR, use_magic=False, save_files=False, save_on_edit=False, shell=shell
+        )  # type: ignore
 
     def check_xy_values(self):
         sd = SyncData(self.aqm.aq.filepath)
@@ -316,8 +312,9 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
 
     def test_file_does_not_exist_on_new_cell(self):
         self.create_acquisition_cell()
-        self.assertFalse(os.path.exists(self.aqm.current_filepath + ".h5"),
-                         msg="H5 file was created. But it should not.")
+        self.assertFalse(
+            os.path.exists(self.aqm.current_filepath + ".h5"), msg="H5 file was created. But it should not."
+        )
 
     def test_file_does_not_exist_on_add_data(self):
         self.create_acquisition_cell()
@@ -329,15 +326,17 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
 
         self.aqm.aq.pop('z')
 
-        self.assertFalse(os.path.exists(self.aqm.current_filepath + ".h5"),
-                         msg="H5 file was created. But it should not.")
+        self.assertFalse(
+            os.path.exists(self.aqm.current_filepath + ".h5"), msg="H5 file was created. But it should not."
+        )
 
     def test_file_exist_on_save_acquisition(self):
         self.create_acquisition_cell()
 
         self.aqm.save_acquisition()
-        self.assertTrue(os.path.exists(self.aqm.current_filepath + ".h5"),
-                        msg="After running save_acquisition h5 file should exist")
+        self.assertTrue(
+            os.path.exists(self.aqm.current_filepath + ".h5"), msg="After running save_acquisition h5 file should exist"
+        )
 
     def test_file_exist_on_save_acquisition_with_data(self):
         self.create_acquisition_cell()
@@ -347,15 +346,15 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
 
         self.aqm.save_acquisition()
 
-        self.assertTrue(os.path.exists(self.aqm.current_filepath + ".h5"),
-                        msg="After running save_acquisition h5 file should exist")
+        self.assertTrue(
+            os.path.exists(self.aqm.current_filepath + ".h5"), msg="After running save_acquisition h5 file should exist"
+        )
 
         self.check_xy_values()
 
         assert self.aqm.current_analysis
 
-        self.assertEqual(
-            self.aqm.current_analysis.get("acquisition_cell"), self.cell_text)
+        self.assertEqual(self.aqm.current_analysis.get("acquisition_cell"), self.cell_text)
 
     def test_save_acquisition_creates_am(self):
         self.create_acquisition_cell()
@@ -380,19 +379,21 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
 
         sd = SyncData(self.aqm.d.filepath)
         self.assertEqual(
-            sd.get("analysis_cells", {}).get('default'), self.cell_text,
+            sd.get("analysis_cells", {}).get('default'),
+            self.cell_text,
             msg=f"Key saved {sd.keys()}, \
-            aqm._analysis_cell_str='{self.aqm._analysis_cell_str}'")  # pylint: disable=W0212
+            aqm._analysis_cell_str='{self.aqm._analysis_cell_str}'",  # pylint: disable=W0212
+        )
 
     def test_run_analysis_before_saving_check_cell(self):
         self.create_acquisition_cell()
         self.create_analysis_cell()
         self.assertFalse(
             os.path.exists(self.aqm.current_filepath + ".h5"),
-            msg="H5 file was created. But analysis_cell should not create it.")
+            msg="H5 file was created. But analysis_cell should not create it.",
+        )
         self.aqm.save_acquisition()
-        self.assertEqual(
-            SyncData(self.aqm.aq.filepath).get("acquisition_cell"), self.cell_text)
+        self.assertEqual(SyncData(self.aqm.aq.filepath).get("acquisition_cell"), self.cell_text)
 
     def test_save_inside_analysis_data(self):
         self.create_acquisition_cell()
@@ -425,9 +426,8 @@ class OldDataLoadTestsWithNoShell(unittest.TestCase):
 
     def setUp(self):
         self.aqm = AcquisitionAnalysisManager(
-            DATA_DIR, use_magic=False, save_files=False,
-            save_on_edit=True,
-            shell=None)  # type: ignore
+            DATA_DIR, use_magic=False, save_files=False, save_on_edit=True, shell=None
+        )  # type: ignore
 
     def test_wrong_name(self):
         self.aqm.acquisition_cell(self.experiment_name, cell="none")
@@ -460,8 +460,7 @@ class OldDataLoadTestsWithNoShell(unittest.TestCase):
         self.aqm.analysis_cell(self.aqm.aq.filepath, cell=self.cell_text2)
 
         sd = SyncData(self.aqm.d.filepath)
-        self.assertEqual(
-            sd.get("analysis_cells", {}).get('default'), self.cell_text2)
+        self.assertEqual(sd.get("analysis_cells", {}).get('default'), self.cell_text2)
 
     def test_change_analysis_cell_for_old_data_explicit_cell(self):
         self.aqm.acquisition_cell(self.experiment_name, cell="none")
@@ -483,8 +482,7 @@ class OldDataLoadTestsWithNoShell(unittest.TestCase):
         self.aqm.save_analysis_cell(name="abc", cell=self.cell_text2)
 
         sd = SyncData(self.aqm.d.filepath)
-        self.assertEqual(
-            sd.get("analysis_cells", {}).get('abc'), self.cell_text2)
+        self.assertEqual(sd.get("analysis_cells", {}).get('abc'), self.cell_text2)
 
     def tearDown(self) -> None:
         file = self.aqm.d.filepath + '.h5'
@@ -493,13 +491,11 @@ class OldDataLoadTestsWithNoShell(unittest.TestCase):
 
 
 class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
-
     def setUp(self):
         shell = ShellEmulator(self.cell_text)
         self.aqm = AcquisitionAnalysisManager(
-            DATA_DIR, use_magic=False, save_files=False,
-            save_on_edit=True,
-            shell=shell)  # type: ignore
+            DATA_DIR, use_magic=False, save_files=False, save_on_edit=True, shell=shell
+        )  # type: ignore
 
     def test_change_analysis_cell_for_new_data(self):
         self.aqm.acquisition_cell(self.experiment_name)
@@ -508,8 +504,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
         self.aqm.save_analysis_cell()
 
         sd = SyncData(self.aqm.aq.filepath)
-        self.assertEqual(
-            sd.get("analysis_cells", {}).get('default'), self.cell_text)
+        self.assertEqual(sd.get("analysis_cells", {}).get('default'), self.cell_text)
 
     def test_change_analysis_cell_for_old_data(self):
         self.aqm.acquisition_cell(self.experiment_name)
@@ -521,8 +516,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
         self.aqm.analysis_cell(self.aqm.aq.filepath)
 
         sd = SyncData(self.aqm.d.filepath)
-        self.assertEqual(
-            sd.get("analysis_cells", {}).get('default'), self.cell_text)
+        self.assertEqual(sd.get("analysis_cells", {}).get('default'), self.cell_text)
 
     def test_change_analysis_cell_for_old_data_only_name(self):
         self.aqm.acquisition_cell(self.experiment_name)
@@ -534,8 +528,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
         self.aqm.analysis_cell(self.aqm.aq.filepath.rsplit('/', 1)[-1])  # type: ignore
 
         sd = SyncData(self.aqm.d.filepath)
-        self.assertEqual(
-            sd.get("analysis_cells", {}).get('default'), self.cell_text)
+        self.assertEqual(sd.get("analysis_cells", {}).get('default'), self.cell_text)
 
     def test_change_analysis_cell_for_old_data_explicit_cell(self):
         self.aqm.acquisition_cell(self.experiment_name)
@@ -546,8 +539,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
         self.aqm.save_analysis_cell()
 
         sd = SyncData(self.aqm.d.filepath)
-        self.assertEqual(
-            sd.get("analysis_cells", {}).get('default'), self.cell_text2)
+        self.assertEqual(sd.get("analysis_cells", {}).get('default'), self.cell_text2)
 
     @classmethod
     def tearDownClass(cls):
@@ -566,9 +558,8 @@ class LintingTest(unittest.TestCase):
     def setUp(self):
         shell = ShellEmulator(self.cell_text)
         self.aqm = AcquisitionAnalysisManager(
-            DATA_DIR, use_magic=False, save_files=False,
-            save_on_edit=True,
-            shell=shell)  # type: ignore
+            DATA_DIR, use_magic=False, save_files=False, save_on_edit=True, shell=shell
+        )  # type: ignore
         self.turn_on_linting()
 
     def turn_on_linting(self):
@@ -583,17 +574,13 @@ class LintingTest(unittest.TestCase):
 
     @staticmethod
     def remove_tabs(code: str):
-        tabs = " "*(code.find("aqm"))
+        tabs = " " * (code.find("aqm"))
         return code.replace(tabs, "")
 
     def check_logs(self, logs, msg, level):
-        for log in logs:
-            if msg in log.message and log.levelno >= level:
-                return True
-        return False
+        return any((msg in log.message and log.levelno >= level) for log in logs)
 
-    def assert_logs(
-            self, logs, msg=None, level=None):
+    def assert_logs(self, logs, msg=None, level=None):
         if isinstance(msg, list):
             for msg_ in msg:
                 self.assert_logs(logs, msg_, level)
@@ -602,14 +589,14 @@ class LintingTest(unittest.TestCase):
         if msg:
             level = level if level is not None else 30
 
-            self.assertTrue(self.check_logs(logs, msg, level),
-                            msg=f"No '{msg}' at level {level} inside: {logs}")
+            self.assertTrue(self.check_logs(logs, msg, level), msg=f"No '{msg}' at level {level} inside: {logs}")
         else:
             msg = "External variable used"
             level = level or 0
             self.assertFalse(
                 self.check_logs(logs, msg, level),
-                msg=f"There is '{msg}' inside: {[f'{log.levelno}:{log.message}' for log in logs]}")
+                msg=f"There is '{msg}' inside: {[f'{log.levelno}:{log.message}' for log in logs]}",
+            )
 
     def test_lint_standard(self):
         code = """\
@@ -747,13 +734,20 @@ class AcquisitionAnalysisManagerParceTest(AnalysisDataParceTest):
     def setUp(self):
         shell = ShellEmulator(self.cell_text)
         self.aqm = AcquisitionAnalysisManager(
-            DATA_DIR, use_magic=False, save_files=False,
-            save_on_edit=True,
-            shell=shell)  # type: ignore
+            DATA_DIR, use_magic=False, save_files=False, save_on_edit=True, shell=shell
+        )  # type: ignore
 
         # self.config = (os.path.join(TEST_DIR, "data/config.txt"))
-        self.config = (os.path.join(TEST_DIR, "data/config.txt",),
-                       os.path.join(TEST_DIR, "data/imported_config.py",))
+        self.config = (
+            os.path.join(
+                TEST_DIR,
+                "data/config.txt",
+            ),
+            os.path.join(
+                TEST_DIR,
+                "data/imported_config.py",
+            ),
+        )
         self.aqm.set_config_file(self.config)
         self.aqm.new_acquisition(self.experiment_name)
         self.aqm.aq.update(x=[1, 2, 3], y=[[1, 2], [3, 4], [4, 5]])
@@ -787,16 +781,20 @@ class ShellEmulator:
         self.next_input = ""
 
     def get_parent(self):
-        return {'content': {
-            'code': self.internal_data
-        }}
+        return {'content': {'code': self.internal_data}}
 
     @property
     def last_execution_result(self):
         from labmate.attrdict import AttrDict
+
         return AttrDict(
-            {'info': {'raw_cell': self.last_cell, },
-             'success': self.last_success})
+            {
+                'info': {
+                    'raw_cell': self.last_cell,
+                },
+                'success': self.last_success,
+            }
+        )
 
     def set_next_input(self, code):
         self.next_input = code
@@ -822,9 +820,8 @@ class LoadCreateIndependentFilesTest(unittest.TestCase):
     def setUp(self):
         shell = ShellEmulator(self.cell_text)
         self.aqm = AcquisitionAnalysisManager(
-            DATA_DIR, use_magic=False, save_files=False,
-            save_on_edit=True,
-            shell=shell)  # type: ignore
+            DATA_DIR, use_magic=False, save_files=False, save_on_edit=True, shell=shell
+        )  # type: ignore
 
     def check_xy_values(self, file=None):
         if file is None:
@@ -880,8 +877,8 @@ class LoadCreateIndependentFilesTest(unittest.TestCase):
         for i in range(5):
             aq = self.aqm.create_acquisition('list_item')
             aq.save_acquisition(
-                x=self.x, y=self.y, i=i,
-                parent=self.aqm.current_filepath.str)  # optional, but good to keep a trace of the files
+                x=self.x, y=self.y, i=i, parent=self.aqm.current_filepath.str
+            )  # optional, but good to keep a trace of the files
 
             files.append(aq.filepath)
             self.aqm['files'] = files
@@ -899,8 +896,8 @@ class LoadCreateIndependentFilesTest(unittest.TestCase):
         for i in range(5):
             aq = self.aqm.create_acquisition()
             aq.save_acquisition(
-                x=self.x, y=self.y, i=i,
-                parent=self.aqm.current_filepath.str)  # optional, but good to keep a trace of the files
+                x=self.x, y=self.y, i=i, parent=self.aqm.current_filepath.str
+            )  # optional, but good to keep a trace of the files
 
             files.append(aq.filepath)
             self.aqm['files'] = files
@@ -915,7 +912,7 @@ class LoadCreateIndependentFilesTest(unittest.TestCase):
             self.assertEqual(data['i'], i)
 
 
-class FunctionToRun():
+class FunctionToRun:
     def __init__(self):
         self.function_run = 0
 

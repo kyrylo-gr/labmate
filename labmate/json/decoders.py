@@ -1,3 +1,4 @@
+"""Contains all custom JSON decoders used."""
 import json
 
 
@@ -14,8 +15,7 @@ class NumbersDecoder(json.JSONDecoder):
                 obj_check = obj[1:] if obj.startswith('-') else obj
                 if obj_check.isnumeric():
                     return int(obj)
-                if obj_check.count('.') == 1 and \
-                        obj_check.replace('.', '').isnumeric():
+                if obj_check.count('.') == 1 and obj_check.replace('.', '').isnumeric():
                     return float(obj)
                 return obj
             except ValueError:

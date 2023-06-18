@@ -1,10 +1,14 @@
+"""This module provides the magic way for acquisition_analysis_manager usage.
+
+It's very old method and should will be removed in the future.
+"""
+
 from IPython.core.magic import Magics, magics_class, cell_magic
 from .acquisition_analysis_manager import AcquisitionAnalysisManager
 
 
 @magics_class
 class AcquisitionMagic(Magics):
-
     def __init__(self, aqm: AcquisitionAnalysisManager, shell, **kwargs):
         if shell is None:
             raise ValueError("Cannot use magic cells if a shell is not found.")
@@ -14,7 +18,7 @@ class AcquisitionMagic(Magics):
 
     @cell_magic
     def acquisition_cell(self, line, cell):
-        """Create new_acquisition with the name provided"""
+        """Create new_acquisition with the name provided."""
         experiment_name = line.strip()
 
         self.aqm.acquisition_cell(experiment_name, cell=cell)
@@ -23,9 +27,7 @@ class AcquisitionMagic(Magics):
 
     @cell_magic
     def analysis_cell(self, line, cell):
-        """If file is provided, opens this file to aqm.data.
-        Otherwise, opens to aqm.data the filename from last acquisition."""
-
+        """Open data if file is provided, otherwise open last acquisition."""
         if len(line):  # getting old data
             line = line.strip("'").strip('"')
         else:

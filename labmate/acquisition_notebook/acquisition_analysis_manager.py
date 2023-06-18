@@ -4,6 +4,7 @@ import logging
 import time
 from ..acquisition import AcquisitionManager, AnalysisData
 from .. import utils
+
 if TYPE_CHECKING:
     from ..acquisition import FigureProtocol
     from ..acquisition.config_file import ConfigFile
@@ -58,15 +59,18 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     _analysis_cell_prerun_hook: Optional[Tuple[_CallableWithNoArgs, ...]] = None
     _acquisition_cell_prerun_hook: Optional[Tuple[_CallableWithNoArgs, ...]] = None
 
-    def __init__(self,
-                 data_directory: Optional[Union[str, Any]] = None, *,
-                 config_files: Optional[List[str]] = None,
-                 save_files: bool = False,
-                 use_magic: bool = False,
-                 save_on_edit: bool = True,
-                 save_on_edit_analysis: Optional[bool] = None,
-                 save_fig_inside_h5: bool = False,
-                 shell: Any = True):
+    def __init__(
+        self,
+        data_directory: Optional[Union[str, Any]] = None,
+        *,
+        config_files: Optional[List[str]] = None,
+        save_files: bool = False,
+        use_magic: bool = False,
+        save_on_edit: bool = True,
+        save_on_edit_analysis: Optional[bool] = None,
+        save_fig_inside_h5: bool = False,
+        shell: Any = True,
+    ):
         """
         AcquisitionAnalysisManager.
 
@@ -90,6 +94,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if shell is False or shell is True:  # behavior by default shell
             try:
                 from IPython.core.getipython import get_ipython
+
                 self.shell = get_ipython()
             except ImportError:
                 self.shell = None
@@ -98,6 +103,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         if use_magic:
             from .acquisition_magic_class import load_ipython_extension
+
             load_ipython_extension(aqm=self, shell=self.shell)
 
         if save_on_edit_analysis is None:
@@ -110,41 +116,48 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             data_directory=str(data_directory),
             config_files=config_files,
             save_files=save_files,
-            save_on_edit=save_on_edit)
+            save_on_edit=save_on_edit,
+        )
 
     @property
     def current_acquisition(self):
+        """Return current acquisition if it's not an old data analyses."""
         if self._is_old_data:
             return None
         return super().current_acquisition
 
     @property
     def current_analysis(self):
+        """Return the current analysis. Class where you cannot change existed keys."""
         return self._analysis_data
 
     @property
     def data(self):
+        """Same as current_analysis."""
         if self._analysis_data is None:
             raise ValueError('No data set')
         return self._analysis_data
 
     @property
     def d(self):  # pylint: disable=invalid-name
+        """Shorter alias for data."""
         return self.data
 
     def save_fig_only(
-            self,
-            fig: Optional['FigureProtocol'] = None,
-            name: Optional[Union[str, int]] = None, **kwds
+        self,
+        fig: Optional['FigureProtocol'] = None,
+        name: Optional[Union[str, int]] = None,
+        extensions: Optional[str] = None,
+        **kwds,
     ) -> 'AcquisitionAnalysisManager':
-        """
-        Save the fig as a file.
+        """Save the figure as a file.
 
         Args:
-            fig (Figure, optional): Figure that should be saved.
-                Figure could be any class with function save_fig implemented. Defaults to None.
-
-            name (str, optional): name of the fig. It's not the name of the file, it's its suffix. Defaults to None.
+            fig (Figure, optional): Figure that should be saved. Figure could be any class with
+             function save_fig implemented. By default gets plt.gcf().
+            name (str, optional): Name of the fig. It's a suffix that will be added to the filename. Defaults to None.
+            extensions(str, optional): Extensions of the file. Defaults to `pdf`.
+            tight_layout(bool, optional): True to call fig.tight_layout(). Defaults to True.
 
         Raises:
             ValueError: if analysis_data is not loaded
@@ -152,13 +165,11 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         Return:
             self
         """
-        self.data.save_fig(fig=fig, name=name, **kwds)
+        self.data.save_fig(fig=fig, name=name, extensions=extensions, **kwds)
         return self
 
     def save_analysis_cell(
-            self,
-            name: Optional[Union[str, int]] = None,
-            cell: Optional[Union[str, Literal['none']]] = None
+        self, name: Optional[Union[str, int]] = None, cell: Optional[Union[str, Literal['none']]] = None
     ) -> 'AcquisitionAnalysisManager':
         if name is None:
             name = self.data.figure_last_name
@@ -173,13 +184,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return self
 
     def save_fig(
-            self,
-            fig: Optional['FigureProtocol'] = None,
-            name: Optional[Union[str, int]] = None,
-            cell: Optional[str] = None,
-            **kwds
+        self,
+        fig: Optional['FigureProtocol'] = None,
+        name: Optional[Union[str, int]] = None,
+        cell: Optional[str] = None,
+        **kwds,
     ) -> 'AcquisitionAnalysisManager':
-
         self.save_fig_only(fig=fig, name=name, **kwds)
         self.save_analysis_cell(name=name, cell=cell)
         return self
@@ -188,17 +198,19 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if self._analysis_data is not None:
             raise ValueError(
                 "This is the way to save acquisition data. But analysis data was loaded. "
-                "So you possibly run it outside of acquisition_cell")
+                "So you possibly run it outside of acquisition_cell"
+            )
         acq_data = self.current_acquisition
         if acq_data is None:
             raise ValueError(
                 "Cannot save data to acquisition as current acquisition is None."
-                "Possibly because you have never run `acquisition_cell(..)` or it's an old data")
+                "Possibly because you have never run `acquisition_cell(..)` or it's an old data"
+            )
         acq_data[__key] = __value
 
     def save_acquisition(self, **kwds) -> 'AcquisitionAnalysisManager':
         acquisition_finished = time.time()
-        kwds.update({"info": {"acquisition_duration": acquisition_finished-self._acquisition_started}})
+        kwds.update({"info": {"acquisition_duration": acquisition_finished - self._acquisition_started}})
         super().save_acquisition(**kwds)
         self._load_analysis_data()
         return self
@@ -214,14 +226,16 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return self._analysis_data
 
     def load_file(self, filename) -> 'AnalysisData':
-        filename = self.get_full_filename(str(filename))
+        filename = self._get_full_filename(filename)
         if not os.path.exists(filename if filename.endswith('.h5') else filename + '.h5'):
             raise ValueError(f"File {filename} cannot be found")
 
         data = AnalysisData(
             filepath=filename,
-            save_files=self._save_files, save_on_edit=self._save_on_edit_analysis,
-            save_fig_inside_h5=self._save_fig_inside_h5)
+            save_files=self._save_files,
+            save_on_edit=self._save_on_edit_analysis,
+            save_fig_inside_h5=self._save_fig_inside_h5,
+        )
 
         if not data.get('useful', True):
             data.unlock_data('useful').update(**{'useful': True}).lock_data('useful')
@@ -232,11 +246,11 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return data
 
     def acquisition_cell(
-            self,
-            name: str,
-            cell: Optional[str] = None,
-            prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
-            save_on_edit: Optional[bool] = None
+        self,
+        name: str,
+        cell: Optional[str] = None,
+        prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
+        save_on_edit: Optional[bool] = None,
     ) -> 'AcquisitionAnalysisManager':
         self._analysis_cell_str = None
         self._analysis_data = None
@@ -255,12 +269,13 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return self
 
     def analysis_cell(
-            self,
-            filename: Optional[Union[str, 'Path']] = None, *,
-            acquisition_name=None,
-            cell: Optional[str] = None,
-            filepath: Optional[Union[str, 'Path']] = None,
-            prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
+        self,
+        filename: Optional[Union[str, 'Path']] = None,
+        *,
+        acquisition_name=None,
+        cell: Optional[str] = None,
+        filepath: Optional[Union[str, 'Path']] = None,
+        prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
     ) -> 'AcquisitionAnalysisManager':
         # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
 
@@ -268,40 +283,43 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if filename or filepath:  # getting old data
             self._is_old_data = True
             if self.shell is not None:
-                try:
-                    from IPython import display
-                    html = """<div style="
-                    background-color:#ec7413; padding: .5em; text-align:center"
-                    >Old data analysis</div>"""
-                    display.display(display.HTML(str(html)))  # type: ignore
-                except ImportError:
-                    logger.warning("Old data analysis")
-            filename = str(filepath or self.get_full_filename(str(filename)))  # type: ignore
-            filename = (filename.rsplit('.h5', 1)[0]) \
-                if filename.endswith('.h5') else filename
+                utils.output_warning("Old data analysis")
+
+            filename = str(filepath or self._get_full_filename(filename))  # type: ignore
+            filename = (filename.rsplit('.h5', 1)[0]) if filename.endswith('.h5') else filename
 
         else:
             self._is_old_data = False
             if acquisition_name is not None:
                 import re
+
                 if (
-                    len(acquisition_name) == 0 or
-                    (acquisition_name[0] != r"^" and acquisition_name != self.current_experiment_name) or
-                    (acquisition_name[0] == r"^" and re.match(acquisition_name, self.current_experiment_name) is None)
+                    len(acquisition_name) == 0
+                    or (acquisition_name[0] != r"^" and acquisition_name != self.current_experiment_name)
+                    or (
+                        acquisition_name[0] == r"^" and re.match(acquisition_name, self.current_experiment_name) is None
+                    )
                 ):
                     raise ValueError(
                         f"Current acquisition ('{self.current_experiment_name}') "
-                        f"isn't the one expected ('{acquisition_name}') for this analysis")
+                        f"isn't the one expected ('{acquisition_name}') for this analysis"
+                    )
 
             filename = str(self.current_filepath)  # without h5
         logger.info(os.path.basename(filename))
 
-        if not self._is_old_data and self.shell is not None:
-            if ('acquisition_cell(' in self.shell.last_execution_result.info.raw_cell and
-                    not self.shell.last_execution_result.success):
-                raise ChildProcessError(
-                    "Last executed cell was probably an `acquisition_cell` and failed to run. "
-                    "Check if everything is ok and executive again")
+        if (
+            (not self._is_old_data)
+            and (self.shell is not None)
+            and (
+                'acquisition_cell(' in self.shell.last_execution_result.info.raw_cell
+                and not self.shell.last_execution_result.success
+            )
+        ):
+            raise ChildProcessError(
+                "Last executed cell was probably an `acquisition_cell` and failed to run. "
+                "Check if everything is ok and executive again"
+            )
 
         if os.path.exists(filename + '.h5'):
             self._load_analysis_data(filename)
@@ -313,13 +331,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if cell is not None:
             self.save_analysis_cell(cell=cell)
 
-        if self._analysis_cell_str is not None:
-            if self._linting_external_vars is not None:
-                from ..acquisition import lint
-                _, external_vars = lint.find_variables_from_code(
-                    self._analysis_cell_str, self._linting_external_vars)
-                for var in external_vars:
-                    logger.warning("External variable used inside the analysis code: %s", var)
+        if (self._analysis_cell_str is not None) and (self._linting_external_vars is not None):
+            from ..acquisition import lint
+
+            _, external_vars = lint.find_variables_from_code(self._analysis_cell_str, self._linting_external_vars)
+            for var in external_vars:
+                logger.warning("External variable used inside the analysis code: %s", var)
 
         utils.run_functions(self._analysis_cell_prerun_hook)
         utils.run_functions(prerun)
@@ -336,7 +353,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     # def open_analysis_fig(self) -> List[FigureProtocol]:
     #     return self.data.open_fig()
 
-    def get_full_filename(self, filename: str) -> str:
+    def _get_full_filename(self, filename: Union[str, 'Path']) -> str:
+        if filename is None:
+            raise ValueError("Filename cannot be None")
+
+        filename = str(filename)
+
         if '/' in filename or '\\' in filename:
             return filename
 
@@ -352,42 +374,43 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def parse_config_file(self, config_file_name: str, /) -> 'ConfigFile':
         return self.data.parse_config_file(config_file_name)
 
-    def parse_config(
-            self,
-            config_files: Optional[Tuple[str, ...]] = None) -> 'ConfigFile':
-        return self.data.parse_config(config_files=(config_files or self._default_config_files))
+    def parse_config(self, config_files: Optional[Tuple[str, ...]] = None) -> 'ConfigFile':
+        return self.data.parse_config(config_files=config_files)
 
     @property
     def cfg(self) -> 'ConfigFile':
-        return self.parse_config()
+        return self.data.cfg
 
     def parse_config_str(
         self,
-        values: List[str], /,
+        values: List[str],
+        /,
         max_length: Optional[int] = None,
     ) -> str:
-        return self.data.parse_config_str(
-            values, max_length=max_length, config_files=self._default_config_files)
+        return self.data.parse_config_str(values, max_length=max_length)
 
-    def linting(self,
-                allowed_variables: Optional[Iterable[str]] = None,
-                init_file: Optional[str] = None):
+    def linting(self, allowed_variables: Optional[Iterable[str]] = None, init_file: Optional[str] = None):
         from ..acquisition import lint
+
         allowed_variables = set() if allowed_variables is None else set(allowed_variables)
         if init_file is not None:
             allowed_variables.update(lint.find_variables_from_file(init_file)[0])
         self._linting_external_vars = allowed_variables
 
     def set_default_config_files(self, config_files: Union[str, Tuple[str, ...], List[str]], /):
-        self._default_config_files = (config_files, ) if isinstance(config_files, str) else tuple(config_files)
+        self._default_config_files = (config_files,) if isinstance(config_files, str) else tuple(config_files)
+        if self._analysis_data:
+            self._analysis_data.set_default_config_files(self._default_config_files)
 
     def set_analysis_cell_prerun_hook(
-            self, hook: Union[_CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]]):
-        self._analysis_cell_prerun_hook = tuple(hook) if isinstance(hook, (list, tuple)) else (hook, )
+        self, hook: Union[_CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]]
+    ):
+        self._analysis_cell_prerun_hook = tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
 
     def set_acquisition_cell_prerun_hook(
-            self, hook: Union[_CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]]):
-        self._acquisition_cell_prerun_hook = tuple(hook) if isinstance(hook, (list, tuple)) else (hook, )
+        self, hook: Union[_CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]]
+    ):
+        self._acquisition_cell_prerun_hook = tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
 
 
 def get_current_cell(shell: Any) -> Optional[str]:
@@ -403,18 +426,18 @@ class AcquisitionAnalysisManagerDataOnly:
     def analysis_cell(self, *args, **kwds):
         return self.aqm.analysis_cell(*args, **kwds)
 
-    @ property
+    @property
     def current_acquisition(self):
         return None
 
-    @ property
+    @property
     def current_analysis(self):
         return self.aqm.current_analysis
 
-    @ property
+    @property
     def data(self):
         return self.aqm.data
 
-    @ property
+    @property
     def d(self):  # pylint: disable=invalid-name
         return self.data

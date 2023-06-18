@@ -3,6 +3,7 @@ from typing import Any, Callable, List, Optional, Tuple, Union
 
 def get_timestamp() -> str:
     import datetime
+
     x = datetime.datetime.now()
     return x.strftime("%Y_%m_%d__%H_%M_%S")
 
@@ -18,10 +19,10 @@ def lstrip_int(line: str) -> Optional[Tuple[str, str, str]]:
     main = re.search("_[A-Za-z]", line)
     if main is None:
         return None
-    prefix, main = line[:main.start()], line[main.start()+1:]
+    prefix, main = line[: main.start()], line[main.start() + 1 :]
     if '__' in main:
         suffix_index = main.rfind('__')
-        suffix = main[suffix_index+2:]
+        suffix = main[suffix_index + 2 :]
         if suffix.isdecimal():
             main = main[:suffix_index]
         else:
@@ -37,6 +38,7 @@ def lstrip_int(line: str) -> Optional[Tuple[str, str, str]]:
 
 def get_var_name_from_def():
     import traceback
+
     line = traceback.extract_stack()[-3].line
     if line and "=" in line:
         return line.split("=")[0].strip()
@@ -52,10 +54,31 @@ _CallableWithNoArgs = Callable[[], Any]
 
 
 def run_functions(
-        funcs: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]]] = None):
+    funcs: Optional[
+        Union[_CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]]
+    ] = None
+):
+    """Run functions if some provided."""
     if funcs is not None:
         if isinstance(funcs, (list, tuple)):
             for func in funcs:
                 func()
         else:
             funcs()
+
+
+def output_warning(text: str, logger=None):
+    try:
+        from IPython import display
+
+        html = f"""<div style="
+        background-color:#ec7413; padding: .5em; text-align:center"
+        >{text}</div>"""
+
+        display.display(display.HTML(str(html)))  # type: ignore
+
+    except ImportError:
+        if logger is not None:
+            logger.warning(text)
+        else:
+            print(text)

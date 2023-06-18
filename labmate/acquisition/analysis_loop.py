@@ -39,7 +39,7 @@ class AnalysisLoop(SyncData):
     def __init__(self, data: Optional[dict] = None, loop_shape: Optional[List[int]] = None):
         super().__init__(data=data)
         if loop_shape is None:
-            loop_shape = self.get("__loop_shape__", None)
+            loop_shape = self.get("__loop_shape__")
         self._loop_shape = loop_shape
 
     def __iter__(self):
@@ -55,8 +55,7 @@ class AnalysisLoop(SyncData):
                     continue
 
                 # if not isinstance(value, Iterable) or isinstance(value, (str, bytes)):
-                if not hasattr(value, "__getitem__") or \
-                        isinstance(value, (str, bytes, int, float, complex)):
+                if not hasattr(value, "__getitem__") or isinstance(value, (str, bytes, int, float, complex)):
                     child_kwds[key] = value
                 elif len(value) == 1:
                     child_kwds[key] = value[0]
@@ -64,8 +63,7 @@ class AnalysisLoop(SyncData):
                     child_kwds[key] = value[index]
 
                 val = child_kwds[key]
-                if isinstance(val, (Iterable)) and \
-                        len(val) == 1 and not isinstance(val[0], (Iterable)):  # type: ignore
+                if isinstance(val, (Iterable)) and len(val) == 1 and not isinstance(val[0], (Iterable)):  # type: ignore
                     child_kwds[key] = val[0]  # type: ignore
 
             if len(self._loop_shape) > 1:
@@ -99,7 +97,7 @@ class AnalysisLoop(SyncData):
             else:
                 child_data[key] = value[__slice]
 
-        new_shape = [(__slice.stop-__slice.start)//__slice.step]
+        new_shape = [(__slice.stop - __slice.start) // __slice.step]
         new_shape.extend(self._loop_shape[1:])
         return child_data, new_shape
 

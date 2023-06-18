@@ -1,15 +1,23 @@
+"""SyncData class is a dictionary that is synchronized with .h5 file."""
 from typing import Any, Dict, Iterable, Literal, Optional, Set, TypeVar, Union, overload
+
 import logging
 import os
 from pathlib import Path
 from functools import wraps
+
 from . import h5py_utils
+from .data_transformation import transform_to_possible_formats
+from .dict_structure import get_keys_structure, output_dict_structure
+
+from .types import DICT_OR_LIST_LIKE
 
 
 def editing(func):
     """If a function changes the data it should be saved.
     It's a wrapper for such function.
     """
+
     @wraps(func)
     def run_func_and_clean_precalculated_results(self, *args, **kwargs):
         self._last_data_saved = False  # pylint: disable=W0212
@@ -25,7 +33,7 @@ def editing(func):
 _T = TypeVar("_T")
 
 
-class NotLoaded(object):
+class NotLoaded:
     """Internal class for data that has not been loaded yet."""
 
     def __init__(self):
@@ -61,16 +69,20 @@ class SyncData:
     _file_modified_time: float = 0
     __should_not_be_converted__ = True
 
-    def __init__(self,
-                 filepath_or_data: Optional[Union[str, dict, Path]] = None, /,
-                 mode: Optional[Literal['r', 'w', 'a']] = None, *,
-                 filepath: Optional[Union[str, Path]] = None,
-                 save_on_edit: bool = False,
-                 read_only: Optional[Union[bool, Set[str]]] = None,
-                 overwrite: Optional[bool] = None,
-                 data: Optional[dict] = None,
-                 open_on_init: Optional[bool] = None,
-                 **kwds):
+    def __init__(
+        self,
+        filepath_or_data: Optional[Union[str, dict, Path]] = None,
+        /,
+        mode: Optional[Literal['r', 'w', 'a']] = None,
+        *,
+        filepath: Optional[Union[str, Path]] = None,
+        save_on_edit: bool = False,
+        read_only: Optional[Union[bool, Set[str]]] = None,
+        overwrite: Optional[bool] = None,
+        data: Optional[dict] = None,
+        open_on_init: Optional[bool] = None,
+        **kwds,
+    ):
         """SyncData.
 
         Args:
@@ -112,14 +124,16 @@ class SyncData:
         self._last_update = set()
         self._save_on_edit = save_on_edit
         self._classes_should_be_saved_internally = set()
-        self._key_prefix: Optional[str] = kwds.get("key_prefix", None)
+        self._key_prefix: Optional[str] = kwds.get("key_prefix")
 
         if read_only is None:
             read_only = (save_on_edit is False and not overwrite) and filepath is not None
 
         if open_on_init is False and overwrite is True:
             raise ValueError("Cannot overwrite file and open_on_init=False mode")
-        self._open_on_init = open_on_init if open_on_init is not None else (None if self._data else True)
+        self._open_on_init = (
+            open_on_init if open_on_init is not None else (None if self._data else True)
+        )
         self._unopened_keys = set()
 
         # if keep_up_to_data and read_only is True:
@@ -138,7 +152,8 @@ class SyncData:
                     raise ValueError(
                         "File with the same name already exists. So you should explicitly "
                         "provide what to do with it. Set `overwrite=True` to replace file. "
-                        "Set `overwrite=False` if you want to open existing file and work with it.")
+                        "Set `overwrite=False` if you want to open existing file and work with it."
+                    )
 
                 if overwrite and not read_only:
                     os.remove(filepath)
@@ -151,7 +166,9 @@ class SyncData:
                         self._unopened_keys.update(self._keys)
 
             elif read_only:
-                raise ValueError(f"Cannot open file in read_only mode if file {filepath} does not exist")
+                raise ValueError(
+                    f"Cannot open file in read_only mode if file {filepath} does not exist"
+                )
 
             # if not read_only:
             self._filepath = filepath
@@ -161,7 +178,9 @@ class SyncData:
         self._key_prefix = filekey
         self._save_on_edit = save_on_edit
 
-    def _load_from_h5(self, filepath: Optional[str] = None, key: Optional[Union[str, Set[str]]] = None):
+    def _load_from_h5(
+        self, filepath: Optional[str] = None, key: Optional[Union[str, Set[str]]] = None
+    ):
         filepath = filepath or self._filepath
         if filepath is None:
             raise ValueError("Filepath is not specified. So cannot load_h5")
@@ -214,19 +233,18 @@ class SyncData:
         self._last_update.add(key)
 
     def __check_read_only_true(self, key):
-        return self._read_only and \
-            (self._read_only is True or key in self._read_only)
+        return self._read_only and (self._read_only is True or key in self._read_only)
 
     @editing
-    def update(self, __m: Optional[dict] = None, **kwds: h5py_utils.DICT_OR_LIST_LIKE):
+    def update(self, __m: Optional[dict] = None, **kwds: 'DICT_OR_LIST_LIKE'):
         if __m is not None:
             kwds.update(__m)
 
         for key in kwds:  # pylint: disable=C0206
             if self.__check_read_only_true(key):
-                raise TypeError(f"Cannot set a read-only '{key}' attribute")
+                raise KeyError(f"Cannot set a read-only '{key}' attribute")
             self.__add_key(key)
-            kwds[key] = h5py_utils.transform_to_possible_formats(kwds[key])
+            kwds[key] = transform_to_possible_formats(kwds[key])
 
         # self.pull(auto=True)
         self._data.update(**kwds)
@@ -247,7 +265,7 @@ class SyncData:
     @editing
     def pop(self, key: str):
         if self.__check_read_only_true(key):
-            raise TypeError(f"Cannot pop a read-only '{key}' attribute")
+            raise KeyError(f"Cannot pop a read-only '{key}' attribute")
         self.__del_key(key)
         # self.pull(auto=True)
         if key not in self._unopened_keys:
@@ -281,23 +299,23 @@ class SyncData:
 
     def __getitem__(self, __key: Union[str, tuple]):
         if isinstance(__key, tuple):
-            return self.__getitem__(__key[0]).__getitem__(
-                __key[1:] if len(__key) > 2 else __key[1])
+            return self.__getitem__(__key[0]).__getitem__(__key[1:] if len(__key) > 2 else __key[1])
         return self.__get_data_or_raise__(__key)
         # return self._data.__getitem__(__key)
 
     @editing
-    def __setitem__(self, __key: Union[str, tuple], __value: h5py_utils.DICT_OR_LIST_LIKE) -> None:
+    def __setitem__(self, __key: Union[str, tuple], __value: 'DICT_OR_LIST_LIKE') -> None:
         if isinstance(__key, tuple):
             self.__add_key(__key[0])
             return self.__getitem__(__key[0]).__setitem__(
-                __key[1:] if len(__key) > 2 else __key[1], __value)
+                __key[1:] if len(__key) > 2 else __key[1], __value
+            )
 
         if self.__check_read_only_true(__key):
-            raise TypeError(f"Cannot set a read-only '{__key}' attribute")
+            raise KeyError(f"Cannot set a read-only '{__key}' attribute")
 
         self.__add_key(__key)
-        __value = h5py_utils.transform_to_possible_formats(__value)
+        __value = transform_to_possible_formats(__value)
 
         if self._read_only is not True:
             if hasattr(__value, "save"):
@@ -308,7 +326,8 @@ class SyncData:
                     raise ValueError("Cannot run __init__filepath__ with file unspecified")
                 key = __key if self._key_prefix is None else f"{self._key_prefix}/{__key}"
                 __value.__init__filepath__(  # type: ignore
-                    filepath=self._filepath, filekey=key, save_on_edit=self._save_on_edit)
+                    filepath=self._filepath, filekey=key, save_on_edit=self._save_on_edit
+                )
         self.__set_data__(__key, __value)
 
     def __delitem__(self, key: str):
@@ -316,8 +335,7 @@ class SyncData:
 
     def __getattr__(self, __name: str):
         """Call if __getattribute__ does not work."""
-        if len(__name) > 1 and __name[0] == 'i' and \
-                __name[1:].isdigit() and __name not in self:
+        if len(__name) > 1 and __name[0] == 'i' and __name[1:].isdigit() and __name not in self:
             __name = __name[1:]
         if __name in self:
             data = self.get(__name)
@@ -326,17 +344,17 @@ class SyncData:
             return data
         raise AttributeError(f"No attribute {__name} found in SyncData")
 
-    def __setattr__(self, __name: str, __value: h5py_utils.DICT_OR_LIST_LIKE) -> None:
+    def __setattr__(self, __name: str, __value: 'DICT_OR_LIST_LIKE') -> None:
         """Call every time you set an attribute."""
         if __name.startswith('_'):
             return object.__setattr__(self, __name, __value)
 
-        if isinstance(vars(self.__class__).get(__name, None), property):
+        if isinstance(vars(self.__class__).get(__name), property):
             return object.__setattr__(self, __name, __value)
         return self.__setitem__(__name, __value)
 
     def __delattr__(self, __name: str) -> None:
-        if __name in self.keys():
+        if __name in self:
             return self.__delitem__(__name)
         return object.__delattr__(self, __name)
 
@@ -389,7 +407,7 @@ class SyncData:
 
     def keys_tree(self) -> Dict[str, Optional[dict]]:
         """Tree of the keys. Used for h5viewer."""
-        structure = h5py_utils.get_keys_structure(self._data)
+        structure = get_keys_structure(self._data)
 
         for key in self._unopened_keys:
             structure[key] = None
@@ -401,9 +419,14 @@ class SyncData:
     def _get_repr(self):
         # self.pull(auto=True)
         if self._repr is None:
-            additional_info = {key: " (r)" for key in self._read_only} if isinstance(self._read_only, set) else None
-            self._repr = h5py_utils.output_dict_structure(self._data, additional_info=additional_info) + \
-                (f"\nUnloaded keys: {self._unopened_keys}" if self._unopened_keys else "")
+            additional_info = (
+                {key: " (r)" for key in self._read_only}
+                if isinstance(self._read_only, set)
+                else None
+            )
+            self._repr = output_dict_structure(self._data, additional_info=additional_info) + (
+                f"\nUnloaded keys: {self._unopened_keys}" if self._unopened_keys else ""
+            )
 
     def __repr__(self):
         self._get_repr()
@@ -424,10 +447,12 @@ class SyncData:
     def __dir__(self) -> Iterable[str]:
         return list(self._keys) + self._default_attr
 
-    def save(self,
-             just_update: Union[bool, Iterable[str]] = False,
-             filepath: Optional[str] = None,
-             force: Optional[bool] = None):
+    def save(
+        self,
+        just_update: Union[bool, Iterable[str]] = False,
+        filepath: Optional[str] = None,
+        force: Optional[bool] = None,
+    ):
         if just_update is False and force is True:
             just_update = False
         # print(f"saving globally with {just_update=}")
@@ -449,8 +474,11 @@ class SyncData:
                 data_to_save = self._data
                 data_to_save.update({key: None for key in last_update if key not in self._data})
             else:
-                data_to_save = {key: value for key, value in self._data.items()
-                                if key not in self._read_only or key in last_update}
+                data_to_save = {
+                    key: value
+                    for key, value in self._data.items()
+                    if key not in self._read_only or key in last_update
+                }
             self.__h5py_utils_save_dict_with_retry(filepath=filepath, data=data_to_save)
 
             return self
@@ -464,8 +492,12 @@ class SyncData:
                     self._classes_should_be_saved_internally.remove(key)
         self.__h5py_utils_save_dict_with_retry(
             filepath=filepath,
-            data={key: self._data.get(key, None) for key in last_update
-                  if key not in self._classes_should_be_saved_internally})
+            data={
+                key: self._data.get(key)
+                for key in last_update
+                if key not in self._classes_should_be_saved_internally
+            },
+        )
 
         return self
 
@@ -475,9 +507,7 @@ class SyncData:
             try:
                 # print("_raise_file_locked_error", self._raise_file_locked_error, list(data.keys()))
                 self._file_modified_time = h5py_utils.save_dict(
-                    filename=filepath + '.h5',
-                    data=data,
-                    key_prefix=self._key_prefix
+                    filename=filepath + '.h5', data=data, key_prefix=self._key_prefix
                 )
                 return
             except h5py_utils.FileLockedError as error:
@@ -485,10 +515,12 @@ class SyncData:
                     raise error
                 logging.info("File is locked. waiting 2s and %d more retrying.", i)
                 from ..utils import async_utils
+
                 async_utils.sleep(1)
 
         raise h5py_utils.FileLockedError(
-            f"Even after {self._retry_on_file_locked_error} data was not saved")
+            f"Even after {self._retry_on_file_locked_error} data was not saved"
+        )
 
     @staticmethod
     def _check_if_filepath_was_set(filepath: Optional[str], filepath2: Optional[str]) -> str:
@@ -501,8 +533,7 @@ class SyncData:
 
     @property
     def filepath(self):
-        return None if self._filepath is None else \
-            (self._filepath.rsplit('.h5', 1)[0])
+        return None if self._filepath is None else (self._filepath.rsplit('.h5', 1)[0])
 
     @filepath.setter
     def filepath(self, value: str):
@@ -520,9 +551,6 @@ class SyncData:
     @property
     def save_on_edit(self):
         return self._save_on_edit
-
-    # def _asdict(self):
-    #     return self._data
 
     def asdict(self):
         return self._data

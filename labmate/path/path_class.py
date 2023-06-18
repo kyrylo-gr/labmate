@@ -15,7 +15,7 @@ class Path(type(pathlib.Path())):
     """
 
     def __add__(self, other: Union['Path', str]):
-        """Sum 2 str."""
+        """Sum two paths as concatenation of two strings."""
         if not isinstance(other, str):
             other = str(other)
         return type(self)(self.as_posix() + other)
@@ -24,8 +24,7 @@ class Path(type(pathlib.Path())):
         """Create a directories if needed.
 
         If self is a file creates directories to dirname(self)."""
-        file = os.path.dirname(self) \
-            if '.' in os.path.basename(self) else self
+        file = os.path.dirname(self) if '.' in os.path.basename(self) else self
         if not os.path.exists(file):
             os.makedirs(file, mode=mode, exist_ok=exist_ok)
         return self
@@ -34,13 +33,20 @@ class Path(type(pathlib.Path())):
         """Make sure that the extension is the one provided.
 
         If the list of extensions provided, then any extensions are allowed,
-        but is no one satisfied, uses first to determine extension."""
+        but is no one satisfied, uses first to determine extension.
+
+        Examples:
+        --------
+        >>> path = Path("some_file.json")
+        >>> path.make_extension(".json") # -> "some_file.json"
+        >>> path.make_extension(["txt", "csv"]) # -> "some_file.json.txt"
+
+        """
         if isinstance(extension, str):
             extension = [extension]
         if not isinstance(extension, Iterable):
             raise ValueError("Extension must be a string or an iterable")
-        extension = [ext if ext.startswith('.') else ('.' + ext)
-                     for ext in extension]
+        extension = [ext if ext.startswith('.') else ('.' + ext) for ext in extension]
         path = self.as_posix()
         for ext in extension:
             if path.endswith(ext):
@@ -49,10 +55,12 @@ class Path(type(pathlib.Path())):
 
     @property
     def dirname(self) -> 'Path':
+        """Same as os.path.dirname."""
         return type(self)(os.path.dirname(self))
 
     @property
     def basename(self) -> 'Path':
+        """Same as os.path.basename."""
         return type(self)(os.path.basename(self))
 
     @property
@@ -60,12 +68,13 @@ class Path(type(pathlib.Path())):
         return str(self)
 
 
-def get_file_path(file_name: Union[str, Path], *,
-                  path: Optional[Union[str, Path]] = None,
-                  extension: Optional[str] = None) -> Path:
-    file_name = Path(file_name)
+def get_file_path(
+    filename: Union[str, Path], *, path: Optional[Union[str, Path]] = None, extension: Optional[str] = None
+) -> Path:
+    """Get a Path for a file called `filename` at `path` location with `extension`."""
+    filename = Path(filename)
     if extension:
-        file_name.make_extension(extension)
+        filename.make_extension(extension)
     if path is not None:
-        return Path(path, file_name)
-    return Path(file_name)
+        return Path(path, filename)
+    return Path(filename)

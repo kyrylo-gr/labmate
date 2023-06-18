@@ -29,8 +29,7 @@ class AcquisitionLoop(SyncData):
         """Return np.arange(stop) given a stop value."""
 
     @overload
-    def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /
-                 ) -> Iterator:
+    def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /) -> Iterator:
         """Return np.arange(start, stop, step) given a start, stop and step."""
 
     def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Optional[Iterator]:
@@ -59,11 +58,11 @@ class AcquisitionLoop(SyncData):
             raise ValueError("You should provide keywords and values to save.")
 
         level = level if level is not None else self._level
-        shape = tuple(self._shape[:self._level])
+        shape = tuple(self._shape[: self._level])
 
-        iteration = tuple(self._iteration[:self._level])
+        iteration = tuple(self._iteration[: self._level])
         for key, value in kwds.items():
-            if isinstance(value, (np.ndarray, )):
+            if isinstance(value, (np.ndarray,)):
                 key_shape = (*shape, *value.shape)
             else:
                 key_shape = shape
@@ -79,12 +78,14 @@ class AcquisitionLoop(SyncData):
                     if len(key_shape) < len(self[key].shape):
                         raise ValueError(
                             f"Object {key} hasn't the same shape as before. Now it's "
-                            f"{key_shape[len(shape):]}, but before it was {self[key].shape[len(shape):]}.")
+                            f"{key_shape[len(shape):]}, but before it was {self[key].shape[len(shape):]}."
+                        )
 
                     elif len(key_shape) > len(self[key].shape):
                         raise ValueError(
                             f"Object {key} cannot be save as the shape is not compatible. "
-                            f"Before the shape was {self[key].shape}, but now it is {key_shape}.")
+                            f"Before the shape was {self[key].shape}, but now it is {key_shape}."
+                        )
 
                     # print(self[key].shape)
                     # print(f"{key_shape=}")
@@ -92,11 +93,7 @@ class AcquisitionLoop(SyncData):
                     #             key_shape,
                     #             self[key].shape)))
                     self[key] = SyncNp(
-                        np.pad(
-                            self[key],
-                            pad_width=tuple((0, i-j) for i, j in zip(
-                                key_shape,
-                                self[key].shape)))
+                        np.pad(self[key], pad_width=tuple((0, i - j) for i, j in zip(key_shape, self[key].shape)))
                     )
                     self[key][iteration] = value
                     # data = self.data[key]
@@ -128,23 +125,21 @@ class AcquisitionLoop(SyncData):
             if len(self._shape) <= level:
                 self._shape.append(length)
                 self['__loop_shape__'] = self._shape
-            elif self._iteration[level] != 0 and \
-                    (len(self._iteration) == 1 or self._iteration[level-1] == 0):
-                self._shape[level] = self._shape[level]+length
+            elif self._iteration[level] != 0 and (len(self._iteration) == 1 or self._iteration[level - 1] == 0):
+                self._shape[level] = self._shape[level] + length
                 self['__loop_shape__'] = self._shape
 
             self._level += 1
             for a in array:
                 yield a
-                if len(self._iteration)-1 > level:
+                if len(self._iteration) - 1 > level:
                     self._iteration[-1] = 0
-                self._iteration[self._level-1] += 1
-            if len(self._iteration)-1 > level:
+                self._iteration[self._level - 1] += 1
+            if len(self._iteration) - 1 > level:
                 self._iteration.pop()
             self._level -= 1
 
-        return GenerToIter(
-            loop_iter(iterable, level=level), length)
+        return GenerToIter(loop_iter(iterable, level=level), length)
 
     def enum(self, *args, iterable: Optional[Iterable] = None):
         return enumerate(self(*args, iterable=iterable))  # type: ignore
@@ -197,8 +192,7 @@ class AcquisitionLoopOld:
         """Given a stop value returns np.arange(stop)."""
 
     @overload
-    def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /
-                 ) -> Iterator:
+    def __call__(self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /) -> Iterator:
         """Given a start, stop and step returns np.arange(start, stop, step)."""
 
     def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Optional[Iterator]:
@@ -252,8 +246,7 @@ class AcquisitionLoopOld:
                 self.loop_shape.append(length)
             else:
                 assert length == self.loop_shape[self.current_loop - 1]
-            for i in iterable:
-                yield i  # for body executes here
+            yield from iterable
             self.current_loop -= 1
 
         return GenerToIter(loop_iter(), length)
@@ -279,8 +272,9 @@ class AcquisitionLoopOld:
                 # print(key, expected_len, len(data_flatten))
                 data_flatten = data_flatten[-expected_len:]
 
-            data_reshape[key] = np.pad(data_flatten, (0, expected_len-len(data_flatten))).reshape(  # type: ignore
-                self._reshape_tuple(key))
+            data_reshape[key] = np.pad(data_flatten, (0, expected_len - len(data_flatten))).reshape(  # type: ignore
+                self._reshape_tuple(key)
+            )
         return data_reshape
 
     def asdict(self):
@@ -299,9 +293,7 @@ class AcquisitionLoopOld:
         if not self.__filename__ or not self.__filekey__:
             raise ValueError("Cannot save changes without filename and filekey provided")
 
-        h5py_utils.save_dict(
-            filename=self.__filename__,
-            data={self.__filekey__: self.asdict()})
+        h5py_utils.save_dict(filename=self.__filename__, data={self.__filekey__: self.asdict()})
 
 
 class GenerToIter:

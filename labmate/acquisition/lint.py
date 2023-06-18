@@ -20,24 +20,22 @@ class NameVisitor(ast.NodeVisitor):
         node.parent = parent  # type: ignore
         node.dont_parse = dont_parse  # type: ignore
 
-        if (isinstance(node, ast.Call) and
-                isinstance(node.func, ast.Attribute) and
-                node.func.attr == "save_acquisition"):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "save_acquisition":
             node.dont_parse = []  # type: ignore
             return
 
         if isinstance(node, ast.FunctionDef):
             variables = (
-                get_args_from_list(node.args.posonlyargs) +
-                get_args_from_list(node.args.args) +
-                get_args_from_list(node.args.kwonlyargs)
+                get_args_from_list(node.args.posonlyargs)
+                + get_args_from_list(node.args.args)
+                + get_args_from_list(node.args.kwonlyargs)
             )
             if node.args.kwarg:
                 variables += node.args.kwarg.arg
             node.dont_parse = variables  # type: ignore
 
         elif isinstance(node, (ast.Import, ast.ImportFrom)):
-            for name in node.names:
+            for name in node.names:  # type: ignore
                 var = name.asname or name.name
                 if var != "*":
                     self.local_vars.add(var)
@@ -49,11 +47,13 @@ class NameVisitor(ast.NodeVisitor):
                 else:
                     node.dont_parse.append(node.id)  # type: ignore
 
-            if (isinstance(node.ctx, ast.Load) and
-                    node.id not in self.local_vars and
-                    node.id not in self.builtins):
-                if (node.dont_parse is None) or (node.id not in node.dont_parse):  # type: ignore
-                    self.external_vars.add(node.id)
+            if (
+                isinstance(node.ctx, ast.Load)
+                and (node.id not in self.local_vars)
+                and (node.id not in self.builtins)
+                and ((node.dont_parse is None) or (node.id not in node.dont_parse))  # type: ignore
+            ):
+                self.external_vars.add(node.id)
 
         self.generic_visit(node)
 
@@ -62,11 +62,9 @@ class NameVisitor(ast.NodeVisitor):
             if isinstance(value, list):
                 for item in value:
                     if isinstance(item, ast.AST):
-                        self.visit(item, parent=node,
-                                   dont_parse=node.dont_parse)  # type: ignore
+                        self.visit(item, parent=node, dont_parse=node.dont_parse)  # type: ignore
             elif isinstance(value, ast.AST):
-                self.visit(value, parent=node,
-                           dont_parse=node.dont_parse)  # type: ignore
+                self.visit(value, parent=node, dont_parse=node.dont_parse)  # type: ignore
 
 
 def find_variables(node, ignore_var: Optional[set] = None) -> Tuple[set, set]:

@@ -1,3 +1,4 @@
+"""Contains all custom JSON encoders used."""
 import json
 
 

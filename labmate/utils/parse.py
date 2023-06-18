@@ -1,5 +1,4 @@
-from typing import Any, Dict, List, NamedTuple, \
-    Optional, Tuple, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 
 class BracketsScore:
@@ -12,9 +11,9 @@ class BracketsScore:
         return self.round == 0 and self.curly == 0 and self.square == 0
 
     def update_from_str(self, text: str):
-        self.round += text.count('(') - text.count(')')
-        self.curly += text.count('{') - text.count('}')
-        self.square += text.count('[') - text.count(']')
+        self.round += text.count("(") - text.count(")")
+        self.curly += text.count("{") - text.count("}")
+        self.square += text.count("[") - text.count("]")
 
 
 class ParsedValue(NamedTuple):
@@ -79,17 +78,22 @@ def parse_value(value: str) -> Union[str, int, float]:
     try:
         if len(value_without_underscores) == 0:
             pass
-        elif value_without_underscores.isdigit() or \
-                (value_without_underscores[0] == '-' and value[1:].isdigit()):
+        elif value_without_underscores.isdigit() or (
+            value_without_underscores[0] == "-" and value[1:].isdigit()
+        ):
             return int(value)
-        elif value_without_underscores.replace('.', '').isdigit() or \
-                (value[0] == '-' and value_without_underscores[1:].replace('.', '').isdigit()):
+        elif value_without_underscores.replace(".", "").isdigit() or (
+            value[0] == "-" and value_without_underscores[1:].replace(".", "").isdigit()
+        ):
             return float(value)
-        elif (value[0].isdigit() or (value[0] == "-" and value[1].isdigit())) \
-                and value[-1].isdigit() and 'e' in value:
+        elif (
+            (value[0].isdigit() or (value[0] == "-" and value[1].isdigit()))
+            and value[-1].isdigit()
+            and "e" in value
+        ):
             return float(value)
     except ValueError:
-        pass
+        return value
 
     return value
 
@@ -101,25 +105,25 @@ def parse_str(file: str, /) -> Dict[str, ParsedValue]:
     parsed_values = {}
     brackets = BracketsScore()
     param, value = "", ""
-    for line in file.split('\n'):
+    for line in file.split("\n"):
         if not brackets.is_zero():
             value += f"{line.split('#')[0].strip()}\n"  # type: ignore
-        elif len(line) == 0 or not line[0].isalpha() or '=' not in line:
+        elif len(line) == 0 or not line[0].isalpha() or "=" not in line:
             continue
         else:
-            param, value = line.split('=')[:2]
+            param, value = line.split("=")[:2]
 
         brackets.update_from_str(line)
         if not brackets.is_zero():
             continue
 
         if "# value: " in value:
-            value_eval = value[value.rfind("# value: ") + 9:]
+            value_eval = value[value.rfind("# value: ") + 9 :]
             value_eval = parse_value(value_eval)
         else:
             value_eval = None
 
-        value = parse_value(value.split('#')[0].strip())
+        value = parse_value(value.split("#")[0].strip())
 
         if value_eval is None:
             value_eval = value
@@ -133,10 +137,10 @@ def parse_get_format(key: str) -> Tuple[str, Optional[str], Optional[str]]:
     """Convert a key into a key, units, format.
 
     Example:
-        speed__km/s__2f -> (speed, km/s, 2f)
-        speed -> (speed, None, None)
-        speed__2f -> (speed, None, '2f')
-        speed__km/s -> (speed, 'km/s', None)
+        >>> speed__km/s__2f -> (speed, km/s, 2f)
+        >>> speed -> (speed, None, None)
+        >>> speed__2f -> (speed, None, '2f')
+        >>> speed__km/s -> (speed, 'km/s', None)
     """
     args = key.split("__")
     if len(args) >= 3:
@@ -149,6 +153,8 @@ def parse_get_format(key: str) -> Tuple[str, Optional[str], Optional[str]]:
 
 
 class ValueForPrint(NamedTuple):
+    """Value with key, units and format."""
+
     key: str
     value: Any
     units: Optional[str] = None
@@ -161,11 +167,11 @@ def format_title(values: List[ValueForPrint], max_length: Optional[int] = None):
     last_line_len = 0
     for value in values:
         units = f" ({value.units})" if value.units is not None else ""
-        value_str = value.value if value.format is None else value.value.__format__(f".{value.format}")
+        value_str = (
+            value.value if value.format is None else value.value.__format__(f".{value.format}")
+        )
         new_txt = f"{value.key} = {value_str}{units}"
-        if not max_length or \
-                ((last_line_len + len(new_txt) < max_length) or
-                 last_line_len == 0):
+        if not max_length or ((last_line_len + len(new_txt) < max_length) or last_line_len == 0):
             txt += ("; " if txt != "" else "") + new_txt
             last_line_len += len(new_txt) + 2
         else:
