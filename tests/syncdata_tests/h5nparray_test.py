@@ -1,5 +1,6 @@
 import os
 import shutil
+
 # import shutil
 
 import unittest
@@ -15,7 +16,7 @@ DATA_FILE_PATH = os.path.join(DATA_DIR, "some_data.h5")
 
 
 class H5NpArraySaveOnEditTest(unittest.TestCase):
-    """Saving different type of variables inside h5"""
+    """Saving different type of variables inside h5."""
 
     def setUp(self):
         self.sd = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
@@ -24,13 +25,11 @@ class H5NpArraySaveOnEditTest(unittest.TestCase):
         self.sd['test'] = SyncNp(self.check)
 
     def compare(self):
-        self.assertTrue(self.compare_np_array(
-            self.check, self.sd['test']))
+        self.assertTrue(self.compare_np_array(self.check, self.sd['test']))
 
         sd = SyncData(DATA_FILE_PATH)
 
-        self.assertTrue(self.compare_np_array(
-            self.check, sd['test']))
+        self.assertTrue(self.compare_np_array(self.check, sd['test']))
 
     @staticmethod
     def compare_np_array(a1, a2):
@@ -92,12 +91,11 @@ class H5NpArrayTest(H5NpArraySaveOnEditTest):
         self.sd['test'] = SyncNp(self.check)
 
     def compare(self):
-        self.sd['test'].save(just_update=True)  # pylint: disable=E1101 # type: ignore
+        self.sd['test'].save()  # pylint: disable=E1101 # type: ignore
         return super().compare()
 
 
 class H5NpArrayGlobalSaveTest(H5NpArraySaveOnEditTest):
-
     def compare(self):
         self.sd.save()
         return super().compare()

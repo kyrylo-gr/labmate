@@ -22,17 +22,19 @@ DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
 class AcquisitionLoopTest(unittest.TestCase):
     """Test of saving simple data."""
 
+    save_on_edit = True
+
     @staticmethod
     def get_some_data(freq, points):
-        x = np.linspace(0, 10*np.pi, points)
-        y = np.sin(freq*2*np.pi*x)
+        x = np.linspace(0, 10 * np.pi, points)
+        y = np.sin(freq * 2 * np.pi * x)
         return x, y
 
     # @classmethod
     def setUp(self) -> None:
         """Create a dictionary to verify with."""
         self.name = "LoopTest"
-        self.aqm = AcquisitionManager(DATA_DIR, save_on_edit=True)
+        self.aqm = AcquisitionManager(DATA_DIR, save_on_edit=self.save_on_edit)
         self.aqm.new_acquisition(self.name)
 
         self.points = 101
@@ -44,9 +46,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         # return super().setUpClass()
 
     def test_dir_was_created(self):
-        self.assertTrue(os.path.exists(
-            os.path.join(DATA_DIR, self.name)
-        ))
+        self.assertTrue(os.path.exists(os.path.join(DATA_DIR, self.name)))
 
     def test_classical_loop(self):
         """Save and load the simplest list.
@@ -140,7 +140,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.aqm.aq.loop = loop = AcquisitionLoop()
         self.data = {"freq": []}
 
-        for freq in loop(1, 10, .5):
+        for freq in loop(1, 10, 0.5):
             loop(freq=freq)
             self.data['freq'].append(freq)
 
@@ -149,14 +149,15 @@ class AcquisitionLoopTest(unittest.TestCase):
 
     def test_classical_loop_iterator(self):
         """Save and load the simplest list."""
+
         def iterator():
-            for i in range(10):
-                yield i
+            yield from range(10)
+
         # Protocol
         self.aqm.aq.loop = loop = AcquisitionLoop()
         self.data = {"freq": []}
 
-        for freq in loop(iterator()):
+        for freq in loop(iterator(), length=10):
             loop(freq=freq)
             self.data['freq'].append(freq)
 
@@ -173,7 +174,6 @@ class AcquisitionLoopTest(unittest.TestCase):
             loop()
 
     def test_1level_2loop(self):
-
         self.aqm.aq.loop = loop = AcquisitionLoop()
         self.data = {"freq": [], "y": [], "x": []}
 
@@ -199,7 +199,6 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.data_verification()
 
     def test_2level_1loop(self):
-
         self.aqm.aq.loop = loop = AcquisitionLoop()
         self.data = {"freq": [], "y": [], "x": [], 'y2': [], 'freq2': []}
 
@@ -224,7 +223,6 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.data_verification()
 
     def test_2level_2loop(self):
-
         self.aqm.aq.loop = loop = AcquisitionLoop()
         self.data = {"freq": [], "y": [], "x": [], 'y2': [], 'freq2': []}
 
@@ -277,12 +275,52 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.aqm.aq.loop = loop = AcquisitionLoop()
         self.data = {"freqs": [], "i": []}
 
-        for i, freq in loop.enum(1, 5, .5):
+        for i, freq in loop.enum(1, 5, 0.5):
             loop.append(i=i**2, freqs=freq)
             self.data['i'].append(i**2)
             self.data['freqs'].append(freq)
 
         # Verification
+        self.data_verification()
+
+    def test_interrupted_loop(self):
+        """Test enum on iterable."""
+        # Protocol
+        self.aqm.aq.loop = loop = AcquisitionLoop()
+        self.data = {"freqs": [], "i": []}
+
+        for i, freq in enumerate(np.arange(1, 5, 0.5)):
+            self.data['i'].append(i**2)
+            self.data['freqs'].append(freq)
+
+        for i, freq in loop.enum(1, 5, 0.5):
+            loop.append(i=i**2, freqs=freq)
+            if i > 2:
+                break
+
+        if not self.save_on_edit:
+            loop.save()
+
+        d2 = SyncData(self.aqm.current_filepath, 'a', save_on_edit=self.save_on_edit)
+        d2.loop = loop = AcquisitionLoop(d2.get('loop'))
+
+        self.data['i'][1] = -10
+        d2.loop.i[1] = -10
+
+        for i, freq in loop.enum(1, 5, 0.5):
+            if loop.already_saved():
+                continue
+            self.data['i'][i] = i**2  # to check if loop wasn't rerun from beginning
+
+            loop.append(i=i**2, freqs=freq)
+
+        # Verification
+        self.assertAlmostEqual(loop['i', 1], -10)
+        self.assertAlmostEqual(self.data['i'][1], -10)
+
+        if not self.save_on_edit:
+            d2.save()
+
         self.data_verification()
 
     def data_verification(self):
@@ -291,7 +329,10 @@ class AcquisitionLoopTest(unittest.TestCase):
 
         for key, value in self.data.items():
             self.assertAlmostEqual(
-                compare_np_array(np.array(value), loop_freq.get(key)), 0)
+                compare_np_array(np.array(value), loop_freq.get(key)),
+                0,
+                msg=f"Difference in key {key}.",
+            )
 
     @classmethod
     def tearDownClass(cls):
@@ -302,17 +343,12 @@ class AcquisitionLoopTest(unittest.TestCase):
         return super().tearDownClass()
 
 
-def compare_np_array(array1: Union[list, np.ndarray],
-                     array2: Union[list, np.ndarray]):
+def compare_np_array(array1: Union[list, np.ndarray], array2: Union[list, np.ndarray]):
     return np.abs(np.array(array1) - np.array(array2)).sum()  # type: ignore
 
 
 class AcquisitionLoopWithoutSaveOnEditTest(AcquisitionLoopTest):
-    def setUp(self) -> None:
-        """Create a dictionary to verify with."""
-        super().setUp()
-        self.aqm = AcquisitionManager(DATA_DIR, save_on_edit=False)
-        self.aqm.new_acquisition(self.name)
+    save_on_edit = False
 
     def data_verification(self):
         # print(self.aqm.aq.loop._save_on_edit)

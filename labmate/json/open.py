@@ -6,7 +6,10 @@ from ..path import Path, get_file_path
 
 
 def write(
-    file: Union[str, 'Path'], data: dict, path: Optional[str] = None, encoder: Type[json.JSONEncoder] = StringEncoder
+    file: Union[str, 'Path'],
+    data: dict,
+    path: Optional[str] = None,
+    encoder: Type[json.JSONEncoder] = StringEncoder,
 ) -> None:
     """Write data to a file. Sort keys.
 
@@ -25,7 +28,9 @@ def write(
 
 
 def read(
-    file: Union[str, 'Path'], path: Optional[str] = None, decoder: Type[json.JSONDecoder] = NumbersDecoder
+    file: Union[str, 'Path'],
+    path: Optional[str] = None,
+    decoder: Type[json.JSONDecoder] = NumbersDecoder,
 ) -> dict:
     """Load a data from file at path. Decode number by default.
 

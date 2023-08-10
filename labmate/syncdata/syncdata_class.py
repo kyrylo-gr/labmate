@@ -24,7 +24,7 @@ def editing(func):
         res = func(self, *args, **kwargs)
         self._clean_precalculated_results()  # pylint: disable=W0212
         if self._save_on_edit:  # pylint: disable=W0212
-            self.save(just_update=True)
+            self.save(only_update=True)
         return res
 
     return run_func_and_clean_precalculated_results
@@ -73,7 +73,7 @@ class SyncData:
         self,
         filepath_or_data: Optional[Union[str, dict, Path]] = None,
         /,
-        mode: Optional[Literal['r', 'w', 'a']] = None,
+        mode: Optional[Literal['r', 'w', 'a', 'w=', 'a=']] = None,
         *,
         filepath: Optional[Union[str, Path]] = None,
         save_on_edit: bool = False,
@@ -99,14 +99,17 @@ class SyncData:
             open_on_init (Optional[bool], optional): open_on_init. Defaults to True.
 
         """
-        if mode == 'w':
-            read_only = False
-            overwrite = True
-        elif mode == 'a':
-            read_only = False
-            overwrite = False
-        elif mode == 'r':
-            read_only = True
+        if mode is not None:
+            if mode.startswith('w'):
+                read_only = False
+                overwrite = True
+            elif mode.startswith('a'):
+                read_only = False
+                overwrite = False
+            elif mode == 'r':
+                read_only = True
+            if mode.endswith('='):
+                save_on_edit = True
 
         if filepath_or_data is not None and hasattr(filepath_or_data, "keys"):
             if not isinstance(filepath_or_data, dict):
@@ -233,7 +236,7 @@ class SyncData:
         self._last_update.add(key)
 
     def __check_read_only_true(self, key):
-        return self._read_only and (self._read_only is True or key in self._read_only)
+        return (self._read_only) and (self._read_only is True or key in self._read_only)
 
     @editing
     def update(self, __m: Optional[dict] = None, **kwds: 'DICT_OR_LIST_LIKE'):
@@ -322,13 +325,16 @@ class SyncData:
                 self._classes_should_be_saved_internally.add(__key)
 
             if hasattr(__value, "__init__filepath__") and self._filepath:
-                if self._filepath is None:
-                    raise ValueError("Cannot run __init__filepath__ with file unspecified")
                 key = __key if self._key_prefix is None else f"{self._key_prefix}/{__key}"
                 __value.__init__filepath__(  # type: ignore
                     filepath=self._filepath, filekey=key, save_on_edit=self._save_on_edit
                 )
+
+            if hasattr(__value, '__post__init__'):
+                __value.__post__init__()  # type: ignore
+
         self.__set_data__(__key, __value)
+        return None
 
     def __delitem__(self, key: str):
         self.pop(key)
@@ -449,18 +455,17 @@ class SyncData:
 
     def save(
         self,
-        just_update: Union[bool, Iterable[str]] = False,
+        only_update: Union[bool, Iterable[str]] = True,
         filepath: Optional[str] = None,
         force: Optional[bool] = None,
     ):
-        if just_update is False and force is True:
-            just_update = False
-        # print(f"saving globally with {just_update=}")
+        if force is True:
+            only_update = False
         if self._read_only is True:
             raise ValueError("Cannot save opened in a read-only mode. Should reopen the file")
-        if isinstance(just_update, Iterable):
-            last_update = self._last_update.intersection(just_update)
-            self._last_update = self._last_update.difference(just_update)
+        if isinstance(only_update, Iterable):
+            last_update = self._last_update.intersection(only_update)
+            self._last_update = self._last_update.difference(only_update)
         else:
             last_update, self._last_update = self._last_update, set()
 
@@ -469,16 +474,23 @@ class SyncData:
 
         filepath = self._check_if_filepath_was_set(filepath, self._filepath)
 
-        if just_update is False:
+        if only_update is False:
             if self._read_only is False:
                 data_to_save = self._data
-                data_to_save.update({key: None for key in last_update if key not in self._data})
             else:
                 data_to_save = {
                     key: value
                     for key, value in self._data.items()
                     if key not in self._read_only or key in last_update
                 }
+            data_to_save.update(
+                {
+                    key: None
+                    for key in last_update
+                    if (key not in self._data) and not self.__check_read_only_true(key)
+                }
+            )
+
             self.__h5py_utils_save_dict_with_retry(filepath=filepath, data=data_to_save)
 
             return self
@@ -487,9 +499,10 @@ class SyncData:
             if key in self._classes_should_be_saved_internally:
                 obj = self._data[key]
                 if hasattr(obj, 'save'):
-                    self._data[key].save(just_update=just_update)
+                    self._data[key].save(only_update=only_update)
                 else:
                     self._classes_should_be_saved_internally.remove(key)
+
         self.__h5py_utils_save_dict_with_retry(
             filepath=filepath,
             data={

@@ -313,7 +313,8 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
     def test_file_does_not_exist_on_new_cell(self):
         self.create_acquisition_cell()
         self.assertFalse(
-            os.path.exists(self.aqm.current_filepath + ".h5"), msg="H5 file was created. But it should not."
+            os.path.exists(self.aqm.current_filepath + ".h5"),
+            msg="H5 file was created. But it should not.",
         )
 
     def test_file_does_not_exist_on_add_data(self):
@@ -327,7 +328,8 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
         self.aqm.aq.pop('z')
 
         self.assertFalse(
-            os.path.exists(self.aqm.current_filepath + ".h5"), msg="H5 file was created. But it should not."
+            os.path.exists(self.aqm.current_filepath + ".h5"),
+            msg="H5 file was created. But it should not.",
         )
 
     def test_file_exist_on_save_acquisition(self):
@@ -335,7 +337,8 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
 
         self.aqm.save_acquisition()
         self.assertTrue(
-            os.path.exists(self.aqm.current_filepath + ".h5"), msg="After running save_acquisition h5 file should exist"
+            os.path.exists(self.aqm.current_filepath + ".h5"),
+            msg="After running save_acquisition h5 file should exist",
         )
 
     def test_file_exist_on_save_acquisition_with_data(self):
@@ -347,7 +350,8 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
         self.aqm.save_acquisition()
 
         self.assertTrue(
-            os.path.exists(self.aqm.current_filepath + ".h5"), msg="After running save_acquisition h5 file should exist"
+            os.path.exists(self.aqm.current_filepath + ".h5"),
+            msg="After running save_acquisition h5 file should exist",
         )
 
         self.check_xy_values()
@@ -589,7 +593,9 @@ class LintingTest(unittest.TestCase):
         if msg:
             level = level if level is not None else 30
 
-            self.assertTrue(self.check_logs(logs, msg, level), msg=f"No '{msg}' at level {level} inside: {logs}")
+            self.assertTrue(
+                self.check_logs(logs, msg, level), msg=f"No '{msg}' at level {level} inside: {logs}"
+            )
         else:
             msg = "External variable used"
             level = level or 0

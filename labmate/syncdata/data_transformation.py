@@ -50,6 +50,9 @@ def transform_to_possible_formats(data: DICT_OR_LIST_LIKE) -> DICT_OR_LIST_LIKE:
     if hasattr(data, 'asdict'):
         data = data.asdict()  # type: ignore
 
+    if hasattr(data, '_asdict'):
+        data = data._asdict()  # type: ignore
+
     if hasattr(data, 'asarray'):
         data = data.asarray()  # type: ignore
 

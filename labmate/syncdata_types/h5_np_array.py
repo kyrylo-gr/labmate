@@ -16,14 +16,19 @@ class SyncNp(np.ndarray):
             data = np.array(data)
         if isinstance(data, tuple):
             data = np.zeros(shape=data)
-        return data.view(cls)
+        if isinstance(data, SyncNp):
+            return data
+        data = data.view(cls)
+        return data
 
     def __init__filepath__(self, *, filepath: str, filekey: str, save_on_edit: bool = False, **_):
         self.__filename__ = filepath
         self.__filekey__ = filekey
         self.__save_on_edit__ = save_on_edit
-        self.__last_changes__ = []
-        self.save(just_update=False)
+        if self.__last_changes__ is None:
+            self.__last_changes__ = []
+        if self.__save_on_edit__:  # or not self.__initialized__:
+            self.save(only_update=False)
 
     def __setitem__(self, __key, __value):
         if self.__last_changes__ is None:
@@ -33,9 +38,9 @@ class SyncNp(np.ndarray):
         super().__setitem__(__key, __value)
 
         if self.__save_on_edit__:
-            self.save(just_update=True)
+            self.save(only_update=True)
 
-    def save(self, just_update=True):
+    def save(self, only_update=True):
         if self.__last_changes__ is None:
             return self
 
@@ -47,16 +52,20 @@ class SyncNp(np.ndarray):
         ):
             os.makedirs(os.path.dirname(self.__filename__), exist_ok=True)
 
-        if not just_update:
+        if not only_update:
             with h5py.File(self.__filename__, 'a') as file:
                 if self.__filekey__ in file:
                     del file[self.__filekey__]
                 file[self.__filekey__] = np.asarray(self)
 
-        for key in self.__last_changes__:
-            with h5py.File(self.__filename__, 'a') as file:
-                if self.__filekey__ not in file.keys():
-                    file.create_dataset(self.__filekey__, shape=self.data.shape)
+        with h5py.File(self.__filename__, 'a') as file:
+            if self.__filekey__ not in file.keys():
+                # file.create_dataset(self.__filekey__, shape=self.data.shape)
+                file[self.__filekey__] = np.asarray(self)
+
+                # file[self.__filekey__] = self[key]  # type: ignore
+
+            for key in self.__last_changes__:
                 file[self.__filekey__][key] = self[key]  # type: ignore
 
         self.__last_changes__ = []

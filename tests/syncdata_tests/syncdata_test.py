@@ -302,21 +302,21 @@ class SavingManualTest(SavingOnEditTest):
 
     @property
     def data_dict(self):
-        self.data_smart.save(just_update=False)
+        self.data_smart.save(only_update=False)
         return h5py_utils.open_h5(DATA_FILE_PATH)
 
 
 class SavingManualJustUpdateTest(SavingManualTest):
-    """Testing that SyncData saves the data after save(just_update=True) function runs."""
+    """Testing that SyncData saves the data after save(only_update=True) function runs."""
 
     @property
     def data_dict(self):
-        self.data_smart.save(just_update=True)
+        self.data_smart.save(only_update=True)
         return h5py_utils.open_h5(DATA_FILE_PATH)
 
 
 class SavingOnEditWithReadonlyFieldTest(SavingOnEditTest):
-    """Testing that SyncData saves the data after save(just_update=True) function runs."""
+    """Testing that SyncData saves the data after save(only_update=True) function runs."""
 
     def setUp(self):
         self.data_smart = SyncData(filepath=DATA_FILE_PATH, overwrite=True, save_on_edit=True)
@@ -433,10 +433,10 @@ class ReadModeTest(unittest.TestCase):
             d.unlock_data('t')
 
         with self.assertRaises(ValueError):
-            d.save(just_update=True)
+            d.save(only_update=True)
 
         with self.assertRaises(ValueError):
-            d.save(just_update=False)
+            d.save(only_update=False)
 
     def test_cannot_change_in_read_mode(self):
         d = SyncData(DATA_FILE_PATH)
@@ -708,6 +708,22 @@ class SavingOnEditDifferentFormatTest(unittest.TestCase):
         # with self.assertRaises(ValueError):
         d['t'] = Test()
 
+    def test_post_init(self):
+        class Test:
+            __should_not_be_converted__ = True
+            inited = False
+
+            def __post__init__(self):
+                self.inited = True
+
+            def asdict(self):
+                return {'a': 5}
+
+        d = self.create_file()
+        d['t'] = Test()
+
+        self.assertTrue(d['t'].inited)  # type: ignore  # pylint: disable=E1101
+
     @classmethod
     def tearDownClass(cls):
         """Remove tmp_test_data directory ones all test finished."""
@@ -867,7 +883,7 @@ class RandomCasesTest(unittest.TestCase):
         sd1['b'] = 3
 
         sd1.filepath = DATA_FILE_PATH[:-3] + '2'
-        sd1.save()
+        sd1.save(force=True)
 
         sd1['c'] = 4
         sd2 = SyncData(DATA_FILE_PATH[:-3] + '2')

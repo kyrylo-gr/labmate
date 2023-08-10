@@ -14,8 +14,7 @@ import numpy as np
 
 from labmate.acquisition import AcquisitionManager, AnalysisData
 
-from labmate.acquisition.acquisition_loop \
-    import AcquisitionLoopOld as AcquisitionLoop
+from labmate.acquisition.acquisition_loop import AcquisitionLoop
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
@@ -31,13 +30,11 @@ class BasicTest(unittest.TestCase):
         cls.aqm.new_acquisition(cls.name)
 
     def test_dir_was_created(self):
-        self.assertTrue(os.path.exists(
-            os.path.join(DATA_DIR, self.name)
-        ))
+        self.assertTrue(os.path.exists(os.path.join(DATA_DIR, self.name)))
 
     def test_simple_save(self):
         """Save and load the simplest list."""
-        x = np.linspace(0, 20*np.pi, 101)
+        x = np.linspace(0, 20 * np.pi, 101)
         y = np.sin(x)
         self.aqm.save_acquisition(x=x, y=y)
 
@@ -53,15 +50,13 @@ class BasicTest(unittest.TestCase):
         old_file_path = os.path.join(basedir, "data/old_data_example.h5")
         data = AnalysisData(old_file_path)
         assert data, "File probably exists, but create SyncData object"
-        x = np.linspace(0, 10*np.pi, 101)
-        self.assertAlmostEqual(
-            np.abs(data.get('x') - x).sum(), 0)
-        self.assertAlmostEqual(
-            np.abs(data.get('y') - np.sin(x)).sum(), 0)
+        x = np.linspace(0, 10 * np.pi, 101)
+        self.assertAlmostEqual(np.abs(data.get('x') - x).sum(), 0)
+        self.assertAlmostEqual(np.abs(data.get('y') - np.sin(x)).sum(), 0)
 
     def test_manager_die(self):
         """Save, make reload on AcquisitionManager and verify that it will found current acquisition."""
-        x = np.linspace(0, 20*np.pi, 101)
+        x = np.linspace(0, 20 * np.pi, 101)
         y = np.sin(x)
         self.aqm.save_acquisition(x=x, y=y)
 
@@ -87,8 +82,8 @@ class AcquisitionLoopTest(unittest.TestCase):
 
     @staticmethod
     def acquire_sine(freq, points):
-        x = np.linspace(0, 10*np.pi, points)
-        y = np.sin(freq*2*np.pi*x)
+        x = np.linspace(0, 10 * np.pi, points)
+        y = np.sin(freq * 2 * np.pi * x)
         return x, y
 
     @classmethod
@@ -111,9 +106,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         return super().setUpClass()
 
     def test_dir_was_created(self):
-        self.assertTrue(os.path.exists(
-            os.path.join(DATA_DIR, self.name)
-        ))
+        self.assertTrue(os.path.exists(os.path.join(DATA_DIR, self.name)))
 
     def test_classical_loop(self):
         """Save and load the simplest list.
@@ -131,8 +124,8 @@ class AcquisitionLoopTest(unittest.TestCase):
         loop = AcquisitionLoop()
         for freq in loop.iter(self.freqs):
             x, y = self.acquire_sine(freq, self.points)
-            loop.append_data(y=y, freq=freq)
-        loop.append_data(x=x)  # type: ignore
+            loop.append(y=y, freq=freq)
+        loop.append(x=x)  # type: ignore
         self.aqm.save_acquisition(loop_freq=loop)
 
         # Verification
@@ -180,8 +173,8 @@ class AcquisitionLoopTest(unittest.TestCase):
         loop = AcquisitionLoop()
         for freq in loop.iter(self.freqs):
             x, y = self.acquire_sine(freq, self.points)
-            loop.append_data(y=y, freq=freq)
-            loop.append_data(x=x, level=-1)
+            loop.append(y=y, freq=freq)
+            loop.append(x=x, level=-1)
         self.aqm.save_acquisition(loop_freq=loop)
 
         # Verification
@@ -205,8 +198,8 @@ class AcquisitionLoopTest(unittest.TestCase):
         loop = AcquisitionLoop()
         for freq in loop.iter(self.freqs):
             x, y = self.acquire_sine(freq, self.points)
-            loop.append_data(y=y, freq=freq)
-            loop.append_data(x=x, level=-1)
+            loop.append(y=y, freq=freq)
+            loop.append(x=x, level=-1)
             self.aqm.save_acquisition(loop_freq=loop)
 
         # Verification
@@ -224,8 +217,7 @@ class AcquisitionLoopTest(unittest.TestCase):
 
         self.assertAlmostEqual(compare_np_array(self.data['freq'], loop_freq.get("freq")), 0)
         self.assertAlmostEqual(compare_np_array(self.data['y'], loop_freq.get("y")), 0)
-        self.assertAlmostEqual(
-            compare_np_array(self.data['x'], loop_freq.get("x")[0, :]), 0)
+        self.assertAlmostEqual(compare_np_array(self.data['x'], loop_freq.get("x")), 0)
 
         # for i, d in enumerate(loop_freq):
         #     self.assertAlmostEqual(self.data['freq'][i], d.freq)
@@ -259,12 +251,13 @@ class AnalysisLoopTest(AcquisitionLoopTest):
         for i, d in enumerate(loop_freq):
             self.assertAlmostEqual(self.data['freq'][i], d.freq)
             self.assertAlmostEqual(compare_np_array(self.data['y'][i], d.y), 0)
-            self.assertAlmostEqual(compare_np_array(self.data['x'], d.x), 0)  # type: ignore
+        self.assertAlmostEqual(compare_np_array(self.data['x'], loop_freq.x), 0)  # type: ignore
 
         # print(loop_freq['freq'][5])
         self.assertAlmostEqual(self.data['freq'][5], loop_freq['freq'][5])  # pylint: disable=E1136
         self.assertAlmostEqual(
-            compare_np_array(self.data['y'][5], loop_freq[4:7]['y'][1]), 0)  # pylint: disable=E1136
+            compare_np_array(self.data['y'][5], loop_freq[4:7]['y'][1]), 0
+        )  # pylint: disable=E1136
 
         self.assertEqual(len(loop_freq), len(self.data['freq']))
 
@@ -274,9 +267,9 @@ class MultiAnalysisLoopTest(unittest.TestCase):
 
     @staticmethod
     def acquire_sine(freq, points, tau):
-        x = np.linspace(10*tau, 10*tau+10*np.pi, points)
-        y = np.sin(freq*2*np.pi*x)
-        y *= np.exp(-x*tau)
+        x = np.linspace(10 * tau, 10 * tau + 10 * np.pi, points)
+        y = np.sin(freq * 2 * np.pi * x)
+        y *= np.exp(-x * tau)
         return x, y
 
     @classmethod
@@ -319,11 +312,11 @@ class MultiAnalysisLoopTest(unittest.TestCase):
         loop = AcquisitionLoop()
 
         for tau in loop.iter(self.taus):
-            loop.append_data(tau=tau)
+            loop.append(tau=tau)
             for freq in loop.iter(self.freqs):
                 x, y = self.acquire_sine(freq, self.points, tau)
-                loop.append_data(y=y, freq=freq)
-            loop.append_data(x=x)  # type: ignore
+                loop.append(y=y, freq=freq)
+            loop.append(x=x)  # type: ignore
 
             self.aqm.save_acquisition(loop_tau_freq=loop)
 
@@ -331,7 +324,6 @@ class MultiAnalysisLoopTest(unittest.TestCase):
         self.data_verification_for_2d_loop()
 
     def data_verification_for_2d_loop(self):
-
         data = AnalysisData(self.aqm.current_filepath)
 
         assert data is not None
@@ -344,7 +336,7 @@ class MultiAnalysisLoopTest(unittest.TestCase):
                 self.assertAlmostEqual(self.data['tau'][i], dd.tau)
                 self.assertAlmostEqual(self.data['freq'][i][j], dd.freq)
                 self.assertAlmostEqual(compare_np_array(self.data['y'][i][j], dd.y), 0)
-                self.assertAlmostEqual(compare_np_array(self.data['x'][i], dd.x), 0)  # type: ignore
+            self.assertAlmostEqual(compare_np_array(self.data['x'][i], d.x), 0)  # type: ignore
 
     @classmethod
     def tearDownClass(cls):
@@ -354,8 +346,7 @@ class MultiAnalysisLoopTest(unittest.TestCase):
         return super().tearDownClass()
 
 
-def compare_np_array(array1: Union[list, np.ndarray],
-                     array2: Union[list, np.ndarray]):
+def compare_np_array(array1: Union[list, np.ndarray], array2: Union[list, np.ndarray]):
     return np.abs(np.array(array1) - np.array(array2)).sum()  # type: ignore
 
 
