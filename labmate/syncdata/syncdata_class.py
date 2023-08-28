@@ -407,7 +407,7 @@ class SyncData:
             self._load_from_h5(key=self._unopened_keys)
         return self._data.values()
 
-    def keys(self):
+    def keys(self) -> Set[str]:
         # self.pull(auto=True)
         return self._keys.copy().union(self._unopened_keys.copy())
 
@@ -584,4 +584,52 @@ class SyncData:
             self._keys = set()
             self._clean_precalculated_results()
             self._load_from_h5()
+
+        return self
+
+    @overload
+    def close_key(self, key: None = None, every: Literal[True] = True):
+        """Close every opened key so it could be collected by the garbage collector afterwards."""
+
+    @overload
+    def close_key(self, key: Iterable[str]):
+        """Close every key provided so it could be collected by the garbage collector afterwards."""
+
+    @overload
+    def close_key(self, key: str):
+        """Close the key so it could be collected by the garbage collector afterwards."""
+
+    def close_key(
+        self,
+        key: Optional[Union[str, Iterable[str]]] = None,
+        every: Optional[Literal[True]] = None,
+    ):
+        """Close the key so it could be collected by the garbage collector afterwards.
+
+        Args:
+            key (str | Iterable[str], optional): key or keys that should be closed. Defaults to None.
+            every (True, optional): put to True if all keys should be closed. Defaults to None.
+
+        Raises:
+            ValueError: if both key and every are not provided.
+
+        Returns:
+            self.__class__: Self
+        """
+        if every is True:
+            for k in self.keys():
+                self.close_key(k)
+            return self
+        elif key is None:
+            raise ValueError("Should provide key or every=True.")
+
+        if not isinstance(key, str):
+            for k in key:
+                self.close_key(k)
+            return self
+
+        if key not in self._unopened_keys:
+            self._data.pop(key)
+        self._unopened_keys.add(key)
+
         return self
