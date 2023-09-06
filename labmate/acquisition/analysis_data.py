@@ -55,7 +55,9 @@ class AnalysisData(SyncData):
         if filepath is None:
             raise ValueError("You must specify filepath")
 
-        super().__init__(filepath=str(filepath), overwrite=False, read_only=False, save_on_edit=save_on_edit)
+        super().__init__(
+            filepath=str(filepath), overwrite=False, read_only=False, save_on_edit=save_on_edit
+        )
         self.lock_data()
 
         self._save_files = save_files
@@ -87,7 +89,9 @@ class AnalysisData(SyncData):
         self._figure_saved = False
         self._parsed_configs = {}
 
-    def save_analysis_cell(self, cell: Optional[Union[str, Literal['none']]] = None, cell_name: Optional[str] = None):
+    def save_analysis_cell(
+        self, cell: Optional[Union[str, Literal['none']]] = None, cell_name: Optional[str] = None
+    ):
         cell = cell or self._analysis_cell
         if cell == "none":
             return
@@ -98,11 +102,15 @@ class AnalysisData(SyncData):
             logger.warning("Analysis cell is not set. Nothing to save")
             return
 
-        self.unlock_data(cell_name_key).update({cell_name_key: cell}).lock_data(cell_name_key).save([cell_name_key])
+        self.unlock_data(cell_name_key).update({cell_name_key: cell}).lock_data(cell_name_key).save(
+            [cell_name_key]
+        )
 
         if self._save_files:
             assert self.filepath, "You must set self.filepath before saving"
-            with open(self.filepath + f'_ANALYSIS_CELL_{cell_name}.py', 'w', encoding="UTF-8") as file:
+            with open(
+                self.filepath + f'_ANALYSIS_CELL_{cell_name}.py', 'w', encoding="UTF-8"
+            ) as file:
                 file.write(cell)
 
     def save_fig(
@@ -127,7 +135,9 @@ class AnalysisData(SyncData):
 
             fig = plt.gcf()
 
-        if (self._save_fig_inside_h5 and kwargs.get("inside_h5", True)) or kwargs.get("inside_h5", False):
+        if (self._save_fig_inside_h5 and kwargs.get("inside_h5", True)) or kwargs.get(
+            "inside_h5", False
+        ):
             try:
                 # import pickle
                 # import codecs
@@ -145,7 +155,9 @@ class AnalysisData(SyncData):
 
         self._figure_saved = True
 
-    def _get_fig_name(self, name: Optional[Union[str, int]] = None, extensions: Optional[str] = None) -> str:
+    def _get_fig_name(
+        self, name: Optional[Union[str, int]] = None, extensions: Optional[str] = None
+    ) -> str:
         """Get the name of the figure depending on the suffix.
 
         If name is not specified, suffix is `FIG1.pdf`, `FIG2.pdf`, etc.
@@ -185,7 +197,9 @@ class AnalysisData(SyncData):
         if hash(config_files) in self._parsed_configs:
             return self._parsed_configs[hash(config_files)]
 
-        config_data = sum((self.parse_config_file(config_file) for config_file in config_files), ConfigFile())
+        config_data = sum(
+            (self.parse_config_file(config_file) for config_file in config_files), ConfigFile()
+        )
 
         self._parsed_configs[hash(config_files)] = config_data
 
@@ -206,25 +220,36 @@ class AnalysisData(SyncData):
             key_value, key_units, key_format = utils.parse.parse_get_format(key)
             if key_value == "filename" or key_value == "file" or key_value == "f":
                 filename = os.path.split(self.filepath)[-1]
-                keys_with_values.append(utils.parse.ValueForPrint(key_value, filename, key_units, key_format))
+                keys_with_values.append(
+                    utils.parse.ValueForPrint(key_value, filename, key_units, key_format)
+                )
             elif key_value in config_data:
                 keys_with_values.append(
-                    utils.parse.ValueForPrint(key_value, config_data[key_value], key_units, key_format)
+                    utils.parse.ValueForPrint(
+                        key_value, config_data[key_value], key_units, key_format
+                    )
                 )
             elif key_value in self:
-                keys_with_values.append(utils.parse.ValueForPrint(key_value, self[key_value], key_units, key_format))
+                keys_with_values.append(
+                    utils.parse.ValueForPrint(key_value, self[key_value], key_units, key_format)
+                )
             else:
                 logger.warning("key %s not found and cannot be parsed", key_value)
 
         return keys_with_values
 
     def parse_config_str(
-        self, values: List[str], max_length: Optional[int] = 60, config_files: Optional[Tuple[str, ...]] = None
+        self,
+        values: List[str],
+        max_length: Optional[int] = None,
+        config_files: Optional[Tuple[str, ...]] = None,
     ) -> str:
         """Parse the configuration files.
 
         Returns: key1=value1, key2=value2, ...
         """
+        if max_length is None:
+            max_length = 60
         keys_with_values = self.parse_config_values(values, config_files=config_files)
         return utils.parse.format_title(keys_with_values, max_length=max_length)
 
@@ -267,13 +292,16 @@ class AnalysisData(SyncData):
         return config_data
 
     def set_default_config_files(self, config_files: Union[str, Tuple[str, ...]], /):
-        self._default_config_files = (config_files,) if isinstance(config_files, str) else tuple(config_files)
+        self._default_config_files = (
+            (config_files,) if isinstance(config_files, str) else tuple(config_files)
+        )
 
     def get_analysis_code(self, name: str = "default", /, update_code: bool = True) -> str:
         code: Optional[dict] = self.get('analysis_cells')
         if code is None:
             raise ValueError(
-                f"There is no field 'analysis_cells' inside the data file. " f"Possible keys are {tuple(self.keys())}."
+                f"There is no field 'analysis_cells' inside the data file. "
+                f"Possible keys are {tuple(self.keys())}."
             )
 
         # if isinstance(code, bytes):
@@ -283,7 +311,9 @@ class AnalysisData(SyncData):
 
         code_str: str = code[name]
         if update_code:
-            code_str = code_str.replace("aqm.analysis_cell()", f"aqm.analysis_cell('{self.filepath}')")
+            code_str = code_str.replace(
+                "aqm.analysis_cell()", f"aqm.analysis_cell('{self.filepath}')"
+            )
         return code_str
 
     def open_figs(self) -> list:

@@ -135,7 +135,9 @@ class AcquisitionLoop(SyncData):
                     )
                     self[key][iteration] = value
             else:
-                if isinstance(value, (complex, np.complex_)):  # type: ignore
+                if isinstance(value, (complex, np.complex_)) or (  # type: ignore
+                    isinstance(value, (np.ndarray,)) and value.dtype == np.complex_
+                ):
                     self[key] = SyncNp(np.zeros(key_shape, dtype=np.complex128))
                 else:
                     self[key] = SyncNp(np.zeros(key_shape))
