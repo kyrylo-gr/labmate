@@ -35,7 +35,7 @@ class AcquisitionLoop(SyncData):
     _save_indexes = True
 
     def __init__(self, *args, **kwds) -> None:
-        super().__init__(*args, mode='a', **kwds)
+        super().__init__(*args, mode="a", **kwds)
 
         self._shape = []
 
@@ -45,8 +45,8 @@ class AcquisitionLoop(SyncData):
         self.__post__init__()
 
     def __post__init__(self):
-        if '__loop_shape__' in self:
-            self._shape = list(self.get('__loop_shape__'))
+        if "__loop_shape__" in self:
+            self._shape = list(self.get("__loop_shape__"))
 
         # if self._save_on_edit:
         last_update_keys, self._last_update = self._last_update, set()
@@ -106,7 +106,7 @@ class AcquisitionLoop(SyncData):
         for key, value in kwds.items():
             if isinstance(value, (np.ndarray,)):
                 key_shape = (*shape, *value.shape)
-            elif hasattr(value, '__len__'):
+            elif hasattr(value, "__len__"):
                 key_shape = (*shape, len(value))
             else:
                 key_shape = shape
@@ -164,18 +164,18 @@ class AcquisitionLoop(SyncData):
 
             if len(self._shape) <= level:
                 self._shape.append(length)
-                self['__loop_shape__'] = self._shape
+                self["__loop_shape__"] = self._shape
             elif self._iteration[level] != 0 and (
                 len(self._iteration) == 1 or self._iteration[level - 1] == 0
             ):
                 self._shape[level] = self._shape[level] + length
-                self['__loop_shape__'] = self._shape
+                self["__loop_shape__"] = self._shape
 
             self._level += 1
             for index, a in enumerate(array):
                 yield a
                 if self._save_indexes:
-                    self.append(**{f'__index_{self._level}__': index + 1})
+                    self.append(**{f"__index_{self._level}__": index + 1})
                 if len(self._iteration) - 1 > level:
                     self._iteration[-1] = 0
                 self._iteration[self._level - 1] += 1
@@ -192,10 +192,10 @@ class AcquisitionLoop(SyncData):
         if key is None:
             if not self._save_indexes:
                 raise ValueError("As indexes are not saved with the Loop, key should be provided.")
-            key = f'__index_{self._level}__'
+            key = f"__index_{self._level}__"
 
         iteration = tuple(self._iteration[: self._level])
-        if f'__index_{self._level}__' not in self:
+        if f"__index_{self._level}__" not in self:
             return False
         return self[key][iteration] != 0
 

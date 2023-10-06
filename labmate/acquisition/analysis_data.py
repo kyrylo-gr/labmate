@@ -43,6 +43,7 @@ class AnalysisData(SyncData):
     _figure_last_name = None
     _figure_saved = False
     _fig_index = 0
+    _default_parse_config_str_max_length = 60
 
     def __init__(
         self,
@@ -90,7 +91,7 @@ class AnalysisData(SyncData):
         self._parsed_configs = {}
 
     def save_analysis_cell(
-        self, cell: Optional[Union[str, Literal['none']]] = None, cell_name: Optional[str] = None
+        self, cell: Optional[Union[str, Literal["none"]]] = None, cell_name: Optional[str] = None
     ):
         cell = cell or self._analysis_cell
         if cell == "none":
@@ -109,7 +110,7 @@ class AnalysisData(SyncData):
         if self._save_files:
             assert self.filepath, "You must set self.filepath before saving"
             with open(
-                self.filepath + f'_ANALYSIS_CELL_{cell_name}.py', 'w', encoding="UTF-8"
+                self.filepath + f"_ANALYSIS_CELL_{cell_name}.py", "w", encoding="UTF-8"
             ) as file:
                 file.write(cell)
 
@@ -126,10 +127,10 @@ class AnalysisData(SyncData):
         If name is None, use (...)_FIG1, (...)_FIG2.
         pdf is used by default if no extension is provided in name
         """
-        self._figure_last_name = str(name).lstrip('_') if name is not None else None
+        self._figure_last_name = str(name).lstrip("_") if name is not None else None
 
         fig_name = self._get_fig_name(name, extensions)
-        full_fig_name = f'{self.filepath}_{fig_name}'
+        full_fig_name = f"{self.filepath}_{fig_name}"
         if fig is None:
             from matplotlib import pyplot as plt
 
@@ -173,16 +174,16 @@ class AnalysisData(SyncData):
 
         if name is None:
             self._fig_index += 1
-            name = f'{self._fig_index}.{extensions}'
+            name = f"{self._fig_index}.{extensions}"
         else:
             if not isinstance(name, str):
                 name = str(name)
-            if not name.isnumeric() and name[0] != '_':
+            if not name.isnumeric() and name[0] != "_":
                 name = "_" + name
-            if os.path.splitext(name)[-1] == '':
+            if os.path.splitext(name)[-1] == "":
                 name = f"{name}.{extensions}"
 
-        return 'FIG' + name
+        return "FIG" + name
 
     def parse_config(self, config_files: Optional[Tuple[str, ...]] = None) -> ConfigFile:
         # if isinstance(config_files, str):
@@ -206,7 +207,7 @@ class AnalysisData(SyncData):
         return config_data
 
     @property
-    def cfg(self) -> 'ConfigFile':
+    def cfg(self) -> "ConfigFile":
         return self.parse_config()
 
     def parse_config_values(
@@ -248,8 +249,7 @@ class AnalysisData(SyncData):
 
         Returns: key1=value1, key2=value2, ...
         """
-        if max_length is None:
-            max_length = 60
+        max_length = max_length or self._default_parse_config_str_max_length
         keys_with_values = self.parse_config_values(values, config_files=config_files)
         return utils.parse.format_title(keys_with_values, max_length=max_length)
 
@@ -257,12 +257,12 @@ class AnalysisData(SyncData):
         if config_file_name in self._parsed_configs:
             return self._parsed_configs[config_file_name]
 
-        if 'configs' not in self:
+        if "configs" not in self:
             raise KeyError("The is no config files saved within AnalysisManager")
 
-        if config_file_name not in self['configs']:
+        if config_file_name not in self["configs"]:
             original_config_name = config_file_name
-            for possible_name in self['configs']:
+            for possible_name in self["configs"]:
                 if possible_name.startswith(config_file_name):
                     config_file_name = possible_name
                     break
@@ -281,7 +281,7 @@ class AnalysisData(SyncData):
 
         from ..utils.parse import parse_str
 
-        file_content = self['configs'][config_file_name]
+        file_content = self["configs"][config_file_name]
         config_data = ConfigFile(parse_str(file_content), file_content)
         self._parsed_configs[config_file_name] = config_data
         if original_config_name is not None:
@@ -297,7 +297,7 @@ class AnalysisData(SyncData):
         )
 
     def get_analysis_code(self, name: str = "default", /, update_code: bool = True) -> str:
-        code: Optional[dict] = self.get('analysis_cells')
+        code: Optional[dict] = self.get("analysis_cells")
         if code is None:
             raise ValueError(
                 f"There is no field 'analysis_cells' inside the data file. "
@@ -322,7 +322,7 @@ class AnalysisData(SyncData):
         for figure_key in self.get("figures", []):
             import pltsave
 
-            figure_code = self['figures'][figure_key]
+            figure_code = self["figures"][figure_key]
             figure = pltsave.loads(figure_code)
             figures.append(figure)
         return figures
@@ -339,10 +339,10 @@ class AnalysisData(SyncData):
             import pickle
             import codecs
 
-            figure_code = self['figures'][figure_key]
+            figure_code = self["figures"][figure_key]
             if isinstance(figure_code, str):
                 figure_code = figure_code.encode()
-            figure = pickle.loads(codecs.decode(figure_code, 'base64'))
+            figure = pickle.loads(codecs.decode(figure_code, "base64"))
             figures.append(figure)
         return figures
 
