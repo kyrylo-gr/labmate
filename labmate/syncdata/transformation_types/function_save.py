@@ -28,31 +28,37 @@ class Function:
     func = None
     original_name: str = ""
 
+    _read_only = True
+
     def __init__(self, code: str):
         """Create a `Function` from the code provided.
 
         Args:
             code (str): Code of the function.
         """
-        index_name = code.find('(')
+        index_name = code.find("(")
         if index_name == -1:
             return
         self.original_name = code[4:index_name]
-        self.code = 'def current_func' + code[index_name:]
+        self.code = "def current_func" + code[index_name:]
 
     def _evaluate_func(self):
         """Evaluate the function code and store it in the self.func."""
-        if self.code == '':
-            logging.warning("Function %s cannot be loaded because the code is empty.", self.original_name)
+        if self.code == "":
+            logging.warning(
+                "Function %s cannot be loaded because the code is empty.", self.original_name
+            )
 
         try:
-            cc = compile(self.code, '<string>', 'single')  # noqa: DUO110
+            cc = compile(self.code, "<string>", "single")  # noqa: DUO110
             eval(cc)  # pylint: disable=W0123 # noqa: DUO104
         except SyntaxError:
-            logging.warning("Function %s cannot be loaded because unexpected SyntaxError.", self.original_name)
+            logging.warning(
+                "Function %s cannot be loaded because unexpected SyntaxError.", self.original_name
+            )
             return
 
-        self.func = locals().get('current_func')
+        self.func = locals().get("current_func")
 
     def eval(self, *args, **kwds):
         """Evaluate the function and return the result."""
@@ -65,7 +71,9 @@ class Function:
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         """Evaluate the function and return the result if the function was already compiled."""
         if self.func is None:
-            raise TypeError("Function was never evaluated. On the first run use the eval(...) method instead.")
+            raise TypeError(
+                "Function was never evaluated. On the first run use the eval(...) method instead."
+            )
         return self.func(*args, **kwds)  # type: ignore
 
 

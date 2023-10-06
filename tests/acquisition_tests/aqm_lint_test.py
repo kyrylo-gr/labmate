@@ -186,16 +186,15 @@ class LintingTest(unittest.TestCase):
     def test_lint_save_fig_twice(self):
         code = """\
         aqm.analysis_cell()
-        
+
         aqm.save_fig("name1")
         aqm.save_fig("name2")
 
         aqm.save_fig(name="name1")
         aqm.save_fig(name="name2")
-        
+
         aqm.save_fig("name1")
         aqm.save_fig(name="name2")
-
 
         """
         logs = self.run_test(code)

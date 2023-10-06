@@ -68,10 +68,10 @@ class AcquisitionLoopTest(unittest.TestCase):
             x, y = self.get_some_data(freq, self.points)
             loop.append(y=y, freq=freq)
 
-            self.data['y'].append(y)
-            self.data['freq'].append(freq)
+            self.data["y"].append(y)
+            self.data["freq"].append(freq)
 
-        self.data['x'].append(x)  # type: ignore
+        self.data["x"].append(x)  # type: ignore
         loop.append(x=x)  # type: ignore
 
         # Verification
@@ -87,10 +87,10 @@ class AcquisitionLoopTest(unittest.TestCase):
             x, y = self.get_some_data(freq, self.points)
             loop(y=y, freq=freq)
 
-            self.data['y'].append(y)
-            self.data['freq'].append(freq)
+            self.data["y"].append(y)
+            self.data["freq"].append(freq)
 
-        self.data['x'].append(x)  # type: ignore
+        self.data["x"].append(x)  # type: ignore
         loop(x=x)  # type: ignore
 
         # Verification
@@ -99,17 +99,17 @@ class AcquisitionLoopTest(unittest.TestCase):
     def test_classical_loop_2(self):
         """Save and load the simplest list."""
         # Protocol
-        self.aqm['loop'] = loop = AcquisitionLoop()
+        self.aqm["loop"] = loop = AcquisitionLoop()
         self.data = {"freq": [], "y": [], "x": []}
 
         for freq in loop(10):
             x, y = self.get_some_data(freq, self.points)
             loop(y=y, freq=freq)
 
-            self.data['y'].append(y)
-            self.data['freq'].append(freq)
+            self.data["y"].append(y)
+            self.data["freq"].append(freq)
 
-        self.data['x'].append(x)  # type: ignore
+        self.data["x"].append(x)  # type: ignore
         loop(x=x)  # type: ignore
 
         # Verification
@@ -125,10 +125,10 @@ class AcquisitionLoopTest(unittest.TestCase):
             x, y = self.get_some_data(freq, self.points)
             loop(y=y, freq=freq)
 
-            self.data['y'].append(y)
-            self.data['freq'].append(freq)
+            self.data["y"].append(y)
+            self.data["freq"].append(freq)
 
-        self.data['x'].append(x)  # type: ignore
+        self.data["x"].append(x)  # type: ignore
         loop(x=x)  # type: ignore
         self.aqm.save_acquisition(loop=loop)
         # Verification
@@ -142,7 +142,7 @@ class AcquisitionLoopTest(unittest.TestCase):
 
         for freq in loop(1, 10, 0.5):
             loop(freq=freq)
-            self.data['freq'].append(freq)
+            self.data["freq"].append(freq)
 
         # Verification
         self.data_verification()
@@ -159,7 +159,7 @@ class AcquisitionLoopTest(unittest.TestCase):
 
         for freq in loop(iterator(), length=10):
             loop(freq=freq)
-            self.data['freq'].append(freq)
+            self.data["freq"].append(freq)
 
         # Verification
         self.data_verification()
@@ -182,17 +182,17 @@ class AcquisitionLoopTest(unittest.TestCase):
             x, y = self.get_some_data(freq, self.points)
             loop.append(y=y, freq=freq)
 
-            self.data['y'].append(y)
-            self.data['freq'].append(freq)
+            self.data["y"].append(y)
+            self.data["freq"].append(freq)
 
         for freq in loop.iter(self.freqs):
             x, y = self.get_some_data(freq, self.points)
             loop.append(y=y, freq=freq)
 
-            self.data['y'].append(y)
-            self.data['freq'].append(freq)
+            self.data["y"].append(y)
+            self.data["freq"].append(freq)
 
-        self.data['x'].append(x)  # type: ignore
+        self.data["x"].append(x)  # type: ignore
         loop.append(x=x)  # type: ignore
 
         # Verification
@@ -200,23 +200,23 @@ class AcquisitionLoopTest(unittest.TestCase):
 
     def test_2level_1loop(self):
         self.aqm.aq.loop = loop = AcquisitionLoop()
-        self.data = {"freq": [], "y": [], "x": [], 'y2': [], 'freq2': []}
+        self.data = {"freq": [], "y": [], "x": [], "y2": [], "freq2": []}
 
         # Protocol
         for freq in loop.iter(self.freqs):
             x, y = self.get_some_data(freq, self.points)
-            self.data['y2'].append([])
-            self.data['freq2'].append([])
+            self.data["y2"].append([])
+            self.data["freq2"].append([])
             for freq2 in loop.iter(self.freqs2):
                 x, y2 = self.get_some_data(freq2, self.points)
                 loop.append(y2=y2, freq2=freq2)
-                self.data['y2'][-1].append(y2)
-                self.data['freq2'][-1].append(freq2)
+                self.data["y2"][-1].append(y2)
+                self.data["freq2"][-1].append(freq2)
             loop.append(y=y, freq=freq)
-            self.data['y'].append(y)
-            self.data['freq'].append(freq)
+            self.data["y"].append(y)
+            self.data["freq"].append(freq)
 
-        self.data['x'].append(x)  # type: ignore
+        self.data["x"].append(x)  # type: ignore
         loop.append(x=x)  # type: ignore
 
         # Verification
@@ -224,32 +224,32 @@ class AcquisitionLoopTest(unittest.TestCase):
 
     def test_2level_2loop(self):
         self.aqm.aq.loop = loop = AcquisitionLoop()
-        self.data = {"freq": [], "y": [], "x": [], 'y2': [], 'freq2': []}
+        self.data = {"freq": [], "y": [], "x": [], "y2": [], "freq2": []}
 
         # Protocol
         for freq in loop.iter(self.freqs):
             x, y = self.get_some_data(freq, self.points)
 
-            self.data['y2'].append([])
-            self.data['freq2'].append([])
+            self.data["y2"].append([])
+            self.data["freq2"].append([])
 
             for freq2 in loop.iter(self.freqs2):
                 x, y2 = self.get_some_data(freq2, self.points)
                 loop.append(y2=y2, freq2=freq2)
-                self.data['y2'][-1].append(y2)
-                self.data['freq2'][-1].append(freq2)
+                self.data["y2"][-1].append(y2)
+                self.data["freq2"][-1].append(freq2)
 
             for freq2 in loop.iter(self.freqs2):
                 x, y2 = self.get_some_data(freq2, self.points)
                 loop.append(y2=y2, freq2=freq2)
-                self.data['y2'][-1].append(y2)
-                self.data['freq2'][-1].append(freq2)
+                self.data["y2"][-1].append(y2)
+                self.data["freq2"][-1].append(freq2)
 
             loop.append(y=y, freq=freq)
-            self.data['y'].append(y)
-            self.data['freq'].append(freq)
+            self.data["y"].append(y)
+            self.data["freq"].append(freq)
 
-        self.data['x'].append(x)  # type: ignore
+        self.data["x"].append(x)  # type: ignore
         loop.append(x=x)  # type: ignore
 
         # Verification
@@ -263,8 +263,8 @@ class AcquisitionLoopTest(unittest.TestCase):
 
         for i, freq in loop.enum(self.freqs):
             loop.append(i=i**2, freqs=freq)
-            self.data['i'].append(i**2)
-            self.data['freqs'].append(freq)
+            self.data["i"].append(i**2)
+            self.data["freqs"].append(freq)
 
         # Verification
         self.data_verification()
@@ -277,8 +277,8 @@ class AcquisitionLoopTest(unittest.TestCase):
 
         for i, freq in loop.enum(1, 5, 0.5):
             loop.append(i=i**2, freqs=freq)
-            self.data['i'].append(i**2)
-            self.data['freqs'].append(freq)
+            self.data["i"].append(i**2)
+            self.data["freqs"].append(freq)
 
         # Verification
         self.data_verification()
@@ -290,8 +290,8 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.data = {"freqs": [], "i": []}
 
         for i, freq in enumerate(np.arange(1, 5, 0.5)):
-            self.data['i'].append(i**2)
-            self.data['freqs'].append(freq)
+            self.data["i"].append(i**2)
+            self.data["freqs"].append(freq)
 
         for i, freq in loop.enum(1, 5, 0.5):
             loop.append(i=i**2, freqs=freq)
@@ -301,22 +301,22 @@ class AcquisitionLoopTest(unittest.TestCase):
         if not self.save_on_edit:
             loop.save()
 
-        d2 = SyncData(self.aqm.current_filepath, 'a', save_on_edit=self.save_on_edit)
-        d2.loop = loop = AcquisitionLoop(d2.get('loop'))
+        d2 = SyncData(self.aqm.current_filepath, "a", save_on_edit=self.save_on_edit)
+        d2.loop = loop = AcquisitionLoop(d2.get("loop"))
 
-        self.data['i'][1] = -10
+        self.data["i"][1] = -10
         d2.loop.i[1] = -10
 
         for i, freq in loop.enum(1, 5, 0.5):
             if loop.already_saved():
                 continue
-            self.data['i'][i] = i**2  # to check if loop wasn't rerun from beginning
+            self.data["i"][i] = i**2  # to check if loop wasn't rerun from beginning
 
             loop.append(i=i**2, freqs=freq)
 
         # Verification
-        self.assertAlmostEqual(loop['i', 1], -10)
-        self.assertAlmostEqual(self.data['i'][1], -10)
+        self.assertAlmostEqual(loop["i", 1], -10)
+        self.assertAlmostEqual(self.data["i"][1], -10)
 
         if not self.save_on_edit:
             d2.save()
@@ -356,5 +356,5 @@ class AcquisitionLoopWithoutSaveOnEditTest(AcquisitionLoopTest):
         super().data_verification()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

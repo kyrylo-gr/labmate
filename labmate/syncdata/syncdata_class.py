@@ -1,4 +1,5 @@
 """SyncData class is a dictionary that is synchronized with .h5 file."""
+from copy import deepcopy
 from typing import Any, Dict, Iterable, Literal, Optional, Set, TypeVar, Union, overload
 
 import logging
@@ -59,7 +60,7 @@ class SyncData:
     """
 
     _repr: Optional[str] = None
-    _default_attr = ['get', 'items', 'keys', 'pop', 'update', 'values', 'save']
+    _default_attr = ["get", "items", "keys", "pop", "update", "values", "save"]
     _last_data_saved: bool = False
     _filepath: Optional[str] = None
     _read_only: Union[bool, Set[str]]
@@ -73,7 +74,7 @@ class SyncData:
         self,
         filepath_or_data: Optional[Union[str, dict, Path]] = None,
         /,
-        mode: Optional[Literal['r', 'w', 'a', 'w=', 'a=']] = None,
+        mode: Optional[Literal["r", "w", "a", "w=", "a="]] = None,
         *,
         filepath: Optional[Union[str, Path]] = None,
         save_on_edit: bool = False,
@@ -100,15 +101,15 @@ class SyncData:
 
         """
         if mode is not None:
-            if mode.startswith('w'):
+            if mode.startswith("w"):
                 read_only = False
                 overwrite = True
-            elif mode.startswith('a'):
+            elif mode.startswith("a"):
                 read_only = False
                 overwrite = False
-            elif mode == 'r':
+            elif mode == "r":
                 read_only = True
-            if mode.endswith('='):
+            if mode.endswith("="):
                 save_on_edit = True
 
         if filepath_or_data is not None and hasattr(filepath_or_data, "keys"):
@@ -145,7 +146,7 @@ class SyncData:
 
         self._read_only = read_only
         if filepath is not None:
-            filepath = filepath if filepath.endswith('.h5') else filepath + '.h5'
+            filepath = filepath if filepath.endswith(".h5") else filepath + ".h5"
 
             if (overwrite or save_on_edit) and read_only:
                 raise ValueError("""Cannot open file in read_only mode and overwrite it.""")
@@ -187,7 +188,7 @@ class SyncData:
         filepath = filepath or self._filepath
         if filepath is None:
             raise ValueError("Filepath is not specified. So cannot load_h5")
-        filepath = filepath if filepath.endswith('.h5') else filepath + '.h5'
+        filepath = filepath if filepath.endswith(".h5") else filepath + ".h5"
         data = h5py_utils.open_h5(filepath, key=key, key_prefix=self._key_prefix)
         self._file_modified_time = os.path.getmtime(filepath)
         self._update(data)
@@ -236,10 +237,13 @@ class SyncData:
         self._last_update.add(key)
 
     def __check_read_only_true(self, key):
+        """Return true if data with this key is only available for read.
+
+        Takes into account the external constrains"""
         return (self._read_only) and (self._read_only is True or key in self._read_only)
 
     @editing
-    def update(self, __m: Optional[dict] = None, **kwds: 'DICT_OR_LIST_LIKE'):
+    def update(self, __m: Optional[dict] = None, **kwds: "DICT_OR_LIST_LIKE"):
         if __m is not None:
             kwds.update(__m)
 
@@ -297,7 +301,13 @@ class SyncData:
     def get(self, key: str, default: Any = None):
         data = self.__get_data__(key, default)
         if isinstance(data, dict) and data:
-            return SyncData(filepath=self._filepath, data=data, key_prefix=key)
+            return SyncData(
+                filepath=self._filepath,
+                data=data,
+                overwrite=False,
+                key_prefix=key,
+                read_only=self.__check_read_only_true(key),
+            )
         return data
 
     def __getitem__(self, __key: Union[str, tuple]):
@@ -307,9 +317,11 @@ class SyncData:
         # return self._data.__getitem__(__key)
 
     @editing
-    def __setitem__(self, __key: Union[str, tuple], __value: 'DICT_OR_LIST_LIKE') -> None:
+    def __setitem__(self, __key: Union[str, tuple], __value: "DICT_OR_LIST_LIKE") -> None:
         if isinstance(__key, tuple):
             self.__add_key(__key[0])
+            if self.__check_read_only_true(__key[0]):
+                raise KeyError(f"Cannot set a read-only '{__key[0]}' attribute")
             return self.__getitem__(__key[0]).__setitem__(
                 __key[1:] if len(__key) > 2 else __key[1], __value
             )
@@ -330,7 +342,7 @@ class SyncData:
                     filepath=self._filepath, filekey=key, save_on_edit=self._save_on_edit
                 )
 
-            if hasattr(__value, '__post__init__'):
+            if hasattr(__value, "__post__init__"):
                 __value.__post__init__()  # type: ignore
 
         self.__set_data__(__key, __value)
@@ -341,7 +353,7 @@ class SyncData:
 
     def __getattr__(self, __name: str):
         """Call if __getattribute__ does not work."""
-        if len(__name) > 1 and __name[0] == 'i' and __name[1:].isdigit() and __name not in self:
+        if len(__name) > 1 and __name[0] == "i" and __name[1:].isdigit() and __name not in self:
             __name = __name[1:]
         if __name in self:
             data = self.get(__name)
@@ -350,9 +362,9 @@ class SyncData:
             return data
         raise AttributeError(f"No attribute {__name} found in SyncData")
 
-    def __setattr__(self, __name: str, __value: 'DICT_OR_LIST_LIKE') -> None:
+    def __setattr__(self, __name: str, __value: "DICT_OR_LIST_LIKE") -> None:
         """Call every time you set an attribute."""
-        if __name.startswith('_'):
+        if __name.startswith("_"):
             return object.__setattr__(self, __name, __value)
 
         if isinstance(vars(self.__class__).get(__name), property):
@@ -379,6 +391,11 @@ class SyncData:
         if isinstance(data, NotLoaded):
             self._load_from_h5(key=__key)
             data = self._data.get(__key, __default)
+        if self.__check_read_only_true(__key):
+            if hasattr(data, "_read_only"):
+                data._read_only = True  # type: ignore # pylint: disable=protected-access
+            else:
+                data = deepcopy(data)
         return data
 
     def __get_data_or_raise__(self, __key):
@@ -389,6 +406,11 @@ class SyncData:
         if isinstance(data, NotLoaded):
             self._load_from_h5(key=__key)
             data = self._data.__getitem__(__key)
+        if self.__check_read_only_true(__key):
+            if hasattr(data, "_read_only"):
+                data._read_only = True  # type: ignore # pylint: disable=protected-access
+            else:
+                data = deepcopy(data)
         return data
 
     def __set_data__(self, __key: str, __value):
@@ -437,10 +459,10 @@ class SyncData:
     def __repr__(self):
         self._get_repr()
 
-        not_saved = '' if self._last_data_saved or self._read_only is True else " (not saved)"
-        mode = 'r' if self._read_only is True else 'w' if self._read_only is False else 'rw'
-        mode = 'l' if self._filepath is None and self._read_only is not True else mode
-        not_saved = '' if mode == 'l' else not_saved
+        not_saved = "" if self._last_data_saved or self._read_only is True else " (not saved)"
+        mode = "r" if self._read_only is True else "w" if self._read_only is False else "rw"
+        mode = "l" if self._filepath is None and self._read_only is not True else mode
+        not_saved = "" if mode == "l" else not_saved
 
         return f"{type(self).__name__} ({mode}){not_saved}: \n {self._repr}"
 
@@ -498,7 +520,7 @@ class SyncData:
         for key in last_update:
             if key in self._classes_should_be_saved_internally:
                 obj = self._data[key]
-                if hasattr(obj, 'save'):
+                if hasattr(obj, "save"):
                     self._data[key].save(only_update=only_update)
                 else:
                     self._classes_should_be_saved_internally.remove(key)
@@ -520,7 +542,7 @@ class SyncData:
             try:
                 # print("_raise_file_locked_error", self._raise_file_locked_error, list(data.keys()))
                 self._file_modified_time = h5py_utils.save_dict(
-                    filename=filepath + '.h5', data=data, key_prefix=self._key_prefix
+                    filename=filepath + ".h5", data=data, key_prefix=self._key_prefix
                 )
                 return
             except h5py_utils.FileLockedError as error:
@@ -541,18 +563,18 @@ class SyncData:
         filepath = filepath or filepath2
         if filepath is None:
             raise ValueError("Should provide filepath or set self.filepath before saving")
-        filepath = (filepath.rsplit('.h5', 1)[0]) if filepath.endswith('.h5') else filepath
+        filepath = (filepath.rsplit(".h5", 1)[0]) if filepath.endswith(".h5") else filepath
         return filepath
 
     @property
     def filepath(self):
-        return None if self._filepath is None else (self._filepath.rsplit('.h5', 1)[0])
+        return None if self._filepath is None else (self._filepath.rsplit(".h5", 1)[0])
 
     @filepath.setter
     def filepath(self, value: str):
         if not isinstance(value, str):
             value = str(value)
-        self._filepath = value if value.endswith('.h5') else value + '.h5'
+        self._filepath = value if value.endswith(".h5") else value + ".h5"
 
     @property
     def filename(self) -> Optional[str]:
@@ -571,7 +593,7 @@ class SyncData:
     def pull_available(self):
         if self.filepath is None:
             raise ValueError("Cannot pull from file if it's not been set")
-        file_modified = os.path.getmtime(self.filepath + '.h5')
+        file_modified = os.path.getmtime(self.filepath + ".h5")
         return self._file_modified_time != file_modified
 
     def pull(self, force_pull: bool = False):
@@ -579,7 +601,7 @@ class SyncData:
             raise ValueError("Cannot pull from file if it's not been set")
 
         if force_pull or self.pull_available():
-            logging.debug('File modified so it will be reloaded.')
+            logging.debug("File modified so it will be reloaded.")
             self._data = {}
             self._keys = set()
             self._clean_precalculated_results()
