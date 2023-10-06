@@ -12,10 +12,10 @@ if TYPE_CHECKING:
 
 # from ..syncdata import SyncData
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
-formatter = logging.Formatter('%(levelname)s:%(message)s')
+formatter = logging.Formatter("%(levelname)s:%(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
@@ -135,7 +135,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def data(self):
         """Same as current_analysis."""
         if self._analysis_data is None:
-            raise ValueError('No data set')
+            raise ValueError("No data set")
         return self._analysis_data
 
     @property
@@ -145,11 +145,11 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def save_fig_only(
         self,
-        fig: Optional['FigureProtocol'] = None,
+        fig: Optional["FigureProtocol"] = None,
         name: Optional[Union[str, int]] = None,
         extensions: Optional[str] = None,
         **kwds,
-    ) -> 'AcquisitionAnalysisManager':
+    ) -> "AcquisitionAnalysisManager":
         """Save the figure as a file.
 
         Args:
@@ -169,8 +169,10 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return self
 
     def save_analysis_cell(
-        self, name: Optional[Union[str, int]] = None, cell: Optional[Union[str, Literal['none']]] = None
-    ) -> 'AcquisitionAnalysisManager':
+        self,
+        name: Optional[Union[str, int]] = None,
+        cell: Optional[Union[str, Literal["none"]]] = None,
+    ) -> "AcquisitionAnalysisManager":
         if name is None:
             name = self.data.figure_last_name
 
@@ -185,11 +187,19 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def save_fig(
         self,
-        fig: Optional['FigureProtocol'] = None,
+        fig_or_name: Optional[Union["FigureProtocol", str, int]] = None,
+        /,
+        *,
+        fig: Optional["FigureProtocol"] = None,
         name: Optional[Union[str, int]] = None,
         cell: Optional[str] = None,
         **kwds,
-    ) -> 'AcquisitionAnalysisManager':
+    ) -> "AcquisitionAnalysisManager":
+        if fig_or_name is not None:
+            if isinstance(fig_or_name, (str, int)):
+                name = name or fig_or_name
+            else:
+                fig = fig or fig_or_name
         self.save_fig_only(fig=fig, name=name, **kwds)
         self.save_analysis_cell(name=name, cell=cell)
         return self
@@ -208,9 +218,11 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             )
         acq_data[__key] = __value
 
-    def save_acquisition(self, **kwds) -> 'AcquisitionAnalysisManager':
+    def save_acquisition(self, **kwds) -> "AcquisitionAnalysisManager":
         acquisition_finished = time.time()
-        kwds.update({"info": {"acquisition_duration": acquisition_finished - self._acquisition_started}})
+        kwds.update(
+            {"info": {"acquisition_duration": acquisition_finished - self._acquisition_started}}
+        )
         super().save_acquisition(**kwds)
         self._load_analysis_data()
         return self
@@ -225,9 +237,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         return self._analysis_data
 
-    def load_file(self, filename) -> 'AnalysisData':
+    def load_file(self, filename) -> "AnalysisData":
         filename = self._get_full_filename(filename)
-        if not os.path.exists(filename if filename.endswith('.h5') else filename + '.h5'):
+        if not os.path.exists(filename if filename.endswith(".h5") else filename + ".h5"):
             raise ValueError(f"File {filename} cannot be found")
 
         data = AnalysisData(
@@ -237,8 +249,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             save_fig_inside_h5=self._save_fig_inside_h5,
         )
 
-        if not data.get('useful', True):
-            data.unlock_data('useful').update(**{'useful': True}).lock_data('useful')
+        if not data.get("useful", True):
+            data.unlock_data("useful").update(**{"useful": True}).lock_data("useful")
 
         if self._default_config_files:
             data.set_default_config_files(self._default_config_files)
@@ -251,7 +263,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         cell: Optional[str] = None,
         prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
         save_on_edit: Optional[bool] = None,
-    ) -> 'AcquisitionAnalysisManager':
+    ) -> "AcquisitionAnalysisManager":
         self._analysis_cell_str = None
         self._analysis_data = None
         self._is_old_data = False
@@ -270,13 +282,13 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def analysis_cell(
         self,
-        filename: Optional[Union[str, 'Path']] = None,
+        filename: Optional[Union[str, "Path"]] = None,
         *,
         acquisition_name=None,
         cell: Optional[str] = None,
-        filepath: Optional[Union[str, 'Path']] = None,
+        filepath: Optional[Union[str, "Path"]] = None,
         prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
-    ) -> 'AcquisitionAnalysisManager':
+    ) -> "AcquisitionAnalysisManager":
         # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
 
         self._analysis_cell_str = cell or get_current_cell(self.shell)
@@ -286,7 +298,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 utils.output_warning("Old data analysis")
 
             filename = str(filepath or self._get_full_filename(filename))  # type: ignore
-            filename = (filename.rsplit('.h5', 1)[0]) if filename.endswith('.h5') else filename
+            filename = (filename.rsplit(".h5", 1)[0]) if filename.endswith(".h5") else filename
 
         else:
             self._is_old_data = False
@@ -295,9 +307,13 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
                 if (
                     len(acquisition_name) == 0
-                    or (acquisition_name[0] != r"^" and acquisition_name != self.current_experiment_name)
                     or (
-                        acquisition_name[0] == r"^" and re.match(acquisition_name, self.current_experiment_name) is None
+                        acquisition_name[0] != r"^"
+                        and acquisition_name != self.current_experiment_name
+                    )
+                    or (
+                        acquisition_name[0] == r"^"
+                        and re.match(acquisition_name, self.current_experiment_name) is None
                     )
                 ):
                     raise ValueError(
@@ -312,7 +328,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             (not self._is_old_data)
             and (self.shell is not None)
             and (
-                'acquisition_cell(' in self.shell.last_execution_result.info.raw_cell
+                "acquisition_cell(" in self.shell.last_execution_result.info.raw_cell
                 and not self.shell.last_execution_result.success
             )
         ):
@@ -321,7 +337,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 "Check if everything is ok and executive again"
             )
 
-        if os.path.exists(filename + '.h5'):
+        if os.path.exists(filename + ".h5"):
             self._load_analysis_data(filename)
         else:
             if self._is_old_data:
@@ -333,11 +349,20 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         if (self._analysis_cell_str is not None) and (self._linting_external_vars is not None):
             from ..acquisition import lint
+            from ..acquisition import custom_lint
 
-            _, external_vars = lint.find_variables_from_code(self._analysis_cell_str, self._linting_external_vars)
-            for var in external_vars:
+            # _, external_vars = lint.find_variables_from_code(
+            #     self._analysis_cell_str, self._linting_external_vars
+            # )
+            lint_result = lint.find_variables_from_code(
+                self._analysis_cell_str,
+                self._linting_external_vars,
+                run_on_call=custom_lint.on_call_functions,
+            )
+            for var in lint_result.expernal_vars:
                 logger.warning("External variable used inside the analysis code: %s", var)
-
+            for error in lint_result.errors:
+                logger.warning(error)
         utils.run_functions(self._analysis_cell_prerun_hook)
         utils.run_functions(prerun)
 
@@ -353,16 +378,16 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     # def open_analysis_fig(self) -> List[FigureProtocol]:
     #     return self.data.open_fig()
 
-    def _get_full_filename(self, filename: Union[str, 'Path']) -> str:
+    def _get_full_filename(self, filename: Union[str, "Path"]) -> str:
         if filename is None:
             raise ValueError("Filename cannot be None")
 
         filename = str(filename)
 
-        if '/' in filename or '\\' in filename:
+        if "/" in filename or "\\" in filename:
             return filename
 
-        filename = (filename.rsplit('.h5', 1)[0]) if filename.endswith('.h5') else filename
+        filename = (filename.rsplit(".h5", 1)[0]) if filename.endswith(".h5") else filename
 
         name_with_prefix = utils.lstrip_int(filename)
 
@@ -371,14 +396,14 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             return os.path.join(self.data_directory, suffix, filename)
         return filename
 
-    def parse_config_file(self, config_file_name: str, /) -> 'ConfigFile':
+    def parse_config_file(self, config_file_name: str, /) -> "ConfigFile":
         return self.data.parse_config_file(config_file_name)
 
-    def parse_config(self, config_files: Optional[Tuple[str, ...]] = None) -> 'ConfigFile':
+    def parse_config(self, config_files: Optional[Tuple[str, ...]] = None) -> "ConfigFile":
         return self.data.parse_config(config_files=config_files)
 
     @property
-    def cfg(self) -> 'ConfigFile':
+    def cfg(self) -> "ConfigFile":
         return self.data.cfg
 
     def parse_config_str(
@@ -389,7 +414,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     ) -> str:
         return self.data.parse_config_str(values, max_length=max_length)
 
-    def linting(self, allowed_variables: Optional[Iterable[str]] = None, init_file: Optional[str] = None):
+    def linting(
+        self, allowed_variables: Optional[Iterable[str]] = None, init_file: Optional[str] = None
+    ):
         from ..acquisition import lint
 
         allowed_variables = set() if allowed_variables is None else set(allowed_variables)
@@ -398,25 +425,37 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self._linting_external_vars = allowed_variables
 
     def set_default_config_files(self, config_files: Union[str, Tuple[str, ...], List[str]], /):
-        self._default_config_files = (config_files,) if isinstance(config_files, str) else tuple(config_files)
+        self._default_config_files = (
+            (config_files,) if isinstance(config_files, str) else tuple(config_files)
+        )
         if self._analysis_data:
             self._analysis_data.set_default_config_files(self._default_config_files)
 
     def set_analysis_cell_prerun_hook(
-        self, hook: Union[_CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]]
+        self,
+        hook: Union[
+            _CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]
+        ],
     ):
-        self._analysis_cell_prerun_hook = tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
+        self._analysis_cell_prerun_hook = (
+            tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
+        )
 
     def set_acquisition_cell_prerun_hook(
-        self, hook: Union[_CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]]
+        self,
+        hook: Union[
+            _CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]
+        ],
     ):
-        self._acquisition_cell_prerun_hook = tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
+        self._acquisition_cell_prerun_hook = (
+            tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
+        )
 
 
 def get_current_cell(shell: Any) -> Optional[str]:
     if shell is None:
         return None
-    return shell.get_parent()['content']['code']
+    return shell.get_parent()["content"]["code"]
 
 
 class AcquisitionAnalysisManagerDataOnly:
