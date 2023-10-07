@@ -29,14 +29,14 @@ class AnalysisDataTest(unittest.TestCase):
             AnalysisData(None)  # type: ignore
 
     def test_open_read_mode(self):
-        self.assertEqual(self.ad.get('x', [])[0], 1)  # pylint: disable=E1136
+        self.assertEqual(self.ad.get("x", [])[0], 1)  # pylint: disable=E1136
         with self.assertRaises(KeyError, msg="Data is not locked"):
-            self.ad['x'] = 2
+            self.ad["x"] = 2
 
-        self.ad['z'] = 3
+        self.ad["z"] = 3
 
         sd = SyncData(self.ad.filepath)
-        self.assertEqual(sd.get('z'), 3)
+        self.assertEqual(sd.get("z"), 3)
 
     def test_analysis_cell(self):
         sd = SyncData(self.aqm.aq.filepath)
@@ -65,7 +65,7 @@ class AnalysisDataTest(unittest.TestCase):
         self.assertTrue(
             os.path.exists(
                 os.path.join(
-                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG1.pdf'
+                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + "_FIG1.pdf"
                 )
             )
         )
@@ -77,7 +77,7 @@ class AnalysisDataTest(unittest.TestCase):
         self.assertTrue(
             os.path.exists(
                 os.path.join(
-                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG123.pdf'
+                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + "_FIG123.pdf"
                 )
             )
         )
@@ -89,19 +89,19 @@ class AnalysisDataTest(unittest.TestCase):
         self.assertTrue(
             os.path.exists(
                 os.path.join(
-                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG_abc.pdf'
+                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + "_FIG_abc.pdf"
                 )
             )
         )
 
     def test_save_fig_tight_layout(self):
         fig = SimpleSaveFigWithTightLayout()
-        self.ad.save_fig(fig, 'a')  # type: ignore
+        self.ad.save_fig(fig, "a")  # type: ignore
 
         self.assertTrue(
             os.path.exists(
                 os.path.join(
-                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG_a.pdf'
+                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + "_FIG_a.pdf"
                 )
             )
         )
@@ -110,12 +110,12 @@ class AnalysisDataTest(unittest.TestCase):
 
     def test_save_fig_tight_layout_false(self):
         fig = SimpleSaveFigWithTightLayout()
-        self.ad.save_fig(fig, 'a', tight_layout=False)  # type: ignore
+        self.ad.save_fig(fig, "a", tight_layout=False)  # type: ignore
 
         self.assertTrue(
             os.path.exists(
                 os.path.join(
-                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + '_FIG_a.pdf'
+                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + "_FIG_a.pdf"
                 )
             )
         )
@@ -149,6 +149,7 @@ class AnalysisDataParceTest(unittest.TestCase):
             ),
         )
         self.aqm = AcquisitionManager(DATA_DIR)
+
         self.aqm.set_config_file(self.config)
         self.aqm.new_acquisition(self.experiment_name)
         self.aqm.aq.update(x=[1, 2, 3], y=[[1, 2], [3, 4], [4, 5]])
@@ -159,28 +160,28 @@ class AnalysisDataParceTest(unittest.TestCase):
         if data is None:
             data = self.ad.parse_config_file(file)
 
-        self.assertEqual(data['int'], 123)
+        self.assertEqual(data["int"], 123)
         self.assertEqual(data.int, 123)  # type: ignore
-        self.assertEqual(data['int_underscore'], 213020)
-        self.assertEqual(data['wrong_int'], "123 213")
-        self.assertEqual(data['div_int'], "123 // 4")
-        self.assertEqual(data['negative_int'], -123)
-        self.assertEqual(data['float'], 123.45)
-        self.assertEqual(data['negative_float'], -123.45)
-        self.assertEqual(data['wrong_float'], "123.321.213")
-        self.assertEqual(data['exp'], 1e5)
-        self.assertEqual(data['negative_exp'], -1e5)
-        self.assertEqual(data['wrong_exp'], "1e3ef")
-        self.assertEqual(data['wrong_exp2'], "1e3e22")
-        self.assertEqual(data['int_with_comment'], 123)
-        self.assertFalse('commented_value' in data)
-        self.assertFalse('tab_variable' in data)
+        self.assertEqual(data["int_underscore"], 213020)
+        self.assertEqual(data["wrong_int"], "123 213")
+        self.assertEqual(data["div_int"], "123 // 4")
+        self.assertEqual(data["negative_int"], -123)
+        self.assertEqual(data["float"], 123.45)
+        self.assertEqual(data["negative_float"], -123.45)
+        self.assertEqual(data["wrong_float"], "123.321.213")
+        self.assertEqual(data["exp"], 1e5)
+        self.assertEqual(data["negative_exp"], -1e5)
+        self.assertEqual(data["wrong_exp"], "1e3ef")
+        self.assertEqual(data["wrong_exp2"], "1e3e22")
+        self.assertEqual(data["int_with_comment"], 123)
+        self.assertFalse("commented_value" in data)
+        self.assertFalse("tab_variable" in data)
 
     def test_parse_file(self):
         """This is no an obvious way to save config files."""
         self.aqm = AcquisitionManager(DATA_DIR)
         self.aqm.new_acquisition(self.experiment_name)
-        self.aqm.aq['configs'] = read_config_files([self.config[0]])
+        self.aqm.aq["configs"] = read_config_files([self.config[0]])
 
         self.ad = AnalysisData(self.aqm.current_filepath)
         # print(self.ad.parse_config("config.txt"))
@@ -257,7 +258,7 @@ class AnalysisDataParceTest(unittest.TestCase):
         """This right way to save configuration files.
         They should be set before creating a new acquisition."""
         self.ad.set_default_config_files(("config.txt",))
-        self.set_data('in_self_data', 789)
+        self.set_data("in_self_data", 789)
         data = self.ad.parse_config_str(["int", "int_underscore", "in_self_data"])
         self.assertIn("int", data)
         self.assertIn("123", data)
@@ -269,22 +270,22 @@ class AnalysisDataParceTest(unittest.TestCase):
         self.assertIn("789", data)
 
     def test_eval_key(self):
-        cfg = self.ad.parse_config_file('imported_config.py')
+        cfg = self.ad.parse_config_file("imported_config.py")
 
-        self.assertDictEqual(cfg.eval_key('param_dict'), {'1': "123", '2': "456"})
+        self.assertDictEqual(cfg.eval_key("param_dict"), {"1": "123", "2": "456"})
 
     def test_eval_as_module(self):
-        cfg = self.ad.parse_config_file('imported_config.py')
-        self.assertEqual(cfg['param_int'], 1)
-        self.assertEqual(cfg['param_float'], 2.5)
-        self.assertEqual(cfg['param_float_link'], 'param_float')
+        cfg = self.ad.parse_config_file("imported_config.py")
+        self.assertEqual(cfg["param_int"], 1)
+        self.assertEqual(cfg["param_float"], 2.5)
+        self.assertEqual(cfg["param_float_link"], "param_float")
         cfg_module = cfg.eval_as_module()
 
         self.assertEqual(cfg_module.param_int, 1)
         self.assertEqual(cfg_module.param_float, 2.5)
         self.assertEqual(cfg_module.param_float_link, 2.5)
 
-        self.assertDictEqual(cfg_module.param_dict, {'1': "123", '2': "456"})
+        self.assertDictEqual(cfg_module.param_dict, {"1": "123", "2": "456"})
 
     def test_parse_config_str_filename(self):
         """This right way to save configuration files.
@@ -294,6 +295,12 @@ class AnalysisDataParceTest(unittest.TestCase):
         self.assertIn(f"file = {os.path.basename(self.aqm.current_filepath)}", data)
         self.assertIn(f"filename = {os.path.basename(self.aqm.current_filepath)}", data)
         self.assertIn(f"f = {os.path.basename(self.aqm.current_filepath)}", data)
+
+    def test_parse_config_cfg(self):
+        self.ad.set_default_config_files(("config.txt",))
+        cfg = self.ad.cfg
+        self.assertEqual(cfg["float"], 123.45)
+        self.assertEqual(cfg.float, 123.45)  # type: ignore
 
     @classmethod
     def tearDownClass(cls):
@@ -323,5 +330,5 @@ class SimpleSaveFigWithTightLayout(SimpleSaveFig):
         self.tighted_layout = True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

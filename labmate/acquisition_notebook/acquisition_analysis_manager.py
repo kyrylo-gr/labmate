@@ -1,4 +1,15 @@
-from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple, Union, TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+    TYPE_CHECKING,
+)
 import os
 import logging
 import time
@@ -220,9 +231,14 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def save_acquisition(self, **kwds) -> "AcquisitionAnalysisManager":
         acquisition_finished = time.time()
-        kwds.update(
-            {"info": {"acquisition_duration": acquisition_finished - self._acquisition_started}}
-        )
+        additional_info: Dict[str, Any] = {
+            "acquisition_duration": acquisition_finished - self._acquisition_started
+        }
+        if self._default_config_files:
+            additional_info.update({"default_config_files": self._default_config_files})
+
+        kwds.update({"info": additional_info})
+
         super().save_acquisition(**kwds)
         self._load_analysis_data()
         return self

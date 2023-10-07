@@ -4,6 +4,7 @@ import shutil
 import unittest
 
 from labmate.acquisition_notebook import AcquisitionAnalysisManager
+from labmate.acquisition import AnalysisData
 
 
 # from quanalys.acquisition import AcquisitionManager, AnalysisManager
@@ -552,6 +553,7 @@ class AcquisitionAnalysisManagerParceTest(AnalysisDataParceTest):
         self.aqm = AcquisitionAnalysisManager(
             DATA_DIR, use_magic=False, save_files=False, save_on_edit=True, shell=shell
         )  # type: ignore
+        self.aqm.set_default_config_files(("config.txt",))
 
         # self.config = (os.path.join(TEST_DIR, "data/config.txt"))
         self.config = (
@@ -566,21 +568,29 @@ class AcquisitionAnalysisManagerParceTest(AnalysisDataParceTest):
         )
         self.aqm.set_config_file(self.config)
         self.aqm.new_acquisition(self.experiment_name)
-        self.aqm.aq.update(x=[1, 2, 3], y=[[1, 2], [3, 4], [4, 5]])
+        self.aqm.save_acquisition(x=[1, 2, 3], y=[[1, 2], [3, 4], [4, 5]])
         self.aqm.analysis_cell()
         self.ad = self.aqm
 
     def set_data(self, key, value):
         self.ad.d[key] = value
 
-    def test_parse_config(self):
+    def test_parse_config_cfg(self):
         """This right way to save configuration files.
 
         They should be set before creating a new acquisition.
         """
-        self.aqm.set_default_config_files(("config.txt",))
         data = self.aqm.cfg
         self.compare_config(data=data)
+
+    def test_parse_config_default_config_load(self):
+        """This right way to save configuration files.
+
+        They should be set before creating a new acquisition.
+        """
+        cfg = AnalysisData(self.aqm.current_filepath).cfg
+        self.assertEqual(cfg["float"], 123.45)
+        self.assertEqual(cfg.float, 123.45)  # type: ignore
 
 
 class LoadCreateIndependentFilesTest(unittest.TestCase):

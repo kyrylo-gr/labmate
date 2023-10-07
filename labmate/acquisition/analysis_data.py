@@ -70,6 +70,8 @@ class AnalysisData(SyncData):
         self._save_fig_inside_h5 = save_fig_inside_h5
 
         self._default_config_files: Tuple[str, ...] = tuple()
+        if "info" in self and "default_config_files" in self["info"]:
+            self._default_config_files = tuple(self["info"]["default_config_files"])
 
         self.reset_am()
 
@@ -185,11 +187,8 @@ class AnalysisData(SyncData):
 
         return "FIG" + name
 
-    def parse_config(self, config_files: Optional[Tuple[str, ...]] = None) -> ConfigFile:
-        # if isinstance(config_files, str):
-        #     logging.warning("""Function `parse_config` changed its behavior.
-        #                     Old parse_config function now calls `parse_config_file`.""")
-        #     return self.parse_config_file(config_files)  # type: ignore
+    def parse_config(self, config_files: Optional[Tuple[str, ...]] = None) -> "ConfigFile":
+        """Parse config files. If `config_files` are not provided takes `default_config_files`."""
 
         config_files = config_files or self._default_config_files
 
