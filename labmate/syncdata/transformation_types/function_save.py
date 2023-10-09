@@ -76,6 +76,9 @@ class Function:
             )
         return self.func(*args, **kwds)  # type: ignore
 
+    def __str__(self):
+        return f"Function: {self.code}"
+
 
 def function_to_str(func):
     """Return the code source of the function using inspect library."""

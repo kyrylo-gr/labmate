@@ -914,5 +914,73 @@ class RandomCasesTest(unittest.TestCase):
         return super().tearDownClass()
 
 
+class ModesDuringInitTest(unittest.TestCase):
+    """Testing to open SyncData in write mode in 2 different kernel."""
+
+    def setUp(self):
+        _ = SyncData(DATA_FILE_PATH, save_on_edit=False, overwrite=True, read_only=False).save()
+
+    def test_read_mode(self):
+        sd1 = SyncData(DATA_FILE_PATH)
+        sd2 = SyncData(DATA_FILE_PATH, mode="r")
+        self.assertTrue(sd1.__similar__(sd2))
+
+    def test_read_equal_mode(self):
+        with self.assertRaises(ValueError):
+            SyncData(DATA_FILE_PATH, mode="r=")  # type: ignore
+
+    def test_append_mode(self):
+        sd1 = SyncData(DATA_FILE_PATH, save_on_edit=False, overwrite=False, read_only=False)
+        sd2 = SyncData(DATA_FILE_PATH, mode="a")
+        self.assertTrue(sd1.__similar__(sd2))
+
+    def test_append_mode_wrong(self):
+        """Overwrite parameter could be difficult to test, so this test checks that it's detected."""
+        sd1 = SyncData(DATA_FILE_PATH, save_on_edit=False, overwrite=True, read_only=False)
+        sd2 = SyncData(DATA_FILE_PATH, mode="a")
+        self.assertFalse(sd1.__similar__(sd2))
+
+    def test_append_equal_mode(self):
+        sd1 = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=False, read_only=False)
+        sd2 = SyncData(DATA_FILE_PATH, mode="a=")
+        self.assertTrue(sd1.__similar__(sd2))
+
+    def test_append_equal_mode_wrong(self):
+        """Overwrite parameter could be difficult to test, so this test checks that it's detected."""
+        sd1 = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True, read_only=False)
+        sd2 = SyncData(DATA_FILE_PATH, mode="a=")
+        self.assertFalse(sd1.__similar__(sd2))
+
+    def test_write_mode(self):
+        sd1 = SyncData(DATA_FILE_PATH, save_on_edit=False, overwrite=True, read_only=False)
+        sd2 = SyncData(DATA_FILE_PATH, mode="w")
+        self.assertTrue(sd1.__similar__(sd2))
+
+    def test_write_mode_wrong(self):
+        """Overwrite parameter could be difficult to test, so this test checks that it's detected."""
+        sd1 = SyncData(DATA_FILE_PATH, save_on_edit=False, overwrite=False, read_only=False)
+        sd2 = SyncData(DATA_FILE_PATH, mode="w")
+        self.assertFalse(sd1.__similar__(sd2))
+
+    def test_write_equal_mode(self):
+        sd1 = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True, read_only=False)
+        sd2 = SyncData(DATA_FILE_PATH, mode="w=")
+        self.assertTrue(sd1.__similar__(sd2))
+
+    def test_write_equal_mode_wrong(self):
+        """Overwrite parameter could be difficult to test, so this test checks that it's detected."""
+        sd1 = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=False, read_only=False)
+        sd2 = SyncData(DATA_FILE_PATH, mode="w=")
+        self.assertFalse(sd1.__similar__(sd2))
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove tmp_test_data directory ones all test finished."""
+        # data_directory = os.path.join(os.path.dirname(__file__), DATA_DIR)
+        if os.path.exists(DATA_DIR):
+            shutil.rmtree(DATA_DIR)
+        return super().tearDownClass()
+
+
 if __name__ == "__main__":
     unittest.main()

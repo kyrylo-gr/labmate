@@ -10,6 +10,7 @@ class SyncNp(np.ndarray):
     __should_not_be_converted__ = True
     __save_on_edit__: bool = False
     __last_changes__: Optional[list] = None
+    __should_initialized__: bool = False
 
     def __new__(cls, data):
         if isinstance(data, list):
@@ -27,6 +28,7 @@ class SyncNp(np.ndarray):
         self.__save_on_edit__ = save_on_edit
         if self.__last_changes__ is None:
             self.__last_changes__ = []
+        self.__should_initialized__ = True
         if self.__save_on_edit__:  # or not self.__initialized__:
             self.save(only_update=False)
 
@@ -53,17 +55,18 @@ class SyncNp(np.ndarray):
             os.makedirs(os.path.dirname(self.__filename__), exist_ok=True)
 
         if not only_update:
-            with h5py.File(self.__filename__, 'a') as file:
+            self.__should_initialized__ = False
+            with h5py.File(self.__filename__, "a") as file:
                 if self.__filekey__ in file:
                     del file[self.__filekey__]
                 file[self.__filekey__] = np.asarray(self)
 
-        with h5py.File(self.__filename__, 'a') as file:
-            if self.__filekey__ not in file.keys():
-                # file.create_dataset(self.__filekey__, shape=self.data.shape)
+        with h5py.File(self.__filename__, "a") as file:
+            if self.__filekey__ not in file or self.__should_initialized__:
+                if self.__filekey__ in file:
+                    del file[self.__filekey__]
                 file[self.__filekey__] = np.asarray(self)
-
-                # file[self.__filekey__] = self[key]  # type: ignore
+                self.__should_initialized__ = False
 
             for key in self.__last_changes__:
                 file[self.__filekey__][key] = self[key]  # type: ignore

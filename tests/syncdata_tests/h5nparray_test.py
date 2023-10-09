@@ -18,18 +18,30 @@ DATA_FILE_PATH = os.path.join(DATA_DIR, "some_data.h5")
 class H5NpArraySaveOnEditTest(unittest.TestCase):
     """Saving different type of variables inside h5."""
 
+    check: np.ndarray
+
     def setUp(self):
+        self.create_file("test")
+
+    def create_file(self, key):
         self.sd = SyncData(DATA_FILE_PATH, save_on_edit=True, overwrite=True)
         self.size = (100, 1000)
         self.check = np.zeros(shape=self.size)
-        self.sd['test'] = SyncNp(self.check)
+        self.sd[key] = SyncNp(self.check)
 
     def compare(self):
-        self.assertTrue(self.compare_np_array(self.check, self.sd['test']))
+        self.assertTrue(
+            self.compare_np_array(self.check, self.sd["test"]),
+            msg=f"In current file:\n{self.sd['test']} \n \n {self.check}",
+        )
 
         sd = SyncData(DATA_FILE_PATH)
-
-        self.assertTrue(self.compare_np_array(self.check, sd['test']))
+        if not np.all(self.check == sd["test"]):
+            pass
+        self.assertTrue(
+            self.compare_np_array(self.check, sd["test"]),
+            msg=f"In loaded file:\n {sd['test']}\n vs\n {self.check}",
+        )
 
     @staticmethod
     def compare_np_array(a1, a2):
@@ -42,34 +54,48 @@ class H5NpArraySaveOnEditTest(unittest.TestCase):
     def test_zeros(self):
         self.compare()
 
+    def test_file_is_overwritten(self):
+        self.create_file("test2")
+        self.assertNotIn("test", self.sd)
+        self.assertIn("test2", self.sd)
+
     def test_new_from_list(self):
         self.check = np.array([1, 2, 3])
-        self.sd['test'] = SyncNp([1, 2, 3])
+        self.sd["test"] = SyncNp([1, 2, 3])
         self.compare()
 
     def test_new_from_shape(self):
         self.check = np.zeros((1, 2, 3))
-        self.sd['test'] = SyncNp((1, 2, 3))
+        self.sd["test"] = SyncNp((1, 2, 3))
         self.compare()
 
     def test_horizontal_change(self):
         data = self.create_random_data(self.size[1])
-        self.sd['test'][1, :] = data
+        self.sd["test"][1, :] = data
         self.check[1, :] = data
 
         self.compare()
 
     def test_vertical_change(self):
         data = self.create_random_data(self.size[0])
-        self.sd['test'][:, 2] = data
+        self.sd["test"][:, 2] = data
         self.check[:, 2] = data
 
+        self.compare()
+
+    def test_sequential_run(self):
+        self.check = np.array([1, 2, 3])
+        self.sd["test"] = SyncNp([1, 2, 3])
+        self.compare()
+
+        self.check = np.array([4, 5, 6])
+        self.sd["test"] = SyncNp([4, 5, 6])
         self.compare()
 
     def test_for_data(self):
         for i in range(self.size[0]):
             data = self.create_random_data(self.size[1])
-            self.sd['test'][i, :] = data
+            self.sd["test"][i, :] = data
             self.check[i, :] = data
 
         self.compare()
@@ -88,18 +114,28 @@ class H5NpArrayTest(H5NpArraySaveOnEditTest):
         self.sd = SyncData(DATA_FILE_PATH, save_on_edit=False, overwrite=True)
         self.size = (100, 1000)
         self.check = np.zeros(shape=self.size)
-        self.sd['test'] = SyncNp(self.check)
+        self.sd["test"] = SyncNp(self.check)
 
     def compare(self):
-        self.sd['test'].save()  # pylint: disable=E1101 # type: ignore
+        self.sd["test"].save()  # pylint: disable=E1101 # type: ignore
         return super().compare()
 
 
-class H5NpArrayGlobalSaveTest(H5NpArraySaveOnEditTest):
+class H5NpArrayGlobalSaveTest(H5NpArrayTest):
+    def setUp(self):
+        super().setUp()
+        self.sd.save()
+
     def compare(self):
         self.sd.save()
         return super().compare()
 
 
-if __name__ == '__main__':
+class H5NpArrayForceGlobalSaveTest(H5NpArraySaveOnEditTest):
+    def compare(self):
+        self.sd.save(force=True)
+        return super().compare()
+
+
+if __name__ == "__main__":
     unittest.main()

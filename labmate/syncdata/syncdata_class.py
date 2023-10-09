@@ -68,6 +68,7 @@ class SyncData:
     _retry_on_file_locked_error: int = 5
     _last_time_data_checked: float = 0
     _file_modified_time: float = 0
+    __should_initialized: bool = False
     __should_not_be_converted__ = True
 
     def __init__(
@@ -160,7 +161,8 @@ class SyncData:
                     )
 
                 if overwrite and not read_only:
-                    os.remove(filepath)
+                    self.__should_initialized = True
+                    # os.remove(filepath)
 
                 if read_only or (not read_only and not overwrite):
                     if self._open_on_init:
@@ -176,6 +178,35 @@ class SyncData:
 
             # if not read_only:
             self._filepath = filepath
+
+    @classmethod
+    def open_overwrite(
+        cls,
+        filepath_or_data: Optional[Union[str, dict, Path]] = None,
+        /,
+        mode: Optional[Literal["="]] = None,
+        *,
+        filepath: Optional[Union[str, Path]] = None,
+        save_on_edit: bool = False,
+        read_only: Optional[Union[bool, Set[str]]] = None,
+        overwrite: Optional[bool] = None,
+        data: Optional[dict] = None,
+        open_on_init: Optional[bool] = None,
+        **kwds,
+    ):
+        """Open file in the overwrite mode."""
+        mode_ = "w=" if mode == "=" else "w"
+        return cls(
+            filepath_or_data,
+            mode=mode_,
+            filepath=filepath,
+            save_on_edit=save_on_edit,
+            read_only=read_only,
+            overwrite=overwrite,
+            data=data,
+            open_on_init=open_on_init,
+            **kwds,
+        )
 
     def __init__filepath__(self, *, filepath: str, filekey: str, save_on_edit: bool = False, **_):
         self._filepath = filepath
@@ -229,6 +260,7 @@ class SyncData:
         self._repr = None
 
     def __add_key(self, key):
+        self._pre_save()
         self._keys.add(key)
         self._last_update.add(key)
 
@@ -475,16 +507,34 @@ class SyncData:
     def __dir__(self) -> Iterable[str]:
         return list(self._keys) + self._default_attr
 
+    def __similar__(self, other: "SyncData") -> bool:
+        return (
+            self._filepath == other._filepath  # pylint: disable=protected-access
+            and self._read_only == other._read_only  # pylint: disable=protected-access
+            and self._save_on_edit == other._save_on_edit  # pylint: disable=protected-access
+            and self.__should_initialized
+            == other.__should_initialized  # pylint: disable=protected-access
+        )
+
+    def _pre_save(self, *args, **kwargs):
+        if self.__should_initialized and self._filepath:
+            os.remove(self._filepath)
+            self.__should_initialized = False
+
     def save(
         self,
         only_update: Union[bool, Iterable[str]] = True,
         filepath: Optional[str] = None,
         force: Optional[bool] = None,
     ):
-        if force is True:
-            only_update = False
         if self._read_only is True:
             raise ValueError("Cannot save opened in a read-only mode. Should reopen the file")
+
+        self._pre_save()
+
+        if force is True:
+            only_update = False
+
         if isinstance(only_update, Iterable):
             last_update = self._last_update.intersection(only_update)
             self._last_update = self._last_update.difference(only_update)
