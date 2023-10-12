@@ -398,19 +398,10 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if filename is None:
             raise ValueError("Filename cannot be None")
 
-        filename = str(filename)
-
-        if "/" in filename or "\\" in filename:
-            return filename
-
-        filename = (filename.rsplit(".h5", 1)[0]) if filename.endswith(".h5") else filename
-
-        name_with_prefix = utils.lstrip_int(filename)
-
-        if name_with_prefix:
-            suffix = name_with_prefix[1]
-            return os.path.join(self.data_directory, suffix, filename)
-        return filename
+        filepath = utils.get_path_from_filename(filename)
+        if isinstance(filepath, tuple):
+            return os.path.join(self.data_directory, *filepath)
+        return filepath
 
     def parse_config_file(self, config_file_name: str, /) -> "ConfigFile":
         return self.data.parse_config_file(config_file_name)
