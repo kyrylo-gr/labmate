@@ -3,7 +3,12 @@ import os
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 from ..path import Path
 
-from .acquisition_data import NotebookAcquisitionData, read_config_files, read_file, eval_config_files
+from .acquisition_data import (
+    NotebookAcquisitionData,
+    read_config_files,
+    read_file,
+    eval_config_files,
+)
 
 from ..utils import get_timestamp
 from .. import json as jsn
@@ -61,7 +66,7 @@ class AcquisitionManager:
         else:
             raise ValueError("No data directory specified")
 
-        self.temp_file_path = self.data_directory / 'temp.json'
+        self.temp_file_path = self.data_directory / "temp.json"
 
         if config_files is not None:
             self.set_config_file(config_files)
@@ -91,11 +96,13 @@ class AcquisitionManager:
     def __setitem__(self, __key: str, __value) -> None:
         self.aq[__key] = __value
 
-    def set_config_file(self, filename: Union[str, List[str], Tuple[str, ...]]) -> 'AcquisitionManager':
+    def set_config_file(
+        self, filename: Union[str, List[str], Tuple[str, ...]]
+    ) -> "AcquisitionManager":
         """Set self.config_file to filename. Verify if exists.
         Only set config file for future acquisition and will not change current acquisition"""
-        if isinstance(filename, str):
-            filename = [filename]
+        if not isinstance(filename, (list, set, tuple)):
+            filename = [str(filename)]
 
         self.config_files = list(filename)
 
@@ -107,7 +114,9 @@ class AcquisitionManager:
 
     def set_config_evaluation_module(self, file, module):
         if file not in self.config_files:
-            raise ValueError("Configuration file should be specified before with set_config_file function")
+            raise ValueError(
+                "Configuration file should be specified before with set_config_file function"
+            )
         self.config_files_eval[os.path.basename(file)] = module
 
     def set_init_analyse_file(self, filename: Union[str, Path]) -> None:
@@ -117,7 +126,9 @@ class AcquisitionManager:
         if init:
             self._init_code = init
 
-    def create_path_from_tmp_data(self, dic: AcquisitionTmpData, ignore_existence: bool = False) -> 'Path':
+    def create_path_from_tmp_data(
+        self, dic: AcquisitionTmpData, ignore_existence: bool = False
+    ) -> "Path":
         data_directory = dic.directory or self.data_directory
         experiment_path = Path(data_directory) / str(dic.experiment_name)
         if not experiment_path.exists():
@@ -125,13 +136,13 @@ class AcquisitionManager:
         if self._init_code and not os.path.exists(experiment_path / "init_analyse.py"):
             with open(experiment_path / "init_analyse.py", "w", encoding="utf-8") as file:
                 file.write(self._init_code)
-        filepath_original = filepath = experiment_path / f'{dic.time_stamp}__{dic.experiment_name}'
+        filepath_original = filepath = experiment_path / f"{dic.time_stamp}__{dic.experiment_name}"
         if ignore_existence:
             return filepath
 
         index = 0
-        while os.path.exists(filepath + '.h5'):
-            filepath = filepath_original + f'__{index}'
+        while os.path.exists(filepath + ".h5"):
+            filepath = filepath_original + f"__{index}"
             index += 1
 
         return filepath
@@ -153,7 +164,10 @@ class AcquisitionManager:
             configs = eval_config_files(configs, self.config_files_eval)
 
         dic = AcquisitionTmpData(
-            experiment_name=name, time_stamp=get_timestamp(), configs=configs, directory=self.data_directory
+            experiment_name=name,
+            time_stamp=get_timestamp(),
+            configs=configs,
+            directory=self.data_directory,
         )
 
         self.acquisition_tmp_data = dic
@@ -163,7 +177,10 @@ class AcquisitionManager:
         return self.current_acquisition
 
     def create_acquisition(
-        self, name: Optional[str] = None, cell: Optional[str] = None, save_on_edit: Optional[bool] = None
+        self,
+        name: Optional[str] = None,
+        cell: Optional[str] = None,
+        save_on_edit: Optional[bool] = None,
     ) -> NotebookAcquisitionData:
         """Create a new acquisition with the given experiment name."""
         configs = read_config_files(self.config_files)
@@ -172,10 +189,13 @@ class AcquisitionManager:
             configs = eval_config_files(configs, self.config_files_eval)
 
         if name is None:
-            name = self.current_experiment_name + '_item'
+            name = self.current_experiment_name + "_item"
 
         dic = AcquisitionTmpData(
-            experiment_name=name, time_stamp=get_timestamp(), configs=configs, directory=self.data_directory
+            experiment_name=name,
+            time_stamp=get_timestamp(),
+            configs=configs,
+            directory=self.data_directory,
         )
 
         filepath = self.create_path_from_tmp_data(dic)
@@ -233,7 +253,7 @@ class AcquisitionManager:
             experiment_name=acquisition_tmp_data.experiment_name,
         )
 
-    def save_acquisition(self, **kwds) -> 'AcquisitionManager':
+    def save_acquisition(self, **kwds) -> "AcquisitionManager":
         acq_data = self.current_acquisition
         if acq_data is None:
             raise ValueError(

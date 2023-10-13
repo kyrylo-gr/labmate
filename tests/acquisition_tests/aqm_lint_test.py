@@ -1,11 +1,10 @@
-import unittest
 import os
 import shutil
-from .utils import ShellEmulator, DATA_DIR, aqm_logger
+from .utils import ShellEmulator, DATA_DIR, aqm_logger, LogTest
 from labmate.acquisition_notebook import AcquisitionAnalysisManager
 
 
-class LintingTest(unittest.TestCase):
+class LintingTest(LogTest):
     cell_text = "this is a analysis cell"
     experiment_name = "abc"
 
@@ -32,29 +31,6 @@ class LintingTest(unittest.TestCase):
     def remove_tabs(code: str):
         tabs = " " * (code.find("aqm"))
         return code.replace(tabs, "")
-
-    def check_logs(self, logs, msg, level):
-        return any((msg in log.message and log.levelno >= level) for log in logs)
-
-    def assert_logs(self, logs, msg=None, level=None):
-        if isinstance(msg, list):
-            for msg_ in msg:
-                self.assert_logs(logs, msg_, level)
-            return
-
-        if msg:
-            level = level if level is not None else 30
-
-            self.assertTrue(
-                self.check_logs(logs, msg, level), msg=f"No '{msg}' at level {level} inside: {logs}"
-            )
-        else:
-            msg = "External variable used"
-            level = level or 0
-            self.assertFalse(
-                self.check_logs(logs, msg, level),
-                msg=f"There is '{msg}' inside: {[f'{log.levelno}:{log.message}' for log in logs]}",
-            )
 
     def test_lint_standard(self):
         code = """\

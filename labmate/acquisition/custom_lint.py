@@ -1,7 +1,7 @@
 import ast
 from typing import Any, Dict
 
-from .lint import get_all_args_from_call
+from ..utils.lint import get_all_args_from_call
 
 SPECIAL_FUNCTIONS_LIST = []
 

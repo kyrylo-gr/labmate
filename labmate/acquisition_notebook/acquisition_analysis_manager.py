@@ -15,6 +15,7 @@ import logging
 import time
 from ..acquisition import AcquisitionManager, AnalysisData
 from .. import utils
+from .. import display
 
 if TYPE_CHECKING:
     from ..acquisition import FigureProtocol
@@ -364,7 +365,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             self.save_analysis_cell(cell=cell)
 
         if (self._analysis_cell_str is not None) and (self._linting_external_vars is not None):
-            from ..acquisition import lint
+            from ..utils import lint
             from ..acquisition import custom_lint
 
             # _, external_vars = lint.find_variables_from_code(
@@ -424,7 +425,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def linting(
         self, allowed_variables: Optional[Iterable[str]] = None, init_file: Optional[str] = None
     ):
-        from ..acquisition import lint
+        from ..utils import lint
 
         allowed_variables = set() if allowed_variables is None else set(allowed_variables)
         if init_file is not None:
@@ -457,6 +458,46 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self._acquisition_cell_prerun_hook = (
             tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
         )
+
+    def find_param_in_config(self, param: str) -> Optional[Tuple[str, int]]:
+        for file in self._default_config_files:
+            for line_no, line in enumerate(self.d["configs", file].split("\n")):
+                if line.startswith(param):
+                    return file, line_no + 1
+        return None
+
+    def display_param_link(
+        self,
+        params: Union[str, List[str], List[Tuple[str, str]]],
+        after_text: Optional[str] = None,
+        title: Optional[str] = None,
+    ):
+        if after_text is not None:
+            if not isinstance(params, str):
+                raise ValueError(
+                    "Cannot use after_text with multiple params"
+                    "Use params=[(param, after_text), ...] instead."
+                )
+            return self.display_param_link(params=[(params, after_text)], title=title)
+
+        if isinstance(params, str):
+            params = [params]
+
+        links = "" if not title else title + "<br/>"
+        for param in params:
+            if not isinstance(param, str):
+                param_text, after_text = param
+            else:
+                param_text, after_text = param, None
+
+            res = self.find_param_in_config(param_text)
+            if res is None:
+                logger.warning("Parameter '%s' cannot be found in default config files.", param)
+                continue
+            file, line_no = res
+            link = display.links.create_link(param_text, file, line_no, after_text)
+            links += link + "<br/>"
+        return display.display_html(links)
 
 
 def get_current_cell(shell: Any) -> Optional[str]:

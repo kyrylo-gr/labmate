@@ -1,10 +1,12 @@
 import os
 import logging
+import unittest
 from labmate.acquisition_notebook.acquisition_analysis_manager import logger as aqm_logger
+from labmate.path import Path
 
-TEST_DIR = os.path.dirname(__file__)
-DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
-DATA_FILE_PATH = os.path.join(DATA_DIR, "some_data.h5")
+TEST_DIR = Path(os.path.dirname(__file__))
+DATA_DIR = Path(os.path.join(TEST_DIR, "tmp_test_data"))
+DATA_FILE_PATH = Path(os.path.join(DATA_DIR, "some_data.h5"))
 
 logging.basicConfig(level=logging.WARNING, force=True)
 logging.StreamHandler().setLevel(logging.WARNING)
@@ -61,3 +63,30 @@ class FunctionToRun:
 
     def func(self):
         self.function_run += 1
+
+
+class LogTest(unittest.TestCase):
+    def check_logs(self, logs, msg, level):
+        return any((msg in log.message and log.levelno >= level) for log in logs)
+
+    def assert_logs(self, logs, msg=None, level=None):
+        if isinstance(msg, list):
+            for msg_ in msg:
+                self.assert_logs(logs, msg_, level)
+            return
+
+        if msg:
+            level = level if level is not None else 30
+
+            self.assertTrue(
+                self.check_logs(logs, msg, level),
+                msg=f"No '{msg}' at level {level} inside: {[(l.message, l.levelno) for l in logs]}",
+            )
+
+        else:
+            msg = "External variable used"
+            level = level or 0
+            self.assertFalse(
+                self.check_logs(logs, msg, level),
+                msg=f"There is '{msg}' inside: {[f'{log.levelno}:{log.message}' for log in logs]}",
+            )
