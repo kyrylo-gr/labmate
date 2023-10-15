@@ -29,11 +29,7 @@ class CopyFilePathButton(BaseWidget):
         super().__init__()
 
     def create(self, aqm: "AcquisitionAnalysisManager", **kwargs):
-        link_name = aqm.current_filepath.basename
-        link = "/".join(
-            str(aqm.current_filepath.absolute().resolve()).split("/")[-self.level_up :]
-        ).replace(" ", "%20")
-        link = f"[{link_name}](//kyrylo-gr.github.io/h5viewer/open?url={link})"
+        link = _create_file_link(aqm, self.level_up)
         self.widget = lm_display.buttons.copy_button("Copy url", link)
 
         return self.widget
@@ -49,18 +45,22 @@ class CopyFigButton(BaseWidget):
 
     def create(self, aqm: "AcquisitionAnalysisManager", fig=None, **kwargs):
         del kwargs
-
-        link_name = aqm.current_filepath.basename
-        link = "/".join(
-            str(aqm.current_filepath.absolute().resolve()).split("/")[-self.level_up :]
-        ).replace(" ", "%20")
-        link = f"[{link_name}](//kyrylo-gr.github.io/h5viewer/open?url={link})"
+        link = _create_file_link(aqm, self.level_up)
 
         def copy_fig():
             windows_utils.copy_fig(fig, text_to_copy=link)
 
         self.widget = lm_display.buttons.create_button(copy_fig, name="Copy fig")
         return self.widget
+
+
+def _create_file_link(aqm: "AcquisitionAnalysisManager", level_up) -> str:
+    link_name = aqm.current_filepath.basename
+    link = "/".join(
+        str(aqm.current_filepath.resolve().absolute()).replace("\\", "/").split("/")[-level_up:]
+    ).replace(" ", "%20")
+    link = f"[{link_name}](//kyrylo-gr.github.io/h5viewer/open?url={link})"
+    return link
 
 
 def display_widgets(objs: List["WidgetProtocol"], *args, **kwargs):
