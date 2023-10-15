@@ -16,6 +16,7 @@ import time
 from ..acquisition import AcquisitionManager, AnalysisData
 from .. import utils
 from .. import display
+from . import display_widget
 
 if TYPE_CHECKING:
     from ..acquisition import FigureProtocol
@@ -70,6 +71,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     _linting_external_vars = None
     _analysis_cell_prerun_hook: Optional[Tuple[_CallableWithNoArgs, ...]] = None
     _acquisition_cell_prerun_hook: Optional[Tuple[_CallableWithNoArgs, ...]] = None
+    _connected_widgets: Optional[List["display_widget.WidgetProtocol"]] = None
 
     def __init__(
         self,
@@ -214,6 +216,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 fig = fig or fig_or_name
         self.save_fig_only(fig=fig, name=name, **kwds)
         self.save_analysis_cell(name=name, cell=cell)
+        if self._connected_widgets:
+            display_widget.display_widgets(
+                self._connected_widgets,
+                aqm=self,
+                fig=fig,
+            )
         return self
 
     def __setitem__(self, __key: str, __value: Any) -> None:
@@ -498,6 +506,16 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             link = display.links.create_link(param_text, file, line_no, after_text)
             links += link + "<br/>"
         return display.display_html(links)
+
+    def connect_default_widget(
+        self,
+        objs: Union["display_widget.WidgetProtocol", List["display_widget.WidgetProtocol"]],
+    ):
+        if not isinstance(objs, (list, tuple)):
+            objs = [objs]
+        if self._connected_widgets is None:
+            self._connected_widgets = []
+        self._connected_widgets.extend(objs)
 
 
 def get_current_cell(shell: Any) -> Optional[str]:
