@@ -1,4 +1,6 @@
 from typing import TYPE_CHECKING, List, Protocol, TypeVar
+import os
+
 from .. import display as lm_display
 from ..display import windows_utils
 
@@ -29,6 +31,7 @@ class CopyFilePathButton(BaseWidget):
         super().__init__()
 
     def create(self, aqm: "AcquisitionAnalysisManager", **kwargs):
+        del kwargs
         link = _create_file_link(aqm, self.level_up)
         self.widget = lm_display.buttons.copy_button("Copy url", link)
 
@@ -55,10 +58,14 @@ class CopyFigButton(BaseWidget):
 
 
 def _create_file_link(aqm: "AcquisitionAnalysisManager", level_up) -> str:
-    link_name = aqm.current_filepath.basename
-    link = "/".join(
-        str(aqm.current_filepath.resolve().absolute()).replace("\\", "/").split("/")[-level_up:]
-    ).replace(" ", "%20")
+    filepath = aqm.current_analysis or aqm.current_acquisition
+    filepath = filepath.filepath if filepath else None
+    if filepath is None:
+        return ""
+    link_name = os.path.basename(filepath)
+    link = "/".join(os.path.abspath(filepath).replace("\\", "/").split("/")[-level_up:]).replace(
+        " ", "%20"
+    )
     link = f"[{link_name}](//kyrylo-gr.github.io/h5viewer/open?url={link})"
     return link
 
