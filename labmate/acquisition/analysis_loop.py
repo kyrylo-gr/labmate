@@ -1,13 +1,13 @@
-"""Contains only AnalysisLoop which is subclass of SyncData.
+"""Contains only AnalysisLoop which is subclass of DH5.
 It has mainly __iter__ method and __getitem__ method for slicing.
 """
 
 from typing import Any, List, Optional, Iterable, Tuple, Union
 
-from ..syncdata import SyncData
+from dh5 import DH5
 
 
-class AnalysisLoop(SyncData):
+class AnalysisLoop(DH5):
     """Analysis loop is a class for reading dict that was created by AcquisitionLoop.
     Normally AnalysisLoop is created by AnalysisManager or it can be created from any
     dict that has __loop_shape__ item.
@@ -51,11 +51,13 @@ class AnalysisLoop(SyncData):
         for index in range(self._loop_shape[0]):
             child_kwds = {}
             for key, value in self._data.items():
-                if key[:1] == '_':
+                if key[:1] == "_":
                     continue
 
                 # if not isinstance(value, Iterable) or isinstance(value, (str, bytes)):
-                if not hasattr(value, "__getitem__") or isinstance(value, (str, bytes, int, float, complex)):
+                if not hasattr(value, "__getitem__") or isinstance(
+                    value, (str, bytes, int, float, complex)
+                ):
                     child_kwds[key] = value
                 elif len(value) == 1:
                     child_kwds[key] = value[0]
@@ -69,7 +71,7 @@ class AnalysisLoop(SyncData):
             if len(self._loop_shape) > 1:
                 yield AnalysisLoop(child_kwds, loop_shape=self._loop_shape[1:].copy())
             else:
-                child = SyncData(child_kwds)
+                child = DH5(child_kwds)
                 yield child
 
     def __getitem__(self, __key: Union[str, tuple, slice]) -> Any:
@@ -88,7 +90,7 @@ class AnalysisLoop(SyncData):
 
         child_data = {}
         for key, value in self._data.items():
-            if key[:1] == '_':
+            if key[:1] == "_":
                 continue
             if not hasattr(value, "__getitem__"):
                 child_data[key] = value

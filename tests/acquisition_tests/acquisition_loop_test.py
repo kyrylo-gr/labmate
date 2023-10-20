@@ -12,8 +12,9 @@ from typing import Union
 import unittest
 import numpy as np
 
+from dh5 import DH5
+
 from labmate.acquisition import AcquisitionLoop, AcquisitionManager
-from labmate.syncdata import SyncData
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
@@ -301,7 +302,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         if not self.save_on_edit:
             loop.save()
 
-        d2 = SyncData(self.aqm.current_filepath, "a", save_on_edit=self.save_on_edit)
+        d2 = DH5(self.aqm.current_filepath, "a", save_on_edit=self.save_on_edit)
         d2.loop = loop = AcquisitionLoop(d2.get("loop"))
 
         self.data["i"][1] = -10
@@ -324,7 +325,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         self.data_verification()
 
     def data_verification(self):
-        loop_freq = SyncData(self.aqm.current_filepath).get("loop")
+        loop_freq = DH5(self.aqm.current_filepath).get("loop")
         assert loop_freq is not None, "Cannot get LoopData from saved data."
 
         for key, value in self.data.items():

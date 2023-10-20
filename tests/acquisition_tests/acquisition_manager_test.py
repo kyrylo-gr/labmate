@@ -3,8 +3,8 @@ import shutil
 
 import unittest
 
+from dh5 import DH5
 from labmate.acquisition import AcquisitionManager
-from labmate.syncdata import SyncData
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
@@ -22,18 +22,18 @@ class AcquisitionManagerTest(unittest.TestCase):
         self.aqm.new_acquisition(self.experiment_name, cell="none")
 
     def load_data(self):
-        return SyncData(self.aqm.aq.filepath)
+        return DH5(self.aqm.aq.filepath)
 
     def test_right_folder_was_created(self):
         self.assertTrue(os.path.exists(os.path.join(DATA_DIR, self.experiment_name)))
 
     def test_right_folder_was_created_environment(self):
-        os.environ['ACQUISITION_DIR'] = DATA_DIR
+        os.environ["ACQUISITION_DIR"] = DATA_DIR
         self.aqm = AcquisitionManager()
         experiment_name = "abc1"
         self.aqm.new_acquisition(experiment_name, cell="none")
         self.assertTrue(os.path.exists(os.path.join(DATA_DIR, experiment_name)))
-        del os.environ['ACQUISITION_DIR']
+        del os.environ["ACQUISITION_DIR"]
 
     def test_no_dir_provided_restore_from_cache(self):
         with self.assertRaises(ValueError):
@@ -41,13 +41,13 @@ class AcquisitionManagerTest(unittest.TestCase):
 
     def test_create_init_analyse_file(self):
         self.aqm = AcquisitionManager(DATA_DIR)
-        with open(os.path.join(DATA_DIR, "random.py"), 'w', encoding="utf-8") as file:
+        with open(os.path.join(DATA_DIR, "random.py"), "w", encoding="utf-8") as file:
             file.write(self.acquisition_cell)
 
         self.aqm.set_init_analyse_file(os.path.join(DATA_DIR, "random.py"))
         self.aqm.new_acquisition(self.experiment_name, cell="none")
         with open(
-            os.path.join(DATA_DIR, self.experiment_name, "init_analyse.py"), 'r', encoding='utf-8'
+            os.path.join(DATA_DIR, self.experiment_name, "init_analyse.py"), "r", encoding="utf-8"
         ) as file:
             code = file.read()
         self.assertEqual(code, self.acquisition_cell)
@@ -77,7 +77,7 @@ class AcquisitionManagerTest(unittest.TestCase):
 
         sd = self.load_data()
 
-        self.assertEqual(sd.get("configs", {}).get('line_config.txt'), "this is a config file")
+        self.assertEqual(sd.get("configs", {}).get("line_config.txt"), "this is a config file")
 
     def test_save_config_same_name(self):
         file = os.path.join(TEST_DIR, "data/line_config.txt")
@@ -113,7 +113,7 @@ class AcquisitionManagerTest(unittest.TestCase):
         cell_filename = self.aqm.current_filepath + "_CELL.py"
         self.assertTrue(os.path.exists(cell_filename))
 
-        self.assertTrue(self.aqm.aq['useful'])
+        self.assertTrue(self.aqm.aq["useful"])
 
     def test_save_config2(self):
         self.aqm.set_config_file(
@@ -126,9 +126,9 @@ class AcquisitionManagerTest(unittest.TestCase):
 
         sd = self.load_data()
 
-        self.assertEqual(sd.get("configs", {}).get('line_config.txt'), "this is a config file")
+        self.assertEqual(sd.get("configs", {}).get("line_config.txt"), "this is a config file")
 
-        self.assertEqual(sd.get("configs", {}).get('line_config2.txt'), "this is a config file2")
+        self.assertEqual(sd.get("configs", {}).get("line_config2.txt"), "this is a config file2")
 
     def test_save_config_environment(self):
         self.aqm = AcquisitionManager(
@@ -143,12 +143,12 @@ class AcquisitionManagerTest(unittest.TestCase):
 
         sd = self.load_data()
 
-        self.assertEqual(sd.get("configs", {}).get('line_config.txt'), "this is a config file")
+        self.assertEqual(sd.get("configs", {}).get("line_config.txt"), "this is a config file")
 
-        self.assertEqual(sd.get("configs", {}).get('line_config2.txt'), "this is a config file2")
+        self.assertEqual(sd.get("configs", {}).get("line_config2.txt"), "this is a config file2")
 
     def test_save_config_param(self):
-        os.environ['ACQUISITION_CONFIG_FILES'] = ",".join(
+        os.environ["ACQUISITION_CONFIG_FILES"] = ",".join(
             [
                 os.path.join(TEST_DIR, "data/line_config.txt"),
                 os.path.join(TEST_DIR, "data/line_config2.txt"),
@@ -158,19 +158,19 @@ class AcquisitionManagerTest(unittest.TestCase):
 
         sd = self.load_data()
 
-        self.assertEqual(sd.get("configs", {}).get('line_config.txt'), "this is a config file")
+        self.assertEqual(sd.get("configs", {}).get("line_config.txt"), "this is a config file")
 
-        self.assertEqual(sd.get("configs", {}).get('line_config2.txt'), "this is a config file2")
+        self.assertEqual(sd.get("configs", {}).get("line_config2.txt"), "this is a config file2")
 
     def test_file_was_explicitly_saved_false(self):
         sd = self.load_data()
-        self.assertEqual(sd.get('useful'), False)
+        self.assertEqual(sd.get("useful"), False)
 
     def test_file_was_explicitly_saved_true(self):
         self.aqm.save_acquisition()
 
         sd = self.load_data()
-        self.assertEqual(sd.get('useful'), True)
+        self.assertEqual(sd.get("useful"), True)
 
     def test_update(self):
         self.aqm.aq.update(x=2)
@@ -182,7 +182,7 @@ class AcquisitionManagerTest(unittest.TestCase):
         self.aqm.save_acquisition(x=5, y=6)
 
         sd = self.load_data()
-        self.assertEqual(sd.get('useful'), True)
+        self.assertEqual(sd.get("useful"), True)
         self.assertEqual(sd.get("x"), 5)
         self.assertEqual(sd.get("y"), 6)
 
@@ -201,5 +201,5 @@ class AcquisitionManagerTest(unittest.TestCase):
         return super().tearDownClass()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -23,8 +23,6 @@ if TYPE_CHECKING:
     from ..acquisition.config_file import ConfigFile
     from ..path import Path
 
-# from ..syncdata import SyncData
-
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()

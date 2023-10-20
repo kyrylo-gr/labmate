@@ -42,17 +42,17 @@ class BasicTest(unittest.TestCase):
 
         assert data is not None
 
-        self.assertTrue(np.all(x == data.get('x')))
-        self.assertTrue(np.all(y == data.get('y')))
+        self.assertTrue(np.all(x == data.get("x")))
+        self.assertTrue(np.all(y == data.get("y")))
 
     def test_open_old_file(self):
         basedir = os.path.dirname(__file__)
         old_file_path = os.path.join(basedir, "data/old_data_example.h5")
         data = AnalysisData(old_file_path)
-        assert data, "File probably exists, but create SyncData object"
+        assert data, "File probably exists, but create DH5 object"
         x = np.linspace(0, 10 * np.pi, 101)
-        self.assertAlmostEqual(np.abs(data.get('x') - x).sum(), 0)
-        self.assertAlmostEqual(np.abs(data.get('y') - np.sin(x)).sum(), 0)
+        self.assertAlmostEqual(np.abs(data.get("x") - x).sum(), 0)
+        self.assertAlmostEqual(np.abs(data.get("y") - np.sin(x)).sum(), 0)
 
     def test_manager_die(self):
         """Save, make reload on AcquisitionManager and verify that it will found current acquisition."""
@@ -66,8 +66,8 @@ class BasicTest(unittest.TestCase):
 
         assert data is not None
 
-        self.assertTrue(np.all(x == data.get('x')))
-        self.assertTrue(np.all(y == data.get('y')))
+        self.assertTrue(np.all(x == data.get("x")))
+        self.assertTrue(np.all(y == data.get("y")))
 
     @classmethod
     def tearDownClass(cls):
@@ -99,9 +99,9 @@ class AcquisitionLoopTest(unittest.TestCase):
         cls.data = {"freq": [], "y": []}
         for freq in cls.freqs:
             x, y = cls.acquire_sine(freq, cls.points)
-            cls.data['y'].append(y)
-            cls.data['freq'].append(freq)
-        cls.data['x'] = x  # type: ignore
+            cls.data["y"].append(y)
+            cls.data["freq"].append(freq)
+        cls.data["x"] = x  # type: ignore
 
         return super().setUpClass()
 
@@ -215,9 +215,9 @@ class AcquisitionLoopTest(unittest.TestCase):
         loop_freq = data.get("loop_freq")
         assert loop_freq is not None, "Cannot get LoopData from saved data."
 
-        self.assertAlmostEqual(compare_np_array(self.data['freq'], loop_freq.get("freq")), 0)
-        self.assertAlmostEqual(compare_np_array(self.data['y'], loop_freq.get("y")), 0)
-        self.assertAlmostEqual(compare_np_array(self.data['x'], loop_freq.get("x")), 0)
+        self.assertAlmostEqual(compare_np_array(self.data["freq"], loop_freq.get("freq")), 0)
+        self.assertAlmostEqual(compare_np_array(self.data["y"], loop_freq.get("y")), 0)
+        self.assertAlmostEqual(compare_np_array(self.data["x"], loop_freq.get("x")), 0)
 
         # for i, d in enumerate(loop_freq):
         #     self.assertAlmostEqual(self.data['freq'][i], d.freq)
@@ -249,17 +249,17 @@ class AnalysisLoopTest(AcquisitionLoopTest):
         assert loop_freq is not None, "Cannot get LoopData from saved data."
 
         for i, d in enumerate(loop_freq):
-            self.assertAlmostEqual(self.data['freq'][i], d.freq)
-            self.assertAlmostEqual(compare_np_array(self.data['y'][i], d.y), 0)
-        self.assertAlmostEqual(compare_np_array(self.data['x'], loop_freq.x), 0)  # type: ignore
+            self.assertAlmostEqual(self.data["freq"][i], d.freq)
+            self.assertAlmostEqual(compare_np_array(self.data["y"][i], d.y), 0)
+        self.assertAlmostEqual(compare_np_array(self.data["x"], loop_freq.x), 0)  # type: ignore
 
         # print(loop_freq['freq'][5])
-        self.assertAlmostEqual(self.data['freq'][5], loop_freq['freq'][5])  # pylint: disable=E1136
+        self.assertAlmostEqual(self.data["freq"][5], loop_freq["freq"][5])  # pylint: disable=E1136
         self.assertAlmostEqual(
-            compare_np_array(self.data['y'][5], loop_freq[4:7]['y'][1]), 0
+            compare_np_array(self.data["y"][5], loop_freq[4:7]["y"][1]), 0
         )  # pylint: disable=E1136
 
-        self.assertEqual(len(loop_freq), len(self.data['freq']))
+        self.assertEqual(len(loop_freq), len(self.data["freq"]))
 
 
 class MultiAnalysisLoopTest(unittest.TestCase):
@@ -284,15 +284,15 @@ class MultiAnalysisLoopTest(unittest.TestCase):
 
         cls.data = {"tau": [], "freq": [], "x": [], "y": []}
         for tau in cls.taus:
-            cls.data['tau'].append(tau)
-            cls.data['y'].append([])
-            cls.data['freq'].append([])
+            cls.data["tau"].append(tau)
+            cls.data["y"].append([])
+            cls.data["freq"].append([])
 
             for freq in cls.freqs:
                 x, y = cls.acquire_sine(freq, cls.points, tau)
-                cls.data['y'][-1].append(y)
-                cls.data['freq'][-1].append(freq)
-            cls.data['x'].append(x)  # type: ignore
+                cls.data["y"][-1].append(y)
+                cls.data["freq"][-1].append(freq)
+            cls.data["x"].append(x)  # type: ignore
 
         return super().setUpClass()
 
@@ -333,10 +333,10 @@ class MultiAnalysisLoopTest(unittest.TestCase):
 
         for i, d in enumerate(loop_freq):
             for j, dd in enumerate(d):
-                self.assertAlmostEqual(self.data['tau'][i], dd.tau)
-                self.assertAlmostEqual(self.data['freq'][i][j], dd.freq)
-                self.assertAlmostEqual(compare_np_array(self.data['y'][i][j], dd.y), 0)
-            self.assertAlmostEqual(compare_np_array(self.data['x'][i], d.x), 0)  # type: ignore
+                self.assertAlmostEqual(self.data["tau"][i], dd.tau)
+                self.assertAlmostEqual(self.data["freq"][i][j], dd.freq)
+                self.assertAlmostEqual(compare_np_array(self.data["y"][i][j], dd.y), 0)
+            self.assertAlmostEqual(compare_np_array(self.data["x"][i], d.x), 0)  # type: ignore
 
     @classmethod
     def tearDownClass(cls):
@@ -350,5 +350,5 @@ def compare_np_array(array1: Union[list, np.ndarray], array2: Union[list, np.nda
     return np.abs(np.array(array1) - np.array(array2)).sum()  # type: ignore
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

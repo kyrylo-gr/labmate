@@ -3,9 +3,10 @@ import os
 from typing import List, Literal, Optional, Protocol, Tuple, Union
 
 
+from dh5 import DH5
+
 from .analysis_loop import AnalysisLoop
 
-from ..syncdata import SyncData
 from .config_file import ConfigFile
 from ..path import Path
 from .. import utils
@@ -20,8 +21,8 @@ class FigureProtocol(Protocol):
         """Save the figure to a file."""
 
 
-class AnalysisData(SyncData):
-    """AnalysisManager is subclass of SyncData.
+class AnalysisData(DH5):
+    """AnalysisManager is subclass of DH5.
 
     It opens the filepath and immediately looks every existing keys.
     So that you can add and modify a new key, but cannot change old keys.
@@ -29,7 +30,7 @@ class AnalysisData(SyncData):
     Also if `cell` was provided, it will save it to h5 file and
     to _ANALYSIS_CELL.py file into the same directory.
 
-    Use case are the same as for the SyncData except additional
+    Use case are the same as for the DH5 except additional
     `save_fig` method.
 
     Example 1:

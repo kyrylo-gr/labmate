@@ -1,0 +1,49 @@
+site_name: Labmate
+# site_url: https://github.com/kyrylo-gr/labmate
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.sections
+    - search.suggest
+    - search.highlight
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            inherited_members: true
+            filters:
+              - '!^_' # exclude all members starting with _
+              - '^__init__$' # but always include __init__ modules and methods
+              - '^__new__$' # but always include __new__ methods
+              - '^__getitem__$'
+              - '^__setitem__$'
+            show_source: true
+            show_submodules: true
+            show_root_heading: false
+            show_root_toc_entry: false
+            show_signature_annotations: false
+            show_root_full_path: true
+            show_object_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            separate_signature: true
+            # summary:
+            # functions: true
+            # show_root_heading: false
+            # show_root_full_path: false
+            # show_root_toc_entry: false
+            # show_signature_annotations: false
+            # heading_level: 1
+      watch: labmate/
+
+nav:
+  - About: about
+  - Releases: releases
+  # - Tutorials:
+  # - Code Reference:

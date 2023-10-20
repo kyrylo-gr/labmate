@@ -1,12 +1,11 @@
 from typing import Iterable, Iterator, Optional, Union, overload
 
 import numpy as np
+from dh5.dh5_types import SyncNp
+from dh5 import DH5
 
-from ..syncdata_types.h5_np_array import SyncNp
-from ..syncdata.syncdata_class import SyncData
 
-
-class AcquisitionLoop(SyncData):
+class AcquisitionLoop(DH5):
     """Comfort way to save a data inside a loop.
 
     Examples:

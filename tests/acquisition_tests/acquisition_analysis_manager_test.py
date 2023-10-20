@@ -3,12 +3,11 @@ import shutil
 
 import unittest
 
+from dh5 import DH5
 from labmate.acquisition_notebook import AcquisitionAnalysisManager
 from labmate.acquisition import AnalysisData
 
 
-# from quanalys.acquisition import AcquisitionManager, AnalysisManager
-from labmate.syncdata import SyncData
 from .analysis_data_test import AnalysisDataParceTest
 from .utils import ShellEmulator, LocalFig, FunctionToRun, TEST_DIR, DATA_DIR
 
@@ -31,7 +30,7 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
         )  # type: ignore
 
     def check_xy_values(self):
-        sd = SyncData(self.aqm.aq.filepath)
+        sd = DH5(self.aqm.aq.filepath)
         self.check_2_list(sd["x"], self.x)
         self.check_2_list(sd["y"], self.y)
 
@@ -89,7 +88,7 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
     def test_acquisition_cell_saved(self):
         self.create_acquisition_cell()
 
-        sd = SyncData(self.aqm.aq.filepath)
+        sd = DH5(self.aqm.aq.filepath)
         self.assertEqual(sd.get("acquisition_cell"), self.cell_text)
 
     def test_analysis_cell_saved(self):
@@ -97,7 +96,7 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
         self.create_analysis_cell()
         self.aqm.save_analysis_cell()
 
-        sd = SyncData(self.aqm.aq.filepath)
+        sd = DH5(self.aqm.aq.filepath)
         self.assertEqual(sd.get("analysis_cells", {}).get("default"), self.cell_text)
 
     def test_analysis_cell_fig_saved(self):
@@ -106,7 +105,7 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
         fig = LocalFig()
         self.aqm.save_fig(fig)
 
-        sd = SyncData(self.aqm.aq.filepath)
+        sd = DH5(self.aqm.aq.filepath)
         self.assertEqual(sd.get("analysis_cells", {}).get("default"), self.cell_text)
         self.assertTrue(fig.fig_saved)
 
@@ -286,7 +285,7 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
         )  # type: ignore
 
     def check_xy_values(self):
-        sd = SyncData(self.aqm.aq.filepath)
+        sd = DH5(self.aqm.aq.filepath)
         self.check_2_list(sd["x"], self.x)
         self.check_2_list(sd["y"], self.y)
 
@@ -372,7 +371,7 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
         self.create_analysis_cell()
         self.aqm.save_analysis_cell()
 
-        sd = SyncData(self.aqm.d.filepath)
+        sd = DH5(self.aqm.d.filepath)
         self.assertEqual(
             sd.get("analysis_cells", {}).get("default"),
             self.cell_text,
@@ -388,7 +387,7 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
             msg="H5 file was created. But analysis_cell should not create it.",
         )
         self.aqm.save_acquisition()
-        self.assertEqual(SyncData(self.aqm.aq.filepath).get("acquisition_cell"), self.cell_text)
+        self.assertEqual(DH5(self.aqm.aq.filepath).get("acquisition_cell"), self.cell_text)
 
     def test_save_inside_analysis_data(self):
         self.create_acquisition_cell()
@@ -397,11 +396,11 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
         self.create_analysis_cell()
 
         self.aqm.d["y"] = self.y
-        data = SyncData(self.aqm.aq.filepath)
+        data = DH5(self.aqm.aq.filepath)
         self.assertFalse("y" in data)
         self.assertEqual(data["useful"], True)
         self.aqm.d.save()
-        self.check_2_list(SyncData(self.aqm.aq.filepath).get("y"), self.y)
+        self.check_2_list(DH5(self.aqm.aq.filepath).get("y"), self.y)
 
     @classmethod
     def tearDownClass(cls):
@@ -454,7 +453,7 @@ class OldDataLoadTestsWithNoShell(unittest.TestCase):
         self.aqm.save_acquisition(x=self.x)
         self.aqm.analysis_cell(self.aqm.aq.filepath, cell=self.cell_text2)
 
-        sd = SyncData(self.aqm.d.filepath)
+        sd = DH5(self.aqm.d.filepath)
         self.assertEqual(sd.get("analysis_cells", {}).get("default"), self.cell_text2)
 
     def test_change_analysis_cell_for_old_data_explicit_cell(self):
@@ -476,7 +475,7 @@ class OldDataLoadTestsWithNoShell(unittest.TestCase):
         self.aqm.analysis_cell(self.aqm.aq.filepath)
         self.aqm.save_analysis_cell(name="abc", cell=self.cell_text2)
 
-        sd = SyncData(self.aqm.d.filepath)
+        sd = DH5(self.aqm.d.filepath)
         self.assertEqual(sd.get("analysis_cells", {}).get("abc"), self.cell_text2)
 
     def tearDown(self) -> None:
@@ -498,7 +497,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
         self.aqm.analysis_cell()
         self.aqm.save_analysis_cell()
 
-        sd = SyncData(self.aqm.aq.filepath)
+        sd = DH5(self.aqm.aq.filepath)
         self.assertEqual(sd.get("analysis_cells", {}).get("default"), self.cell_text)
 
     def test_change_analysis_cell_for_old_data(self):
@@ -510,7 +509,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
         self.aqm.shell = ShellEmulator(self.cell_text2)
         self.aqm.analysis_cell(self.aqm.aq.filepath)
 
-        sd = SyncData(self.aqm.d.filepath)
+        sd = DH5(self.aqm.d.filepath)
         self.assertEqual(sd.get("analysis_cells", {}).get("default"), self.cell_text)
 
     def test_change_analysis_cell_for_old_data_only_name(self):
@@ -522,7 +521,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
         self.aqm.shell = ShellEmulator(self.cell_text2)
         self.aqm.analysis_cell(self.aqm.aq.filepath.rsplit("/", 1)[-1])  # type: ignore
 
-        sd = SyncData(self.aqm.d.filepath)
+        sd = DH5(self.aqm.d.filepath)
         self.assertEqual(sd.get("analysis_cells", {}).get("default"), self.cell_text)
 
     def test_change_analysis_cell_for_old_data_explicit_cell(self):
@@ -533,7 +532,7 @@ class OldDataLoadWithShellTests(OldDataLoadTestsWithNoShell):
         self.aqm.analysis_cell(self.aqm.aq.filepath)
         self.aqm.save_analysis_cell()
 
-        sd = SyncData(self.aqm.d.filepath)
+        sd = DH5(self.aqm.d.filepath)
         self.assertEqual(sd.get("analysis_cells", {}).get("default"), self.cell_text2)
 
     @classmethod
@@ -610,7 +609,7 @@ class LoadCreateIndependentFilesTest(unittest.TestCase):
     def check_xy_values(self, file=None):
         if file is None:
             file = self.aqm.aq.filepath
-        sd = SyncData(file)
+        sd = DH5(file)
         self.check_2_list(sd["x"], self.x)
         self.check_2_list(sd["y"], self.y)
 

@@ -3,9 +3,9 @@ import shutil
 
 import unittest
 
+from dh5 import DH5
 from labmate.acquisition import AcquisitionManager, AnalysisData
 from labmate.acquisition.acquisition_manager import read_config_files
-from labmate.syncdata import SyncData
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
@@ -35,11 +35,11 @@ class AnalysisDataTest(unittest.TestCase):
 
         self.ad["z"] = 3
 
-        sd = SyncData(self.ad.filepath)
+        sd = DH5(self.ad.filepath)
         self.assertEqual(sd.get("z"), 3)
 
     def test_analysis_cell(self):
-        sd = SyncData(self.aqm.aq.filepath)
+        sd = DH5(self.aqm.aq.filepath)
         analysis_cell = sd.get("analysis_cells", {}).get("default")
         # if isinstance(analysis_cell, bytes):
         #     analysis_cell = analysis_cell.decode()

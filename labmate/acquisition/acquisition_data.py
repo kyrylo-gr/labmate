@@ -2,15 +2,15 @@ import logging
 import os
 from typing import Dict, List, Optional, Union
 
-from ..syncdata import SyncData
+from dh5 import DH5
 from ..utils.parse import parse_str
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 
-class NotebookAcquisitionData(SyncData):
-    """It's a SyncData that has information about the configs file and the cell.
+class NotebookAcquisitionData(DH5):
+    """It's a DH5 that has information about the configs file and the cell.
 
     `configs` is a list of the paths to the files that saved by `save_config_files` function.
     `cell` is a str. It saves using `save_cell` function that will save it to `..._CELL.py` file
@@ -27,7 +27,7 @@ class NotebookAcquisitionData(SyncData):
         experiment_name: Optional[str] = None,
     ):
         """Create file.
-        This class is a SyncData object that saves code and config files.
+        This class is a DH5 object that saves code and config files.
 
         Args:
             filepath (str): path to the file to be saved.

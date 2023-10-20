@@ -1,8 +1,3 @@
-"""
-This is something
-"""
-
-# try:
-#     __import__("pkg_resources").declare_namespace(__name__)
-# except ModuleNotFoundError:
-#     pass
+# flake8: noqa: F401 # pylint: disable=E0401
+from dh5 import DH5
+from acquisition import AcquisitionLoop, AnalysisData, AcquisitionManager
