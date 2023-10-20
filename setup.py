@@ -21,7 +21,6 @@ setuptools.setup(
     python_requires=">=3.8",
     install_requires=[
         "numpy",
-        "h5py",
         "dh5",
     ],
     extras_require={
