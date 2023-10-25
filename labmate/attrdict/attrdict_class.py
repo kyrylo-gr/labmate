@@ -1,5 +1,6 @@
+"""This module contains the AttrDict class."""
 from typing import Any, List, Optional, Tuple, Union, overload
-from ..utils import parse as utils_parse
+from ..utils import title_parsing as utils_parse
 
 
 class AttrDict(dict):
@@ -13,6 +14,7 @@ class AttrDict(dict):
     """
 
     def __init__(self, *args, **kwargs):
+        """Use the same constructor as classical dictionary."""
         super().__init__(*args, **kwargs)
         for k, v in self.items():
             if isinstance(v, dict):
@@ -20,7 +22,7 @@ class AttrDict(dict):
         self.__dict__ = self
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}: {super().__repr__()}'
+        return f"{self.__class__.__name__}: {super().__repr__()}"
 
     def __add__(self, other):
         result = self.copy()
@@ -98,7 +100,9 @@ class AttrDict(dict):
         for key in keys:
             key_value, key_units, key_format = utils_parse.parse_get_format(key)
             if key_value in self:
-                keys_with_values.append(utils_parse.ValueForPrint(key_value, self[key_value], key_units, key_format))
+                keys_with_values.append(
+                    utils_parse.ValueForPrint(key_value, self[key_value], key_units, key_format)
+                )
             else:
                 raise ValueError(f"Cannot find key={key} inside {self.__class__.__name__}")
         return keys_with_values

@@ -204,7 +204,8 @@ class AnalysisDataParceTest(unittest.TestCase):
 
     def test_parse_file_pushing_from_begging(self):
         """This right way to save configuration files.
-        They should be set before creating a new acquisition."""
+        They should be set before creating a new acquisition.
+        """
         self.compare_config()
 
     def test_parse_file_pushing_from_begging_small_name(self):
@@ -223,14 +224,16 @@ class AnalysisDataParceTest(unittest.TestCase):
 
     def test_parse_config(self):
         """This right way to save configuration files.
-        They should be set before creating a new acquisition."""
+        They should be set before creating a new acquisition.
+        """
         self.ad.set_default_config_files(("config.txt",))
         data = self.ad.parse_config()
         self.compare_config(data=data)
 
     def test_parse_config_twice(self):
         """This right way to save configuration files.
-        They should be set before creating a new acquisition."""
+        They should be set before creating a new acquisition.
+        """
         self.ad.set_default_config_files(("config.txt",))
         data = self.ad.parse_config()
         self.compare_config(data=data)
@@ -240,13 +243,15 @@ class AnalysisDataParceTest(unittest.TestCase):
 
     def test_parse_config_list(self):
         """This right way to save configuration files.
-        They should be set before creating a new acquisition."""
+        They should be set before creating a new acquisition.
+        """
         data = self.ad.parse_config(["config.txt"])  # type: ignore
         self.compare_config(data=data)
 
     def test_parse_config_default_list(self):
         """This right way to save configuration files.
-        They should be set before creating a new acquisition."""
+        They should be set before creating a new acquisition.
+        """
         self.ad.set_default_config_files(["config.txt"])  # type: ignore
         data = self.ad.parse_config()
         self.compare_config(data=data)
@@ -256,7 +261,8 @@ class AnalysisDataParceTest(unittest.TestCase):
 
     def test_parse_config_str(self):
         """This right way to save configuration files.
-        They should be set before creating a new acquisition."""
+        They should be set before creating a new acquisition.
+        """
         self.ad.set_default_config_files(("config.txt",))
         self.set_data("in_self_data", 789)
         data = self.ad.parse_config_str(["int", "int_underscore", "in_self_data"])
@@ -289,7 +295,8 @@ class AnalysisDataParceTest(unittest.TestCase):
 
     def test_parse_config_str_filename(self):
         """This right way to save configuration files.
-        They should be set before creating a new acquisition."""
+        They should be set before creating a new acquisition.
+        """
         self.ad.set_default_config_files(("config.txt",))
         data = self.ad.parse_config_str(["filename", "f", "file"])
         self.assertIn(f"file = {os.path.basename(self.aqm.current_filepath)}", data)
@@ -313,9 +320,11 @@ class AnalysisDataParceTest(unittest.TestCase):
 
 class SimpleSaveFig:
     """This is emulation of a Figure class.
-    The only goal of this class is to save something with savefig method."""
+    The only goal of this class is to save something with savefig method.
+    """
 
     def __init__(self, internal_data: str = "data"):
+        """Init method with any custom internal_data that later can be accessed."""
         self.internal_data = internal_data
 
     def savefig(self, filepath: str):

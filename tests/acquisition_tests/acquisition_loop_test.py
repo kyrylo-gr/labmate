@@ -7,7 +7,6 @@ everything is good.
 
 import os
 import shutil
-from typing import Union
 
 import unittest
 import numpy as np
@@ -15,6 +14,8 @@ import numpy as np
 from dh5 import DH5
 
 from labmate.acquisition import AcquisitionLoop, AcquisitionManager
+from .utils import compare_np_array
+
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
@@ -342,10 +343,6 @@ class AcquisitionLoopTest(unittest.TestCase):
         if os.path.exists(DATA_DIR):
             shutil.rmtree(DATA_DIR)
         return super().tearDownClass()
-
-
-def compare_np_array(array1: Union[list, np.ndarray], array2: Union[list, np.ndarray]):
-    return np.abs(np.array(array1) - np.array(array2)).sum()  # type: ignore
 
 
 class AcquisitionLoopWithoutSaveOnEditTest(AcquisitionLoopTest):

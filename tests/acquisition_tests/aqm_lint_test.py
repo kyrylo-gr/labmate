@@ -1,7 +1,7 @@
 import os
 import shutil
-from .utils import ShellEmulator, DATA_DIR, aqm_logger, LogTest
 from labmate.acquisition_notebook import AcquisitionAnalysisManager
+from .utils import ShellEmulator, DATA_DIR, aqm_logger, LogTest
 
 
 class LintingTest(LogTest):

@@ -1,8 +1,12 @@
+"""Utils for testing."""
 import os
 import logging
+from typing import List, Optional, Union
 import unittest
+
+import numpy as np
 from labmate.acquisition_notebook.acquisition_analysis_manager import logger as aqm_logger
-from labmate.path import Path
+from dh5.path import Path
 
 TEST_DIR = Path(os.path.dirname(__file__))
 DATA_DIR = Path(os.path.join(TEST_DIR, "tmp_test_data"))
@@ -25,14 +29,21 @@ class ShellEmulator:
     last_cell = "aqm.acquisition_cell('abc')"
 
     def __init__(self, internal_data: str = "shell_emulator_data"):
+        """Create Shell Emulator.
+
+        Args:
+            internal_data (str, optional): Any custom data. Defaults to "shell_emulator_data".
+        """
         self.internal_data = internal_data
         self.next_input = ""
 
     def get_parent(self):
+        """Emulate shell from ipython. Return dict with code."""
         return {"content": {"code": self.internal_data}}
 
     @property
     def last_execution_result(self):
+        """Emulate shell from ipython. Return info about last execution."""
         from labmate.attrdict import AttrDict
 
         return AttrDict(
@@ -45,31 +56,67 @@ class ShellEmulator:
         )
 
     def set_next_input(self, code):
+        """Set self.next_input to code."""
         self.next_input = code
 
 
 class LocalFig:
+    """Emulate Figure behaviour.
+
+    The only parameter is fig_saved, which is False by default.
+    It changes its value when savefig method is called.
+    """
+
     def __init__(self):
+        """Set self.fig_saved to False."""
         self.fig_saved = False
 
     def savefig(self, fname, **kwds):
+        """Change self.fig_saved to True."""
         del fname, kwds
         self.fig_saved = True
 
 
 class FunctionToRun:
+    """Emulate Function behaviour."""
+
     def __init__(self):
+        """Set self.function_run counter to 0."""
         self.function_run = 0
 
     def func(self):
+        """Increase self.function_run counter by 1."""
         self.function_run += 1
 
 
 class LogTest(unittest.TestCase):
-    def check_logs(self, logs, msg, level):
+    """Helper with log checks."""
+
+    def check_logs(self, logs, msg, level) -> bool:
+        """Check if `msg` is in `logs` messages at level >= `level`.
+
+        Args:
+            logs (logs): Logs captured by assertLogs(aqm_logger).
+            msg (str): Message to look for.
+            level (_type_): Minimal accepting level of the provided message.
+
+        Returns:
+            If message was found.
+        """
         return any((msg in log.message and log.levelno >= level) for log in logs)
 
-    def assert_logs(self, logs, msg=None, level=None):
+    def assert_logs(
+        self, logs, msg: Optional[Union[str, List[str]]] = None, level: Optional[int] = None
+    ):
+        """Assert that `msg` is in `logs` messages at level >= `level`.
+
+        Args:
+            logs (logs): Logs captured by assertLogs(aqm_logger).
+            msg (str | list, optional): expected message or list of them. If nothing is provided,
+                then it assert that there are no messages at `level` or higher.
+            level (int, optional): Minimal accepting level of the provided message(s).
+                Defaults to 30 (INFO level).
+        """
         if isinstance(msg, list):
             for msg_ in msg:
                 self.assert_logs(logs, msg_, level)
@@ -90,3 +137,8 @@ class LogTest(unittest.TestCase):
                 self.check_logs(logs, msg, level),
                 msg=f"There is '{msg}' inside: {[f'{log.levelno}:{log.message}' for log in logs]}",
             )
+
+
+def compare_np_array(array1: Union[list, np.ndarray], array2: Union[list, np.ndarray]):
+    """Return the sum of absolute difference between two arrays."""
+    return np.abs(np.array(array1) - np.array(array2)).sum()  # type: ignore

@@ -4,11 +4,11 @@ from typing import List, Literal, Optional, Protocol, Tuple, Union
 
 
 from dh5 import DH5
+from dh5.path import Path
 
 from .analysis_loop import AnalysisLoop
 
 from .config_file import ConfigFile
-from ..path import Path
 from .. import utils
 
 
@@ -17,6 +17,8 @@ logger.setLevel(logging.WARNING)
 
 
 class FigureProtocol(Protocol):
+    """mpl.Figure protocol that has only `savefig` method."""
+
     def savefig(self, fname, **kwds):
         """Save the figure to a file."""
 
@@ -143,9 +145,6 @@ class AnalysisData(DH5):
             "inside_h5", False
         ):
             try:
-                # import pickle
-                # import codecs
-                # pickled = codecs.encode(pickle.dumps(fig), "base64").decode()
                 import pltsave
 
                 data = pltsave.dumps(fig).to_json()
@@ -212,27 +211,29 @@ class AnalysisData(DH5):
 
     def parse_config_values(
         self, keys: List[str], config_files: Optional[Tuple[str, ...]] = None
-    ) -> List[utils.parse.ValueForPrint]:
+    ) -> List[utils.title_parsing.ValueForPrint]:
         config_data = self.parse_config(config_files=config_files)
         if not isinstance(keys, (list, tuple)):
             raise ValueError("Keys must be a list of strings.")
         keys_with_values = []
         for key in keys:
-            key_value, key_units, key_format = utils.parse.parse_get_format(key)
+            key_value, key_units, key_format = utils.title_parsing.parse_get_format(key)
             if key_value == "filename" or key_value == "file" or key_value == "f":
                 filename = os.path.split(self.filepath)[-1]
                 keys_with_values.append(
-                    utils.parse.ValueForPrint(key_value, filename, key_units, key_format)
+                    utils.title_parsing.ValueForPrint(key_value, filename, key_units, key_format)
                 )
             elif key_value in config_data:
                 keys_with_values.append(
-                    utils.parse.ValueForPrint(
+                    utils.title_parsing.ValueForPrint(
                         key_value, config_data[key_value], key_units, key_format
                     )
                 )
             elif key_value in self:
                 keys_with_values.append(
-                    utils.parse.ValueForPrint(key_value, self[key_value], key_units, key_format)
+                    utils.title_parsing.ValueForPrint(
+                        key_value, self[key_value], key_units, key_format
+                    )
                 )
             else:
                 logger.warning("key %s not found and cannot be parsed", key_value)
@@ -251,7 +252,7 @@ class AnalysisData(DH5):
         """
         max_length = max_length or self._default_parse_config_str_max_length
         keys_with_values = self.parse_config_values(values, config_files=config_files)
-        return utils.parse.format_title(keys_with_values, max_length=max_length)
+        return utils.title_parsing.format_title(keys_with_values, max_length=max_length)
 
     def parse_config_file(self, config_file_name: str, /) -> ConfigFile:
         if config_file_name in self._parsed_configs:
@@ -279,7 +280,7 @@ class AnalysisData(DH5):
         else:
             original_config_name = None
 
-        from ..utils.parse import parse_str
+        from ..parsing import parse_str
 
         file_content = self["configs"][config_file_name]
         config_data = ConfigFile(parse_str(file_content), file_content)

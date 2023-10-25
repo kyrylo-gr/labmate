@@ -1,35 +1,37 @@
+"""This submodule contains functions that create Button widgets."""
 from typing import TypeVar
 from .main import display, widgets
-from functools import wraps
 
+# from functools import wraps
+# def add_display_method(func):
+#     """If a function changes the data it should be saved.
+#     It's a wrapper for such function.
+#     """
 
-def add_display_method(func):
-    """If a function changes the data it should be saved.
-    It's a wrapper for such function.
-    """
+#     @wraps(func)
+#     def wrapper(self, *args, **kwargs):
+#         res = func(self, *args, **kwargs)
 
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        res = func(self, *args, **kwargs)
+#         def display_self():
+#             display_button(res)
 
-        def display_self():
-            display_button(res)
+#         res.display = display_self
+#         return res
 
-        res.display = display_self
-        return res
-
-    return wrapper
+#     return wrapper
 
 
 class DisplayingButton(widgets.Button):
-    def display(self) -> "DisplayingButton":
-        return self
+    """Button widget that can be displayed with IPython.core.display.display_functions.display."""
+
+    # def display(self) -> "DisplayingButton":
+    #     return self
 
 
 _T = TypeVar("_T")
 
 
-@add_display_method
+# @add_display_method
 def create_button(func, *args, name=None, **kwargs) -> "DisplayingButton":
     """Create a button widget that calls the given function when clicked.
 
@@ -78,7 +80,7 @@ def display_button(button: _T) -> _T:
     return button
 
 
-@add_display_method
+# @add_display_method
 def copy_button(name, text) -> "DisplayingButton":
     """Create a button widget that copies the given text to the clipboard.
 
@@ -89,6 +91,6 @@ def copy_button(name, text) -> "DisplayingButton":
     Returns:
         A Button widget that copies the given text to the clipboard when clicked.
     """
-    from .copy import copy_text
+    from .platform_utils import copy_text
 
     return create_button(copy_text, text, name=name)

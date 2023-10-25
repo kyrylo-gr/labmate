@@ -1,14 +1,8 @@
-
 import unittest
 
 from labmate.attrdict import AttrDict
 
-DATA = {
-    'int': 123,
-    'float': 123.23,
-    'param_1': "value_1",
-    'param_2': "value_2"
-}
+DATA = {"int": 123, "float": 123.23, "param_1": "value_1", "param_2": "value_2"}
 
 
 class AttrDictMainTest(unittest.TestCase):
@@ -25,31 +19,24 @@ class AttrDictMainTest(unittest.TestCase):
             self.assertTrue(hasattr(self.data, key))
 
     def test_find(self):
-        key_value_found = self.data.find('param')
+        key_value_found = self.data.find("param")
         self.assertIsNotNone(key_value_found)
         assert key_value_found
-        self.assertTupleEqual(key_value_found,
-                              ('param_1', 'value_1'))
+        self.assertTupleEqual(key_value_found, ("param_1", "value_1"))
 
     def test_find_list(self):
-        key_value_found = self.data.find(['param', 'int'])
-        self.assertListEqual(key_value_found,
-                             [('param_1', 'value_1'),
-                              ('int', 123)])
+        key_value_found = self.data.find(["param", "int"])
+        self.assertListEqual(key_value_found, [("param_1", "value_1"), ("int", 123)])
 
     def test_find_all(self):
-        key_value_found = self.data.find_all('param')
-        self.assertListEqual(key_value_found,
-                             [('param_1', 'value_1'),
-                              ('param_2', 'value_2')])
+        key_value_found = self.data.find_all("param")
+        self.assertListEqual(key_value_found, [("param_1", "value_1"), ("param_2", "value_2")])
 
     def test_find_all_list(self):
-        key_value_found = self.data.find_all(['param', 'int'])
-        self.assertListEqual(key_value_found,
-                             [[('param_1', 'value_1'),
-                               ('param_2', 'value_2')],
-                                 [('int', 123)]]
-                             )
+        key_value_found = self.data.find_all(["param", "int"])
+        self.assertListEqual(
+            key_value_found, [[("param_1", "value_1"), ("param_2", "value_2")], [("int", 123)]]
+        )
 
     def test_output_1(self):
         out = self.data.output(["int__m/s__3f"])
@@ -64,5 +51,5 @@ class AttrDictMainTest(unittest.TestCase):
         self.assertEqual("int = 123.000 (m/s)\nparam_1 = value_1 (V)", out)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

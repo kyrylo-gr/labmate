@@ -1,7 +1,7 @@
 import os
 
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
-from ..path import Path
+from dh5.path import Path
 
 from .acquisition_data import (
     NotebookAcquisitionData,
@@ -11,7 +11,7 @@ from .acquisition_data import (
 )
 
 from ..utils import get_timestamp
-from .. import json as jsn
+from dh5 import jsn
 
 
 class AcquisitionTmpData(NamedTuple):

@@ -182,7 +182,7 @@ class AcquisitionLoop(DH5):
                 self._iteration.pop()
             self._level -= 1
 
-        return GenerToIter(loop_iter(iterable, length=length), length)
+        return GeneratorToIterator(loop_iter(iterable, length=length), length)
 
     def enum(self, *args, iterable: Optional[Iterable] = None, **kwds):
         return enumerate(self(*args, iterable=iterable, **kwds))  # type: ignore
@@ -203,7 +203,14 @@ class AcquisitionLoop(DH5):
         self._iteration = []
 
 
-class GenerToIter:
+class GeneratorToIterator:
+    """Create Iterator from Generator.
+
+    This iterator has expected __iter__ and __next__ methods. Also it has __len__ method,
+    which allow to use it for example with tqdm.
+
+    """
+
     def __init__(self, gen, length=None):
         self.gen = gen
         self.length = length

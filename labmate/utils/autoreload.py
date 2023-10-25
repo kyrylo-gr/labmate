@@ -1,5 +1,18 @@
-""" Use `import labmate.utils.autoreload` """
-from IPython import get_ipython
+"""Load autoreload extension to ipython.
+
+Instead:
+```
+%load_ext autoreload
+%autoreload 2
+```
+
+Run:
+```
+import labmate.utils.autoreload
+```
+
+"""
+from IPython.core.getipython import get_ipython
 
 shell = get_ipython()
 if shell:

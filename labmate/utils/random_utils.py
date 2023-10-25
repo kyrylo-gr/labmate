@@ -1,3 +1,4 @@
+"""Random utilities."""
 from typing import Any, Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -5,6 +6,7 @@ if TYPE_CHECKING:
 
 
 def get_timestamp() -> str:
+    """Return timestamp in YYYY_MM_DD__HH_MM_SS format."""
     import datetime
 
     x = datetime.datetime.now()
@@ -71,6 +73,7 @@ def get_path_from_filename(filename: Union[str, "Path"]) -> Union[str, tuple]:
 
 
 def get_var_name_from_def():
+    """Return var name from assignment."""
     import traceback
 
     line = traceback.extract_stack()[-3].line
@@ -80,6 +83,7 @@ def get_var_name_from_def():
 
 
 def get_var_name_from_glob(variable):
+    """Search for the variable in globals and return its name."""
     globals_dict = globals()
     return [var_name for var_name in globals_dict if globals_dict[var_name] is variable]
 
@@ -92,27 +96,10 @@ def run_functions(
         Union[_CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]]
     ] = None
 ):
-    """Run functions if some provided."""
+    """Run functions if any provided."""
     if funcs is not None:
         if isinstance(funcs, (list, tuple)):
             for func in funcs:
                 func()
         else:
             funcs()
-
-
-def output_warning(text: str, logger=None):
-    try:
-        from IPython import display
-
-        html = f"""<div style="
-        background-color:#ec7413; padding: .5em; text-align:center"
-        >{text}</div>"""
-
-        display.display(display.HTML(str(html)))  # type: ignore
-
-    except ImportError:
-        if logger is not None:
-            logger.warning(text)
-        else:
-            print(text)

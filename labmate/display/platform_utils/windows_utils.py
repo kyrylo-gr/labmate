@@ -1,3 +1,6 @@
+"""This submodule contains functions that are specific for windows."""
+
+
 def copy_fig(fig=None, format_=None, text_to_copy=None, **kwargs):
     """Copy fig to the clipboard.
 
@@ -20,7 +23,7 @@ def copy_fig(fig=None, format_=None, text_to_copy=None, **kwargs):
     AttributeError
         If no figure is found
     """
-    from win32gui import GetWindowText, GetForegroundWindow  # type: ignore import warnings
+    # from win32gui import GetWindowText, GetForegroundWindow  # type: ignore import warnings
     import win32clipboard  # type: ignore import warnings
 
     import matplotlib.pyplot as plt
@@ -42,14 +45,14 @@ def copy_fig(fig=None, format_=None, text_to_copy=None, **kwargs):
     if format_ not in format_map:
         format_ = "png"
 
-    if fig is None:
-        # Find the figure window that has UI focus right now (not necessarily
-        # the same as plt.gcf() when in interactive mode)
-        fig_window_text = GetWindowText(GetForegroundWindow())
-        for i in plt.get_fignums():
-            if plt.figure(i).canvas.manager.get_window_title() == fig_window_text:  # type: ignore
-                fig = plt.figure(i)
-                break
+    # if fig is None:
+    #     # Find the figure window that has UI focus right now (not necessarily
+    #     # the same as plt.gcf() when in interactive mode)
+    #     fig_window_text = GetWindowText(GetForegroundWindow())
+    #     for i in plt.get_fignums():
+    #         if plt.figure(i).canvas.manager.get_window_title() == fig_window_text:  # type: ignore
+    #             fig = plt.figure(i)
+    #             break
 
     if fig is None:
         raise AttributeError("No figure found!")

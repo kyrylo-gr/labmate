@@ -3,7 +3,7 @@ import os
 from typing import Dict, List, Optional, Union
 
 from dh5 import DH5
-from ..utils.parse import parse_str
+from ..parsing import parse_str
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)

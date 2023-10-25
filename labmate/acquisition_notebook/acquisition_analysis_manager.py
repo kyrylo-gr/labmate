@@ -21,7 +21,8 @@ from . import display_widget
 if TYPE_CHECKING:
     from ..acquisition import FigureProtocol
     from ..acquisition.config_file import ConfigFile
-    from ..path import Path
+    from dh5.path import Path
+
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -318,7 +319,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if filename or filepath:  # getting old data
             self._is_old_data = True
             if self.shell is not None:
-                utils.output_warning("Old data analysis")
+                from labmate.display.html_output import display_warning
+
+                display_warning("Old data analysis")
 
             filename = str(filepath or self._get_full_filename(filename))  # type: ignore
             filename = (filename.rsplit(".h5", 1)[0]) if filename.endswith(".h5") else filename

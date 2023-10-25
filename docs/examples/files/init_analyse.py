@@ -6,10 +6,11 @@ import sys
 import os
 import matplotlib.pylab as plt
 from labmate.acquisition_notebook import AcquisitionAnalysisManager
-from labmate.path import Path
+from dh5.path import Path
+
 SCRIPT_DIR = os.path.join(os.path.dirname(__file__), os.pardir)
-sys.path.append(os.path.join(os.path.abspath(SCRIPT_DIR), 'analyse'))
+sys.path.append(os.path.join(os.path.abspath(SCRIPT_DIR), "analyse"))
 meas_dir = Path(SCRIPT_DIR).parent.parent.parent
 aqm = AcquisitionAnalysisManager(meas_dir)
 
-print('init_analysis')
+print("init_analysis")
