@@ -1,7 +1,7 @@
 """This submodule contains functions that are specific for windows."""
 
 
-def copy_fig(fig=None, format_=None, text_to_copy=None, **kwargs):
+def copy_fig(fig=None, format_=None, text_to_copy=None, **kwargs):  # pragma: no cover <--
     """Copy fig to the clipboard.
 
     Parameters

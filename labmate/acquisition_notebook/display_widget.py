@@ -158,15 +158,28 @@ class OpenFinderButton(BaseWidget):
 
     """
 
-    def _create(self, aqm: "AcquisitionAnalysisManager", **kwargs):  # pylint: disable=W0221
+    def __init__(self, level_up=3, **kwargs) -> None:
+        del kwargs
+
+        super().__init__()
+
+    def _create(self, aqm: "AcquisitionAnalysisManager", fig=None, **kwargs):
         del kwargs
         filepath = _get_filepath(aqm)
         if filepath is None:
             return None
 
+        import sys, subprocess
+
         def open_finder():
             path = os.path.abspath(filepath) + ".h5"
-            platform_utils.open_finder(path)
+            if sys.platform == "win32":
+                path = path.replace("/", "\\")
+                subprocess.run(["explorer", "/select,", path], shell=True)
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", "-R", path])
+            else:
+                subprocess.Popen(["nautilus", "--select", path])
 
         self.widget = lm_display.buttons.create_button(open_finder, name="Open finder")
         return self.widget

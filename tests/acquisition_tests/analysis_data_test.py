@@ -5,7 +5,7 @@ import unittest
 
 from dh5 import DH5
 from labmate.acquisition import AcquisitionManager, AnalysisData
-from labmate.acquisition.acquisition_manager import read_config_files
+from labmate.acquisition.acquisition_manager import read_files
 
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
@@ -181,7 +181,7 @@ class AnalysisDataParceTest(unittest.TestCase):
         """This is no an obvious way to save config files."""
         self.aqm = AcquisitionManager(DATA_DIR)
         self.aqm.new_acquisition(self.experiment_name)
-        self.aqm.aq["configs"] = read_config_files([self.config[0]])
+        self.aqm.aq["configs"] = read_files([self.config[0]])
 
         self.ad = AnalysisData(self.aqm.current_filepath)
         # print(self.ad.parse_config("config.txt"))

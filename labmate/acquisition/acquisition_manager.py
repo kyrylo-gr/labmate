@@ -3,12 +3,9 @@ import os
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 from dh5.path import Path
 
-from .acquisition_data import (
-    NotebookAcquisitionData,
-    read_config_files,
-    read_file,
-    eval_config_files,
-)
+from .acquisition_data import NotebookAcquisitionData
+from ..utils.file_read import read_file, read_files
+from ..parsing.saving import append_values_from_modules_to_files
 
 from ..utils import get_timestamp
 from dh5 import jsn
@@ -75,14 +72,36 @@ class AcquisitionManager:
 
     @property
     def data_directory(self) -> Path:
+        """Return the path to the directory where the data is stored.
+
+        Returns:
+            Path: The path to the directory where the data is stored.
+
+        """
         return self._data_directory
 
     @data_directory.setter
     def data_directory(self, directory: Path) -> None:
+        """Setter method for _data_directory.
+
+        Args:
+            directory (Path): The directory where the data is stored.
+
+        """
         self._data_directory = directory.makedirs()
 
     @property
     def acquisition_tmp_data(self) -> AcquisitionTmpData:
+        """Return information about the current acquisition.
+
+        Returns class attribute or read it from temp.json file if first is not set.
+        Returns:
+            AcquisitionTmpData(NamedTuple):
+                experiment_name: current experiment name
+                time_stamp: time stamp of the current acquisition
+                configs: dict of configurations files to save
+                directory: directory where the data is stored
+        """
         acquisition_tmp_data = self._acquisition_tmp_data or self.get_temp_data(self.temp_file_path)
         if acquisition_tmp_data is None:
             raise ValueError("You should create a new acquisition. It will create temp.json file.")
@@ -90,6 +109,7 @@ class AcquisitionManager:
 
     @acquisition_tmp_data.setter
     def acquisition_tmp_data(self, dic: AcquisitionTmpData) -> None:
+        """Save AcquisitionTmpData to json file and to class attribute."""
         jsn.write(self.temp_file_path, dic.asdict())
         self._acquisition_tmp_data = dic
 
@@ -159,9 +179,9 @@ class AcquisitionManager:
         """Create a new acquisition with the given experiment name."""
         self._current_acquisition = None
         self.cell = cell
-        configs = read_config_files(self.config_files)
+        configs = read_files(self.config_files)
         if self.config_files_eval:
-            configs = eval_config_files(configs, self.config_files_eval)
+            configs = append_values_from_modules_to_files(configs, self.config_files_eval)
 
         dic = AcquisitionTmpData(
             experiment_name=name,
@@ -183,10 +203,10 @@ class AcquisitionManager:
         save_on_edit: Optional[bool] = None,
     ) -> NotebookAcquisitionData:
         """Create a new acquisition with the given experiment name."""
-        configs = read_config_files(self.config_files)
+        configs = read_files(self.config_files)
 
         if self.config_files_eval:
-            configs = eval_config_files(configs, self.config_files_eval)
+            configs = append_values_from_modules_to_files(configs, self.config_files_eval)
 
         if name is None:
             name = self.current_experiment_name + "_item"

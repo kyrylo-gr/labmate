@@ -1,3 +1,4 @@
+"""AcquisitionLoop class."""
 from typing import Iterable, Iterator, Optional, Union, overload
 
 import numpy as np
@@ -6,34 +7,51 @@ from dh5 import DH5
 
 
 class AcquisitionLoop(DH5):
-    """Comfort way to save a data inside a loop.
+    """Comfort way to save a data on change inside a loop without thinking about shape.
 
     Examples:
-    ----------
-    Update the file each time your save something:
+        Update the file each time you save something:
 
-    ```
-    sd.test_loop = loop = AcquisitionLoop()
-    for i in loop(10):
-        loop.append_data(x=i**2)
-        # loop.save() # necessary if save_on_edit=False
-    ```
+        ```
+        sd.test_loop = loop = AcquisitionLoop()
+        for i in loop(10):
+            loop.append_data(x=i**2)
+            # loop.save() # necessary if save_on_edit=False
+        ```
 
-    Update the file only in the end:
+        Update the file only at the end:
 
-    ```
-    loop = AcquisitionLoop()
-    for i in loop(10):
-        loop.append_data(x=i**2)
-    sd.update(test_loop = loop)
-    # sd.save() # necessary if save_on_edit=False
-    ```
+        ```
+        loop = AcquisitionLoop()
+        for i in loop(10):
+            loop.append_data(x=i**2)
+        sd.update(test_loop=loop)
+        # sd.save() # necessary if save_on_edit=False
+        ```
+
+    Methods:
+        __init__(*args, **kwds): Initializes an AcquisitionLoop object.
+        __post__init__(): Performs post-initialization tasks.
+        __call__(*args, iterable=None, **kwds): Appends data or returns an iterator.
+        append(level=None, **kwds): Appends data to save thereafter.
+        __append_value(key, value, shape, iteration): Appends a value to the HDF5 file.
+        iter(iterable, length=None): Returns an iterator over an iterable.
+        enum(*args, iterable=None, **kwds): Returns an iterator over an iterable with an index.
+        already_saved(key=None): Checks if a key has already been saved.
+        reset_level(): Resets the loop level.
     """
 
     _level = 0
     _save_indexes = True
 
     def __init__(self, *args, **kwds) -> None:
+        """Initialize an AcquisitionLoop object.
+
+        Args:
+            *args: Args to pass to DH5.
+            **kwds: kwds to pass to DH5.
+
+        """
         super().__init__(*args, mode="a", **kwds)
 
         self._shape = []
@@ -78,6 +96,12 @@ class AcquisitionLoop(DH5):
 
         If kwds are provided then is same as calling append_data(kwds),
         otherwise returns iterator over iterable or np.arange(*args).
+
+        Examples:
+            >>> loop(x=1, y=2) # same as loop.append(x=1, y=2)
+            >>> loop(10) # same as np.arange(10)
+            >>> loop(1, 5, .5) # same as np.arange(1, 5, .5)
+            >>> loop(range(10)) # same as loop.iter(range(10))
         """
         if iterable is None and len(args) == 0:
             self.append(**kwds)
@@ -95,6 +119,16 @@ class AcquisitionLoop(DH5):
         return self.iter(iterable, **kwds)
 
     def append(self, level: Optional[int] = None, **kwds):
+        """Append data to save thereafter.
+
+        Args:
+            level (int, Optional): level at which to append the data. By default, it is
+                calculated based on how many nested loops are run.
+            **kwds: data to append, provided as keyword arguments.
+
+        Raises:
+            ValueError: If no `kwds` is provided.
+        """
         if len(kwds) == 0:
             raise ValueError("You should provide keywords and values to save.")
 
@@ -103,47 +137,55 @@ class AcquisitionLoop(DH5):
 
         iteration = tuple(self._iteration[: self._level])
         for key, value in kwds.items():
-            if isinstance(value, (np.ndarray,)):
-                key_shape = (*shape, *value.shape)
-            elif hasattr(value, "__len__"):
-                key_shape = (*shape, len(value))
-            else:
-                key_shape = shape
+            self.__append_value(
+                key=key,
+                value=value,
+                shape=shape,
+                iteration=iteration,
+            )
 
-            if key in self:
-                if self[key].shape == key_shape:
-                    self[key][iteration] = value
-                else:
-                    if len(key_shape) < len(self[key].shape):
-                        raise ValueError(
-                            f"Object {key} hasn't the same shape as before. Now it's"
-                            f" {key_shape[len(shape):]},"
-                            f" but before it was {self[key].shape[len(shape):]}."
-                        )
-                    elif len(key_shape) > len(self[key].shape):
-                        raise ValueError(
-                            f"Object {key} cannot be save as the shape is not compatible. "
-                            f"Before the shape was {self[key].shape}, but now it is {key_shape}."
-                        )
+    def __append_value(self, key, value, shape, iteration):
+        if isinstance(value, (np.ndarray,)):
+            key_shape = (*shape, *value.shape)
+        elif hasattr(value, "__len__"):
+            key_shape = (*shape, len(value))
+        else:
+            key_shape = shape
 
-                    self[key] = SyncNp(
-                        np.pad(
-                            self[key],
-                            pad_width=tuple((0, i - j) for i, j in zip(key_shape, self[key].shape)),
-                        )
-                    )
-                    self[key][iteration] = value
-            else:
-                if isinstance(value, (complex, np.complex_)) or (  # type: ignore
-                    isinstance(value, (np.ndarray,)) and value.dtype == np.complex_
-                ):
-                    self[key] = SyncNp(np.zeros(key_shape, dtype=np.complex128))
-                else:
-                    self[key] = SyncNp(np.zeros(key_shape))
-
+        if key in self:
+            if self[key].shape == key_shape:
                 self[key][iteration] = value
+            else:
+                if len(key_shape) < len(self[key].shape):
+                    raise ValueError(
+                        f"Object {key} hasn't the same shape as before. Now it's"
+                        f" {key_shape[len(shape):]},"
+                        f" but before it was {self[key].shape[len(shape):]}."
+                    )
+                if len(key_shape) > len(self[key].shape):
+                    raise ValueError(
+                        f"Object {key} cannot be save as the shape is not compatible. "
+                        f"Before the shape was {self[key].shape}, but now it is {key_shape}."
+                    )
 
-            self._last_update.add(key)
+                self[key] = SyncNp(
+                    np.pad(
+                        self[key],
+                        pad_width=tuple((0, i - j) for i, j in zip(key_shape, self[key].shape)),
+                    )
+                )
+                self[key][iteration] = value
+        else:
+            if isinstance(value, (complex, np.complex_)) or (  # type: ignore
+                isinstance(value, (np.ndarray,)) and value.dtype == np.complex_
+            ):
+                self[key] = SyncNp(np.zeros(key_shape, dtype=np.complex128))
+            else:
+                self[key] = SyncNp(np.zeros(key_shape))
+
+            self[key][iteration] = value
+
+        self._last_update.add(key)
 
     def iter(
         self,
@@ -188,6 +230,48 @@ class AcquisitionLoop(DH5):
         return enumerate(self(*args, iterable=iterable, **kwds))  # type: ignore
 
     def already_saved(self, key: Optional[str] = None) -> bool:
+        """Check if key was already saved at this level.
+
+        This functionality allows to continue running loop from the moment it was stopped.
+        See Example to get how.
+
+        Args:
+            key (Optional[str], optional): Key to check. By default, at every loop level there is
+                additional key ___index_i__ that is saved and it takes this index to check.
+
+        Example:
+            Let's start a measurements by creating a loop and saving it to DH5.
+            (In this example aqm is in `save_on_edit` mode.)
+            ```
+            dh = DH5(FILE_PATH, mode="w", save_on_edit=True)
+            dh.loop = loop = AcquisitionLoop()
+            ```
+
+            Then run the acquisition loop for some time and break it. It emulates kernel breaking.
+            ```
+            for i, freq in loop.enum(1, 5, 0.5):
+                loop.append(i=i**2, freqs=freq)
+                if i > 2:
+                    break
+            ```
+            Now we have first 3 elements save into loop and we what to continue saving data from the
+                point it was stopped.
+
+            Open again the file: (note: the file should be opened in append mode)
+            ```
+            dh = DH5(FILE_PATH, mode="a", save_on_edit=True)
+            dh.loop = loop = AcquisitionLoop(d2.get("loop"))
+            ```
+
+            Use `already_saved` method to check if the loop was already run:
+            ```
+            for i, freq in loop.enum(1, 5, 0.5):
+                if loop.already_saved():
+                    continue
+                loop.append(i=i**2, freqs=freq)
+            ```
+
+        """
         if key is None:
             if not self._save_indexes:
                 raise ValueError("As indexes are not saved with the Loop, key should be provided.")
@@ -211,15 +295,21 @@ class GeneratorToIterator:
 
     """
 
-    def __init__(self, gen, length=None):
-        self.gen = gen
+    def __init__(self, generator, length=None):
+        """Create Iterator from Generator.
+
+        Args:
+            generator: A generator object that yields data.
+            length: An optional integer specifying the number of iterations.
+        """
+        self.generator = generator
         self.length = length
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        return next(self.gen)
+        return next(self.generator)
 
     def __len__(self):
         return self.length

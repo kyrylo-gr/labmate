@@ -79,7 +79,10 @@ class ParsedValue:
         return self.value.__eq__(__value)
 
     def __abs__(self) -> float:
-        return self.value.__abs__()  # type: ignore
+        return abs(self.value)  # type: ignore
+
+    def __float__(self) -> float:
+        return float(self.value)  # type: ignore
 
     def __add__(self, other):
         other = self._convert_other(other)

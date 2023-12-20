@@ -194,7 +194,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         cell = cell or self._analysis_cell_str
 
-        self.data.save_analysis_cell(cell=cell, cell_name=name)
+        self.data.save_analysis_cell(code=cell, code_name=name)
 
         return self
 
@@ -385,7 +385,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 self._linting_external_vars,
                 run_on_call=custom_lint.on_call_functions,
             )
-            for var in lint_result.expernal_vars:
+            for var in lint_result.external_vars:
                 logger.warning("External variable used inside the analysis code: %s", var)
             for error in lint_result.errors:
                 logger.warning(error)

@@ -1,3 +1,4 @@
+"""Custom additional linter functions for the acquisition module."""
 import ast
 from typing import Any, Dict
 
@@ -7,6 +8,15 @@ SPECIAL_FUNCTIONS_LIST = []
 
 
 def on_call_functions(node: ast.Call, db: Dict[str, Any]):
+    """Check if 'save_fig' function is called more then ones with the same arguments.
+
+    Args:
+        node (ast.Call): The function call node to check.
+        db (Dict[str, Any]): A dict to store information about previous calls.
+
+    Returns:
+        List[str]: A list of error messages, if any.
+    """
     errors = []
     if isinstance(node.func, ast.Attribute):
         function_name = node.func.attr

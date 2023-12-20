@@ -8,41 +8,60 @@ from dh5 import DH5
 
 
 class AnalysisLoop(DH5):
-    """Analysis loop is a class for reading dict that was created by AcquisitionLoop.
-    Normally AnalysisLoop is created by AnalysisManager or it can be created from any
-    dict that has __loop_shape__ item.
+    """A class for reading a dictionary that was created by AcquisitionLoop.
 
-    Example 1 how to use it:
-    ```
-    for data_level1 in loop:
-        print(data_level1.x)
-        for data_level2 in data_level1:
-            print(data_level2.x)
-            print(data_level2.y)
-    ```
+    Args:
+        data (Optional[dict]): The dictionary to read. Defaults to None.
+        loop_shape (Optional[List[int]]): The shape of the loop. Defaults to None.
 
-    Example 2 with slicing:
-    ```
-    for d in loop[:5]:
-        print(d.x)
-    ```
+    Examples:
+        Example 1: How to use it:
+        ```
+        for data_level1 in loop:
+            print(data_level1.x)
+            for data_level2 in data_level1:
+                print(data_level2.x)
+                print(data_level2.y)
+        ```
 
-    Example 3. Slicing return not generator but an object of same class, so
-    it's possible to analyze the data directly:
-    ```
-    data = loop[2:10:2]
-    print(data.x)
-    ```
+        Example 2: With slicing:
+        ```
+        for d in loop[:5]:
+            print(d.x)
+        ```
+
+        Example 3: Slicing returns not a generator but an object of the same class, so
+        it's possible to analyze the data directly:
+        ```
+        data = loop[2:10:2]
+        print(data.x)
+        ```
 
     """
 
     def __init__(self, data: Optional[dict] = None, loop_shape: Optional[List[int]] = None):
+        """Initialize an AnalysisLoop object.
+
+        Args:
+            data (Optional[dict]): A dictionary containing data to initialize the object with.
+            loop_shape (Optional[List[int]]): A list of integers representing the shape of the analysis loop.
+                If not provided, the shape is retrieved from the object's '__loop_shape__' attribute.
+        """
         super().__init__(data=data)
         if loop_shape is None:
             loop_shape = self.get("__loop_shape__")
         self._loop_shape = loop_shape
 
     def __iter__(self):
+        """Iterate over the data.
+
+        Yields:
+            The next item in the iteration.
+
+        Raises:
+            ValueError: If data or loop_shape is not set before iterating over it.
+
+        """
         if self._data is None:
             raise ValueError("Data should be set before iterating over it")
         if self._loop_shape is None:
@@ -75,6 +94,15 @@ class AnalysisLoop(DH5):
                 yield child
 
     def __getitem__(self, __key: Union[str, tuple, slice]) -> Any:
+        """Get an item from the data.
+
+        Args:
+            __key (Union[str, tuple, slice]): The key to get.
+
+        Returns:
+            The item at the specified key.
+
+        """
         if isinstance(__key, slice):
             sliced_data, new_shape = self.get_slice(__key)
             return AnalysisLoop(sliced_data, loop_shape=new_shape)
@@ -82,6 +110,15 @@ class AnalysisLoop(DH5):
         return super().__getitem__(__key)
 
     def get_slice(self, __slice: Optional[slice] = None) -> Tuple[dict, list]:
+        """Get a slice of the data.
+
+        Args:
+            __slice (Optional[slice], optional): The slice to get. Defaults to None.
+
+        Returns:
+            Tuple[dict, list]: The sliced data and the new shape.
+
+        """
         length = self.__len__()
 
         if __slice is None:
@@ -103,11 +140,16 @@ class AnalysisLoop(DH5):
         new_shape.extend(self._loop_shape[1:])
         return child_data, new_shape
 
-    # def __repr__(self):
-    #     self._get_repr()
-    #     return f"AnalysisLoop: \n {self._repr}"
-
     def __len__(self) -> int:
+        """Get the length of the data.
+
+        Returns:
+            int: The length of the data.
+
+        Raises:
+            ValueError: If loop_shape is not set before iterating over it.
+
+        """
         if self._loop_shape is None:
             raise ValueError("loop_shape should be set before iterating over it")
         return self._loop_shape[0]

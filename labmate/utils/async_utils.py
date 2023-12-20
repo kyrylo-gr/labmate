@@ -1,9 +1,4 @@
 """Async utilities."""
-import threading
-
-
-def sleep(delay):
-    """Async sleep. Uses wait from threading.Event."""
-    event = threading.Event()
-    event.wait(delay)
-    event.clear()
+from dh5.utils.async_utils import (  # pylint: disable=unused-import # noqa: F401
+    sleep,
+)

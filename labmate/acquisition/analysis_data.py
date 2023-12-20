@@ -1,6 +1,6 @@
-import logging
+"""AnalysisData class."""
 import os
-from typing import List, Literal, Optional, Protocol, Tuple, Union
+from typing import List, Literal, Optional, Protocol, Tuple, TypeVar, Union
 
 
 from dh5 import DH5
@@ -10,10 +10,9 @@ from .analysis_loop import AnalysisLoop
 
 from .config_file import ConfigFile
 from .. import utils
+from .logger_setup import logger
 
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+_T = TypeVar("_T", bound="AnalysisData")
 
 
 class FigureProtocol(Protocol):
@@ -24,23 +23,43 @@ class FigureProtocol(Protocol):
 
 
 class AnalysisData(DH5):
-    """AnalysisManager is subclass of DH5.
+    """A subclass of DH5 that provides additional functionality for analyzing data.
 
-    It opens the filepath and immediately looks every existing keys.
-    So that you can add and modify a new key, but cannot change old keys.
+    This class opens a provided file and locks all the data. It means that
+    you can add new keys and read old one, but cannot change old keys.
 
-    Also if `cell` was provided, it will save it to h5 file and
-    to _ANALYSIS_CELL.py file into the same directory.
+    This class allows to save figure at the under the same filename with suffix.
+    For this use `save_fig` method.
 
-    Use case are the same as for the DH5 except additional
-    `save_fig` method.
+    This class allows to save the code that was run to generate during analysis.
+    If a `cell` was provided during init, it will save it to the h5 file under `analysis_cell` key.
+    You can also save it to a `ANALYSIS_CELL.py` in the same directory, if `save_files` is True.
+    Additionally, there is always possible to not provide `cell` on init, but save it afterwards
+    with `save_analysis_cell` method.
 
-    Example 1:
-    ```
-    data = AnalysisManager(filepath)
-    print(data.x)
-    data.fit_results = [1,2,3]
-    ```
+    Args:
+        filepath (Union[str, Path]): The path to the file to open.
+        cell (Optional[str]): The cell to save to the h5 file and `_ANALYSIS_CELL.py` file.
+        save_files (bool): Whether to save files.
+        save_on_edit (bool): Whether to save on edit.
+        save_fig_inside_h5 (bool): Whether to save the figure inside the h5 file.
+
+    Examples:
+        >>> DH5(PATH, 'w').update(x=5).save() # create some data
+
+        >>> data = AnalysisData(filepath) # open this data.
+
+        >>> data.x # You can access old data
+        5
+
+        >>> data.x = 1 # But cannot change it.
+        ReadOnlyKeyError: "Cannot set a read-only key 'x'."
+
+        >>> data['y'] = [1,2,3] # Nevertheless, you can add more data
+
+        >>> # If you really want to change old data, you can unlock it. And even lock it again.
+        >>> data.unlock_data('x').update(x=3).lock_data('x')
+
     """
 
     _figure_last_name = None
@@ -56,27 +75,39 @@ class AnalysisData(DH5):
         save_on_edit: bool = True,
         save_fig_inside_h5: bool = False,
     ):
+        """Load data from a filepath and lock it to prevent any changes.
+
+        Args:
+            filepath (Union[str, Path]): The path to the file to open.
+            cell (Optional[str]): The analysis code. Defaults to "none". If None is given,
+                then logger.warning is raised.
+            save_files (bool): Whether to save code additionally into a file in the same directory.
+            save_on_edit (bool): Whether to save as soon as any changes are made.
+            save_fig_inside_h5 (bool): Whether to save the figure inside the h5 file instead of
+                a file in the same directory. Default to False, i.e. creates a separate image file.
+        """
         if filepath is None:
             raise ValueError("You must specify filepath")
+        filepath = str(filepath)
+        filepath = filepath if filepath.endswith(".h5") else filepath + ".h5"
+
+        if not os.path.exists(filepath):
+            raise ValueError(f"File '{filepath}' does not exist.")
 
         super().__init__(
-            filepath=str(filepath), overwrite=False, read_only=False, save_on_edit=save_on_edit
+            filepath=filepath, overwrite=False, read_only=False, save_on_edit=save_on_edit
         )
+
         self.lock_data()
 
         self._save_files = save_files
-
-        # if save_fig_inside_h5 is True:
-        #     raise NotImplementedError(
-        #         """We stop using pickle as it's not consistent between systems.
-        #         before the better solution found this functionality is deprecated.""")
         self._save_fig_inside_h5 = save_fig_inside_h5
 
         self._default_config_files: Tuple[str, ...] = tuple()
         if "info" in self and "default_config_files" in self["info"]:
             self._default_config_files = tuple(self["info"]["default_config_files"])
 
-        self.reset_am()
+        self._reset_attrs()
 
         for key, value in self.items():
             if isinstance(value, dict) and value.get("__loop_shape__") is not None:
@@ -84,49 +115,58 @@ class AnalysisData(DH5):
 
         self._analysis_cell = cell
 
-        # if cell is not None:
-        #     self.unlock_data('analysis_cell')\
-        #         .update({'analysis_cell': cell}).lock_data('analysis_cell')
-
         self.save_analysis_cell()
 
-    def reset_am(self):
+    def _reset_attrs(self):
         self._fig_index = 0
         self._figure_saved = False
         self._parsed_configs = {}
 
     def save_analysis_cell(
-        self, cell: Optional[Union[str, Literal["none"]]] = None, cell_name: Optional[str] = None
-    ):
-        cell = cell or self._analysis_cell
-        if cell == "none":
-            return
-        cell_name = cell_name or "default"
-        cell_name_key = f"analysis_cells/{cell_name}"
+        self: _T,
+        code: Optional[Union[str, Literal["none"]]] = None,
+        code_name: Optional[str] = None,
+    ) -> _T:
+        """Save the analysis cell to the h5 file and optionally to a separate file.
 
-        if cell is None or cell == "":
+        Args:
+            code (str | Literal["none"], optional): The analysis cell to save. Defaults to None.
+                If None is given, then logger.warning is raised. To raise nothing, use cell='none'.
+            code_name (str, optional): The name of the analysis cell. Defaults to None.
+        Returns:
+            self
+        """
+        code = code or self._analysis_cell
+        if code == "none":
+            return self
+        code_name = code_name or "default"
+        cell_name_key = f"analysis_cells/{code_name}"
+
+        if code is None or code == "":
             logger.warning("Analysis cell is not set. Nothing to save")
-            return
+            return self
 
-        self.unlock_data(cell_name_key).update({cell_name_key: cell}).lock_data(cell_name_key).save(
+        self.unlock_data(cell_name_key).update({cell_name_key: code}).lock_data(cell_name_key).save(
             [cell_name_key]
         )
 
         if self._save_files:
             assert self.filepath, "You must set self.filepath before saving"
             with open(
-                self.filepath + f"_ANALYSIS_CELL_{cell_name}.py", "w", encoding="UTF-8"
+                self.filepath + f"_ANALYSIS_CELL_{code_name}.py", "w", encoding="UTF-8"
             ) as file:
-                file.write(cell)
+                file.write(code)
+
+        return self
 
     def save_fig(
-        self,
+        self: _T,
         fig: Optional[FigureProtocol] = None,
         name: Optional[Union[str, int]] = None,
         extensions: Optional[str] = None,
         tight_layout: bool = True,
         **kwargs,
-    ):
+    ) -> _T:
         """Save the figure with the filename (...)_FIG_name.
 
         If name is None, use (...)_FIG1, (...)_FIG2.
@@ -157,6 +197,8 @@ class AnalysisData(DH5):
         fig.savefig(full_fig_name, **kwargs)
 
         self._figure_saved = True
+
+        return self
 
     def _get_fig_name(
         self, name: Optional[Union[str, int]] = None, extensions: Optional[str] = None
@@ -331,24 +373,8 @@ class AnalysisData(DH5):
         # raise NotImplementedError(
         # "Not implemented for the moment. If you want to open an old figure. Use open_old_figs function")
 
-    def open_old_figs(self) -> list:
-        figures = []
-        # print(self.get("figures"))
-
-        for figure_key in self.get("figures", []):  # pylint: disable=E1133
-            # print(figure_key)
-            import pickle
-            import codecs
-
-            figure_code = self["figures"][figure_key]
-            if isinstance(figure_code, str):
-                figure_code = figure_code.encode()
-            figure = pickle.loads(codecs.decode(figure_code, "base64"))
-            figures.append(figure)
-        return figures
-
     def pull(self, force_pull: bool = False):
-        self.reset_am()
+        self._reset_attrs()
         return super().pull(force_pull)
 
     @property
