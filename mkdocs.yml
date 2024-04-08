@@ -4,6 +4,7 @@ repo_url: https://github.com/kyrylo-gr/labmate
 theme:
   name: material
   logo: images/labmate-logo-small.png
+  favicon: images/labmate-logo-small.png
   palette:
     - media: '(prefers-color-scheme: light)'
       scheme: default
@@ -61,13 +62,15 @@ nav:
   - Getting Started:
       - Installation: starting_guide/install
       - First steps: starting_guide/first_steps
+      - Fine tuning: starting_guide/fine_tune.md
       - Advanced examples: starting_guide/advanced_examples
   - User Guide:
+      - AcquisitionNotebookManager: code/acquisition_notebook_manager
       - AcquisitionManager: code/acquisition_manager
       - AcquisitionLoop: code/acquisition_loop
       - AnalysisData: code/analysis_data
       - Linting: code/linting
       - Parsing config: code/parsing_config
-  - Developer Guide: develop/
+  - Developer Guide: https://github.com/kyrylo-gr/labmate/blob/main/CONTRIBUTING.md
   - Releases: releases/
   - About: about/

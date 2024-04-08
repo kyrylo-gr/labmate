@@ -1,11 +1,13 @@
 """Module with widgets that can be displayed with AcquisitionAnalysisManager."""
-from typing import TYPE_CHECKING, List, Optional, Protocol, TypeVar
-import os
 
-# import abc
+import os
+from typing import TYPE_CHECKING, List, Optional, Protocol, TypeVar
 
 from .. import display as lm_display
 from ..display import platform_utils
+
+# import abc
+
 
 if TYPE_CHECKING:
     from labmate.acquisition_notebook import AcquisitionAnalysisManager
@@ -169,7 +171,8 @@ class OpenFinderButton(BaseWidget):
         if filepath is None:
             return None
 
-        import sys, subprocess
+        import subprocess
+        import sys
 
         def open_finder():
             path = os.path.abspath(filepath) + ".h5"

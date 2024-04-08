@@ -1,4 +1,8 @@
+import logging
+import os
+import time
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -8,20 +12,17 @@ from typing import (
     Optional,
     Tuple,
     Union,
-    TYPE_CHECKING,
 )
-import os
-import logging
-import time
+
+from .. import display, utils
 from ..acquisition import AcquisitionManager, AnalysisData
-from .. import utils
-from .. import display
 from . import display_widget
 
 if TYPE_CHECKING:
+    from dh5.path import Path
+
     from ..acquisition import FigureProtocol
     from ..acquisition.config_file import ConfigFile
-    from dh5.path import Path
 
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
@@ -39,7 +40,7 @@ _CallableWithNoArgs = Callable[[], Any]
 class AcquisitionAnalysisManager(AcquisitionManager):
     """AcquisitionAnalysisManager.
 
-    # Init:
+    # Init
     ```
     aqm = AcquisitionAnalysisManager("tmp_data/", use_magic=False, save_files=False)
     aqm.set_config_file("configuration.py")
@@ -374,8 +375,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             self.save_analysis_cell(cell=cell)
 
         if (self._analysis_cell_str is not None) and (self._linting_external_vars is not None):
-            from ..utils import lint
             from ..acquisition import custom_lint
+            from ..utils import lint
 
             # _, external_vars = lint.find_variables_from_code(
             #     self._analysis_cell_str, self._linting_external_vars

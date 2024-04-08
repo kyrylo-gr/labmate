@@ -1,14 +1,13 @@
 import os
-
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+
+from dh5 import jsn
 from dh5.path import Path
 
-from .acquisition_data import NotebookAcquisitionData
-from ..utils.file_read import read_file, read_files
 from ..parsing.saving import append_values_from_modules_to_files
-
 from ..utils import get_timestamp
-from dh5 import jsn
+from ..utils.file_read import read_file, read_files
+from .acquisition_data import NotebookAcquisitionData
 
 
 class AcquisitionTmpData(NamedTuple):
@@ -55,6 +54,9 @@ class AcquisitionManager:
 
         self._current_acquisition = None
         self._acquisition_tmp_data = None
+
+        self.config_files = []
+        self.config_files_eval = {}
 
         if data_directory is not None:
             self.data_directory = Path(data_directory)
