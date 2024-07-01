@@ -1,8 +1,8 @@
 # flake8: noqa: F401
-from typing import Any, TYPE_CHECKING
 import importlib
+from typing import TYPE_CHECKING, Any
 
-from .main import display_html, display, logger, display_widgets
+from .main import display, display_html, display_widgets, logger
 
 __all__ = ["links", "buttons", "logger"]
 
@@ -14,7 +14,9 @@ class _LazyModule:
 
     def __getattr__(self, name):
         if self.__module is None:
-            self.__module = importlib.import_module(f".{self.__name}", package=__package__)
+            self.__module = importlib.import_module(
+                f".{self.__name}", package=__package__
+            )
         return getattr(self.__module, name)
 
     # @property
@@ -29,5 +31,4 @@ buttons = _LazyModule("buttons")
 
 
 if TYPE_CHECKING:
-    from . import links
-    from . import buttons
+    from . import buttons, links

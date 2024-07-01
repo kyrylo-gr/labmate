@@ -1,4 +1,5 @@
 """Linting module that detects bad practice with AcquisitionAnalysisManager."""
+
 import ast
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set
 
@@ -197,7 +198,9 @@ class LintResult(NamedTuple):
     errors: List[str]
 
 
-def find_variables_from_node(node, ignore_var: Optional[set] = None, **kwargs) -> LintResult:
+def find_variables_from_node(
+    node, ignore_var: Optional[set] = None, **kwargs
+) -> LintResult:
     """Walk through ast.node and find the variable that was never declared inside this node, but used.
 
     Variables from ingore_var set is allowed external variables to use.

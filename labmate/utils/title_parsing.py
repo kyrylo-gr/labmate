@@ -1,6 +1,7 @@
 """This file contains function of title generation.
 (parsing expected units and format, creating title)
 """
+
 from typing import Any, List, NamedTuple, Optional, Tuple
 
 
@@ -47,10 +48,14 @@ def format_title(values: List[ValueForPrint], max_length: Optional[int] = None) 
     for value in values:
         units = f" ({value.units})" if value.units is not None else ""
         value_str = (
-            value.value if value.format is None else value.value.__format__(f".{value.format}")
+            value.value
+            if value.format is None
+            else value.value.__format__(f".{value.format}")
         )
         new_txt = f"{value.key} = {value_str}{units}"
-        if not max_length or ((last_line_len + len(new_txt) < max_length) or last_line_len == 0):
+        if not max_length or (
+            (last_line_len + len(new_txt) < max_length) or last_line_len == 0
+        ):
             txt += ("; " if txt != "" else "") + new_txt
             last_line_len += len(new_txt) + 2
         else:

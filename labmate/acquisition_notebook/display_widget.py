@@ -198,9 +198,9 @@ def _create_file_link(aqm: "AcquisitionAnalysisManager", level_up) -> str:
     if filepath is None:
         return ""
     link_name = os.path.basename(filepath)
-    link = "/".join(os.path.abspath(filepath).replace("\\", "/").split("/")[-level_up:]).replace(
-        " ", "%20"
-    )
+    link = "/".join(
+        os.path.abspath(filepath).replace("\\", "/").split("/")[-level_up:]
+    ).replace(" ", "%20")
     link = f"[{link_name}](//kyrylo-gr.github.io/h5viewer/open?url={link})"
     return link
 

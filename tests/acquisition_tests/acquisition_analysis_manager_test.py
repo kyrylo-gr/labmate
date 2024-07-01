@@ -1,15 +1,14 @@
 import os
 import shutil
-
 import unittest
 
 from dh5 import DH5
-from labmate.acquisition_notebook import AcquisitionAnalysisManager
-from labmate.acquisition import AnalysisData
 
+from labmate.acquisition import AnalysisData
+from labmate.acquisition_notebook import AcquisitionAnalysisManager
 
 from .analysis_data_test import AnalysisDataParceTest
-from .utils import ShellEmulator, LocalFig, FunctionToRun, TEST_DIR, DATA_DIR
+from .utils import DATA_DIR, TEST_DIR, FunctionToRun, LocalFig, ShellEmulator
 
 
 class AcquisitionAnalysisManagerTest(unittest.TestCase):
@@ -348,7 +347,9 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
 
         assert self.aqm.current_analysis
 
-        self.assertEqual(self.aqm.current_analysis.get("acquisition_cell"), self.cell_text)
+        self.assertEqual(
+            self.aqm.current_analysis.get("acquisition_cell"), self.cell_text
+        )
 
     def test_save_acquisition_creates_am(self):
         self.create_acquisition_cell()
@@ -387,7 +388,9 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
             msg="H5 file was created. But analysis_cell should not create it.",
         )
         self.aqm.save_acquisition()
-        self.assertEqual(DH5(self.aqm.aq.filepath).get("acquisition_cell"), self.cell_text)
+        self.assertEqual(
+            DH5(self.aqm.aq.filepath).get("acquisition_cell"), self.cell_text
+        )
 
     def test_save_inside_analysis_data(self):
         self.create_acquisition_cell()

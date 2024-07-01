@@ -1,9 +1,9 @@
 import os
 import shutil
-
 import unittest
 
 from dh5 import DH5
+
 from labmate.acquisition import AcquisitionManager
 
 TEST_DIR = os.path.dirname(__file__)
@@ -47,7 +47,9 @@ class AcquisitionManagerTest(unittest.TestCase):
         self.aqm.set_init_analyse_file(os.path.join(DATA_DIR, "random.py"))
         self.aqm.new_acquisition(self.experiment_name, cell="none")
         with open(
-            os.path.join(DATA_DIR, self.experiment_name, "init_analyse.py"), "r", encoding="utf-8"
+            os.path.join(DATA_DIR, self.experiment_name, "init_analyse.py"),
+            "r",
+            encoding="utf-8",
         ) as file:
             code = file.read()
         self.assertEqual(code, self.acquisition_cell)
@@ -77,7 +79,9 @@ class AcquisitionManagerTest(unittest.TestCase):
 
         sd = self.load_data()
 
-        self.assertEqual(sd.get("configs", {}).get("line_config.txt"), "this is a config file")
+        self.assertEqual(
+            sd.get("configs", {}).get("line_config.txt"), "this is a config file"
+        )
 
     def test_save_config_same_name(self):
         file = os.path.join(TEST_DIR, "data/line_config.txt")
@@ -126,9 +130,13 @@ class AcquisitionManagerTest(unittest.TestCase):
 
         sd = self.load_data()
 
-        self.assertEqual(sd.get("configs", {}).get("line_config.txt"), "this is a config file")
+        self.assertEqual(
+            sd.get("configs", {}).get("line_config.txt"), "this is a config file"
+        )
 
-        self.assertEqual(sd.get("configs", {}).get("line_config2.txt"), "this is a config file2")
+        self.assertEqual(
+            sd.get("configs", {}).get("line_config2.txt"), "this is a config file2"
+        )
 
     def test_save_config_environment(self):
         self.aqm = AcquisitionManager(
@@ -143,9 +151,13 @@ class AcquisitionManagerTest(unittest.TestCase):
 
         sd = self.load_data()
 
-        self.assertEqual(sd.get("configs", {}).get("line_config.txt"), "this is a config file")
+        self.assertEqual(
+            sd.get("configs", {}).get("line_config.txt"), "this is a config file"
+        )
 
-        self.assertEqual(sd.get("configs", {}).get("line_config2.txt"), "this is a config file2")
+        self.assertEqual(
+            sd.get("configs", {}).get("line_config2.txt"), "this is a config file2"
+        )
 
     def test_save_config_param(self):
         os.environ["ACQUISITION_CONFIG_FILES"] = ",".join(
@@ -158,9 +170,13 @@ class AcquisitionManagerTest(unittest.TestCase):
 
         sd = self.load_data()
 
-        self.assertEqual(sd.get("configs", {}).get("line_config.txt"), "this is a config file")
+        self.assertEqual(
+            sd.get("configs", {}).get("line_config.txt"), "this is a config file"
+        )
 
-        self.assertEqual(sd.get("configs", {}).get("line_config2.txt"), "this is a config file2")
+        self.assertEqual(
+            sd.get("configs", {}).get("line_config2.txt"), "this is a config file2"
+        )
 
     def test_file_was_explicitly_saved_false(self):
         sd = self.load_data()

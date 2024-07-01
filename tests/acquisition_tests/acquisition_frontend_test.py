@@ -7,13 +7,13 @@ everything is good.
 
 import os
 import shutil
-
 import unittest
+
 import numpy as np
 
 from labmate.acquisition import AcquisitionManager, AnalysisData
-
 from labmate.acquisition.acquisition_loop import AcquisitionLoop
+
 from .utils import compare_np_array
 
 TEST_DIR = os.path.dirname(__file__)
@@ -215,7 +215,9 @@ class AcquisitionLoopTest(unittest.TestCase):
         loop_freq = data.get("loop_freq")
         assert loop_freq is not None, "Cannot get LoopData from saved data."
 
-        self.assertAlmostEqual(compare_np_array(self.data["freq"], loop_freq.get("freq")), 0)
+        self.assertAlmostEqual(
+            compare_np_array(self.data["freq"], loop_freq.get("freq")), 0
+        )
         self.assertAlmostEqual(compare_np_array(self.data["y"], loop_freq.get("y")), 0)
         self.assertAlmostEqual(compare_np_array(self.data["x"], loop_freq.get("x")), 0)
 
@@ -254,7 +256,9 @@ class AnalysisLoopTest(AcquisitionLoopTest):
         self.assertAlmostEqual(compare_np_array(self.data["x"], loop_freq.x), 0)  # type: ignore
 
         # print(loop_freq['freq'][5])
-        self.assertAlmostEqual(self.data["freq"][5], loop_freq["freq"][5])  # pylint: disable=E1136
+        self.assertAlmostEqual(
+            self.data["freq"][5], loop_freq["freq"][5]
+        )  # pylint: disable=E1136
         self.assertAlmostEqual(
             compare_np_array(self.data["y"][5], loop_freq[4:7]["y"][1]), 0
         )  # pylint: disable=E1136

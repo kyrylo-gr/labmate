@@ -1,12 +1,16 @@
 """Utils for testing."""
-import os
+
 import logging
-from typing import List, Optional, Union
+import os
 import unittest
+from typing import List, Optional, Union
 
 import numpy as np
-from labmate.acquisition_notebook.acquisition_analysis_manager import logger as aqm_logger
 from dh5.path import Path
+
+from labmate.acquisition_notebook.acquisition_analysis_manager import (
+    logger as aqm_logger,
+)
 
 TEST_DIR = Path(os.path.dirname(__file__))
 DATA_DIR = Path(os.path.join(TEST_DIR, "tmp_test_data"))
@@ -106,7 +110,10 @@ class LogTest(unittest.TestCase):
         return any((msg in log.message and log.levelno >= level) for log in logs)
 
     def assert_logs(
-        self, logs, msg: Optional[Union[str, List[str]]] = None, level: Optional[int] = None
+        self,
+        logs,
+        msg: Optional[Union[str, List[str]]] = None,
+        level: Optional[int] = None,
     ):
         """Assert that `msg` is in `logs` messages at level >= `level`.
 
@@ -127,7 +134,7 @@ class LogTest(unittest.TestCase):
 
             self.assertTrue(
                 self.check_logs(logs, msg, level),
-                msg=f"No '{msg}' at level {level} inside: {[(l.message, l.levelno) for l in logs]}",
+                msg=f"No '{msg}' at level {level} inside: {[(log.message, log.levelno) for log in logs]}",
             )
 
         else:

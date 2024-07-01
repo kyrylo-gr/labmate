@@ -1,9 +1,9 @@
 import os
 import shutil
-
 import unittest
 
 from dh5 import DH5
+
 from labmate.acquisition import AcquisitionManager, AnalysisData
 from labmate.acquisition.acquisition_manager import read_files
 
@@ -51,7 +51,9 @@ class AnalysisDataTest(unittest.TestCase):
         self.assertEqual(code, self.analysis_cell)
 
     def test_analysis_cell_file(self):
-        self.ad = AnalysisData(self.aqm.current_filepath, cell=self.analysis_cell, save_files=True)
+        self.ad = AnalysisData(
+            self.aqm.current_filepath, cell=self.analysis_cell, save_files=True
+        )
         with open(
             self.aqm.current_filepath + "_ANALYSIS_CELL_default.py", encoding="utf-8"
         ) as file:
@@ -65,7 +67,9 @@ class AnalysisDataTest(unittest.TestCase):
         self.assertTrue(
             os.path.exists(
                 os.path.join(
-                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + "_FIG1.pdf"
+                    DATA_DIR,
+                    self.experiment_name,
+                    self.aqm.current_filepath + "_FIG1.pdf",
                 )
             )
         )
@@ -77,7 +81,9 @@ class AnalysisDataTest(unittest.TestCase):
         self.assertTrue(
             os.path.exists(
                 os.path.join(
-                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + "_FIG123.pdf"
+                    DATA_DIR,
+                    self.experiment_name,
+                    self.aqm.current_filepath + "_FIG123.pdf",
                 )
             )
         )
@@ -89,7 +95,9 @@ class AnalysisDataTest(unittest.TestCase):
         self.assertTrue(
             os.path.exists(
                 os.path.join(
-                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + "_FIG_abc.pdf"
+                    DATA_DIR,
+                    self.experiment_name,
+                    self.aqm.current_filepath + "_FIG_abc.pdf",
                 )
             )
         )
@@ -101,7 +109,9 @@ class AnalysisDataTest(unittest.TestCase):
         self.assertTrue(
             os.path.exists(
                 os.path.join(
-                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + "_FIG_a.pdf"
+                    DATA_DIR,
+                    self.experiment_name,
+                    self.aqm.current_filepath + "_FIG_a.pdf",
                 )
             )
         )
@@ -115,7 +125,9 @@ class AnalysisDataTest(unittest.TestCase):
         self.assertTrue(
             os.path.exists(
                 os.path.join(
-                    DATA_DIR, self.experiment_name, self.aqm.current_filepath + "_FIG_a.pdf"
+                    DATA_DIR,
+                    self.experiment_name,
+                    self.aqm.current_filepath + "_FIG_a.pdf",
                 )
             )
         )

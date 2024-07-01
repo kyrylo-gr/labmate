@@ -1,4 +1,5 @@
 """Custom additional linter functions for the acquisition module."""
+
 import ast
 from typing import Any, Dict
 
@@ -24,7 +25,9 @@ def on_call_functions(node: ast.Call, db: Dict[str, Any]):
             h = hash(tuple(get_all_args_from_call(node)))
             data = db.setdefault("save_fig", [])
             if h in data:
-                errors.append("save_fig with the save arguments is used more then ones.")
+                errors.append(
+                    "save_fig with the save arguments is used more then ones."
+                )
 
             data.append(h)
     return errors
