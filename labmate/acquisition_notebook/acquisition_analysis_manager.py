@@ -264,7 +264,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def load_file(self, filename) -> "AnalysisData":
         filename = self._get_full_filename(filename)
-        if not os.path.exists(filename if filename.endswith(".h5") else filename + ".h5"):
+        if not os.path.exists(
+            filename if filename.endswith(".h5") else filename + ".h5"
+        ):
             raise ValueError(f"File {filename} cannot be found")
 
         data = AnalysisData(
@@ -325,7 +327,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 display_warning("Old data analysis")
 
             filename = str(filepath or self._get_full_filename(filename))  # type: ignore
-            filename = (filename.rsplit(".h5", 1)[0]) if filename.endswith(".h5") else filename
+            filename = (
+                (filename.rsplit(".h5", 1)[0]) if filename.endswith(".h5") else filename
+            )
 
         else:
             self._is_old_data = False
@@ -340,7 +344,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                     )
                     or (
                         acquisition_name[0] == r"^"
-                        and re.match(acquisition_name, self.current_experiment_name) is None
+                        and re.match(acquisition_name, self.current_experiment_name)
+                        is None
                     )
                 ):
                     raise ValueError(
@@ -374,7 +379,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if cell is not None:
             self.save_analysis_cell(cell=cell)
 
-        if (self._analysis_cell_str is not None) and (self._linting_external_vars is not None):
+        if (self._analysis_cell_str is not None) and (
+            self._linting_external_vars is not None
+        ):
             from ..acquisition import custom_lint
             from ..utils import lint
 
@@ -387,7 +394,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 run_on_call=custom_lint.on_call_functions,
             )
             for var in lint_result.external_vars:
-                logger.warning("External variable used inside the analysis code: %s", var)
+                logger.warning(
+                    "External variable used inside the analysis code: %s", var
+                )
             for error in lint_result.errors:
                 logger.warning(error)
         utils.run_functions(self._analysis_cell_prerun_hook)
@@ -417,7 +426,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def parse_config_file(self, config_file_name: str, /) -> "ConfigFile":
         return self.data.parse_config_file(config_file_name)
 
-    def parse_config(self, config_files: Optional[Tuple[str, ...]] = None) -> "ConfigFile":
+    def parse_config(
+        self, config_files: Optional[Tuple[str, ...]] = None
+    ) -> "ConfigFile":
         return self.data.parse_config(config_files=config_files)
 
     @property
@@ -433,16 +444,22 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return self.data.parse_config_str(values, max_length=max_length)
 
     def linting(
-        self, allowed_variables: Optional[Iterable[str]] = None, init_file: Optional[str] = None
+        self,
+        allowed_variables: Optional[Iterable[str]] = None,
+        init_file: Optional[str] = None,
     ):
         from ..utils import lint
 
-        allowed_variables = set() if allowed_variables is None else set(allowed_variables)
+        allowed_variables = (
+            set() if allowed_variables is None else set(allowed_variables)
+        )
         if init_file is not None:
             allowed_variables.update(lint.find_variables_from_file(init_file)[0])
         self._linting_external_vars = allowed_variables
 
-    def set_default_config_files(self, config_files: Union[str, Tuple[str, ...], List[str]], /):
+    def set_default_config_files(
+        self, config_files: Union[str, Tuple[str, ...], List[str]], /
+    ):
         self._default_config_files = (
             (config_files,) if isinstance(config_files, str) else tuple(config_files)
         )
@@ -452,7 +469,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def set_analysis_cell_prerun_hook(
         self,
         hook: Union[
-            _CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]
+            _CallableWithNoArgs,
+            List[_CallableWithNoArgs],
+            Tuple[_CallableWithNoArgs, ...],
         ],
     ):
         self._analysis_cell_prerun_hook = (
@@ -462,7 +481,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def set_acquisition_cell_prerun_hook(
         self,
         hook: Union[
-            _CallableWithNoArgs, List[_CallableWithNoArgs], Tuple[_CallableWithNoArgs, ...]
+            _CallableWithNoArgs,
+            List[_CallableWithNoArgs],
+            Tuple[_CallableWithNoArgs, ...],
         ],
     ):
         self._acquisition_cell_prerun_hook = (
@@ -502,7 +523,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
             res = self.find_param_in_config(param_text)
             if res is None:
-                logger.warning("Parameter '%s' cannot be found in default config files.", param)
+                logger.warning(
+                    "Parameter '%s' cannot be found in default config files.", param
+                )
                 continue
             file, line_no = res
             link = display.links.create_link(param_text, file, line_no, after_text)
@@ -511,7 +534,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def connect_default_widget(
         self,
-        objs: Union["display_widget.WidgetProtocol", List["display_widget.WidgetProtocol"]],
+        objs: Union[
+            "display_widget.WidgetProtocol", List["display_widget.WidgetProtocol"]
+        ],
     ):
         if not isinstance(objs, (list, tuple)):
             objs = [objs]

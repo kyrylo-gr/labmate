@@ -30,12 +30,15 @@ class AttrDictMainTest(unittest.TestCase):
 
     def test_find_all(self):
         key_value_found = self.data.find_all("param")
-        self.assertListEqual(key_value_found, [("param_1", "value_1"), ("param_2", "value_2")])
+        self.assertListEqual(
+            key_value_found, [("param_1", "value_1"), ("param_2", "value_2")]
+        )
 
     def test_find_all_list(self):
         key_value_found = self.data.find_all(["param", "int"])
         self.assertListEqual(
-            key_value_found, [[("param_1", "value_1"), ("param_2", "value_2")], [("int", 123)]]
+            key_value_found,
+            [[("param_1", "value_1"), ("param_2", "value_2")], [("int", 123)]],
         )
 
     def test_output_1(self):

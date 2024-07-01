@@ -104,9 +104,13 @@ class AcquisitionManager:
                 configs: dict of configurations files to save
                 directory: directory where the data is stored
         """
-        acquisition_tmp_data = self._acquisition_tmp_data or self.get_temp_data(self.temp_file_path)
+        acquisition_tmp_data = self._acquisition_tmp_data or self.get_temp_data(
+            self.temp_file_path
+        )
         if acquisition_tmp_data is None:
-            raise ValueError("You should create a new acquisition. It will create temp.json file.")
+            raise ValueError(
+                "You should create a new acquisition. It will create temp.json file."
+            )
         return acquisition_tmp_data
 
     @acquisition_tmp_data.setter
@@ -122,7 +126,8 @@ class AcquisitionManager:
         self, filename: Union[str, List[str], Tuple[str, ...]]
     ) -> "AcquisitionManager":
         """Set self.config_file to filename. Verify if exists.
-        Only set config file for future acquisition and will not change current acquisition"""
+        Only set config file for future acquisition and will not change current acquisition
+        """
         if not isinstance(filename, (list, set, tuple)):
             filename = [str(filename)]
 
@@ -156,9 +161,13 @@ class AcquisitionManager:
         if not experiment_path.exists():
             experiment_path.makedirs()
         if self._init_code and not os.path.exists(experiment_path / "init_analyse.py"):
-            with open(experiment_path / "init_analyse.py", "w", encoding="utf-8") as file:
+            with open(
+                experiment_path / "init_analyse.py", "w", encoding="utf-8"
+            ) as file:
                 file.write(self._init_code)
-        filepath_original = filepath = experiment_path / f"{dic.time_stamp}__{dic.experiment_name}"
+        filepath_original = filepath = (
+            experiment_path / f"{dic.time_stamp}__{dic.experiment_name}"
+        )
         if ignore_existence:
             return filepath
 
@@ -183,7 +192,9 @@ class AcquisitionManager:
         self.cell = cell
         configs = read_files(self.config_files)
         if self.config_files_eval:
-            configs = append_values_from_modules_to_files(configs, self.config_files_eval)
+            configs = append_values_from_modules_to_files(
+                configs, self.config_files_eval
+            )
 
         dic = AcquisitionTmpData(
             experiment_name=name,
@@ -194,7 +205,9 @@ class AcquisitionManager:
 
         self.acquisition_tmp_data = dic
 
-        self._current_acquisition = self.get_acquisition(replace=True, save_on_edit=save_on_edit)
+        self._current_acquisition = self.get_acquisition(
+            replace=True, save_on_edit=save_on_edit
+        )
 
         return self.current_acquisition
 
@@ -208,7 +221,9 @@ class AcquisitionManager:
         configs = read_files(self.config_files)
 
         if self.config_files_eval:
-            configs = append_values_from_modules_to_files(configs, self.config_files_eval)
+            configs = append_values_from_modules_to_files(
+                configs, self.config_files_eval
+            )
 
         if name is None:
             name = self.current_experiment_name + "_item"
@@ -252,13 +267,17 @@ class AcquisitionManager:
 
     @property
     def current_experiment_name(self) -> str:
-        return self.acquisition_tmp_data.experiment_name  # self.current_acquisition.name
+        return (
+            self.acquisition_tmp_data.experiment_name
+        )  # self.current_acquisition.name
 
     def get_acquisition(
         self, replace: Optional[bool] = False, save_on_edit: Optional[bool] = None
     ) -> NotebookAcquisitionData:
         acquisition_tmp_data = self.acquisition_tmp_data
-        filepath = self.create_path_from_tmp_data(acquisition_tmp_data, ignore_existence=True)
+        filepath = self.create_path_from_tmp_data(
+            acquisition_tmp_data, ignore_existence=True
+        )
         configs = acquisition_tmp_data.configs
         configs = configs if configs else None
         cell = self.cell

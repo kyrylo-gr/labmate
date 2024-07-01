@@ -2,7 +2,7 @@
 It has mainly __iter__ method and __getitem__ method for slicing.
 """
 
-from typing import Any, List, Optional, Iterable, Tuple, Union
+from typing import Any, Iterable, List, Optional, Tuple, Union
 
 from dh5 import DH5
 
@@ -39,7 +39,9 @@ class AnalysisLoop(DH5):
 
     """
 
-    def __init__(self, data: Optional[dict] = None, loop_shape: Optional[List[int]] = None):
+    def __init__(
+        self, data: Optional[dict] = None, loop_shape: Optional[List[int]] = None
+    ):
         """Initialize an AnalysisLoop object.
 
         Args:

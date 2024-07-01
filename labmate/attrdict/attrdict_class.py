@@ -1,5 +1,7 @@
 """This module contains the AttrDict class."""
+
 from typing import Any, List, Optional, Tuple, Union, overload
+
 from ..utils import title_parsing as utils_parse
 
 
@@ -30,12 +32,10 @@ class AttrDict(dict):
         return type(self)(result)
 
     @overload
-    def find_all(self, key: str) -> List[Tuple[str, Any]]:
-        ...
+    def find_all(self, key: str) -> List[Tuple[str, Any]]: ...  # noqa
 
     @overload
-    def find_all(self, key: list) -> List[List[Tuple[str, Any]]]:
-        ...
+    def find_all(self, key: list) -> List[List[Tuple[str, Any]]]: ...  # noqa
 
     def find_all(self, key: Union[str, list]):
         """Find all keys that contain the given string.
@@ -54,12 +54,10 @@ class AttrDict(dict):
         return elms
 
     @overload
-    def find(self, key: str) -> Optional[Tuple[str, Any]]:
-        ...
+    def find(self, key: str) -> Optional[Tuple[str, Any]]: ...  # noqa
 
     @overload
-    def find(self, key: list) -> List[Optional[Tuple[str, Any]]]:
-        ...
+    def find(self, key: list) -> List[Optional[Tuple[str, Any]]]: ...  # noqa
 
     def find(self, key: Union[str, list]) -> Union[Optional[tuple], list]:
         """Find the first key that contain the given string.
@@ -94,15 +92,21 @@ class AttrDict(dict):
         keys_with_values = self.__get_value_for_output(keys)
         return utils_parse.format_title(keys_with_values, max_length=max_length)
 
-    def __get_value_for_output(self, keys: List[str]) -> List[utils_parse.ValueForPrint]:
+    def __get_value_for_output(
+        self, keys: List[str]
+    ) -> List[utils_parse.ValueForPrint]:
         """Prepare the values for output. Returns list of ValueForPrint(key, value, unit, format))."""
         keys_with_values = []
         for key in keys:
             key_value, key_units, key_format = utils_parse.parse_get_format(key)
             if key_value in self:
                 keys_with_values.append(
-                    utils_parse.ValueForPrint(key_value, self[key_value], key_units, key_format)
+                    utils_parse.ValueForPrint(
+                        key_value, self[key_value], key_units, key_format
+                    )
                 )
             else:
-                raise ValueError(f"Cannot find key={key} inside {self.__class__.__name__}")
+                raise ValueError(
+                    f"Cannot find key={key} inside {self.__class__.__name__}"
+                )
         return keys_with_values
