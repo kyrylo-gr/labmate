@@ -1,9 +1,10 @@
 """AcquisitionLoop class."""
+
 from typing import Iterable, Iterator, Optional, Union, overload
 
 import numpy as np
-from dh5.dh5_types import SyncNp
 from dh5 import DH5
+from dh5.dh5_types import SyncNp
 
 
 class AcquisitionLoop(DH5):
@@ -87,11 +88,17 @@ class AcquisitionLoop(DH5):
 
     @overload
     def __call__(
-        self, start: Union[int, float], stop: Union[int, float], step: Union[int, float], /
+        self,
+        start: Union[int, float],
+        stop: Union[int, float],
+        step: Union[int, float],
+        /,
     ) -> Iterator:
         """Return np.arange(start, stop, step) given a start, stop and step."""
 
-    def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Optional[Iterator]:
+    def __call__(
+        self, *args, iterable: Optional[Iterable] = None, **kwds
+    ) -> Optional[Iterator]:
         """Append_data or arange.
 
         If kwds are provided then is same as calling append_data(kwds),
@@ -108,7 +115,7 @@ class AcquisitionLoop(DH5):
             return None
 
         if iterable is None:
-            if isinstance(args[0], (int, float, np.int_, np.float_)):  # type: ignore
+            if isinstance(args[0], (int, float, np.int_, np.floating)):  # type: ignore
                 iterable = np.arange(*args)
             else:
                 iterable = args[0]
@@ -171,7 +178,9 @@ class AcquisitionLoop(DH5):
                 self[key] = SyncNp(
                     np.pad(
                         self[key],
-                        pad_width=tuple((0, i - j) for i, j in zip(key_shape, self[key].shape)),
+                        pad_width=tuple(
+                            (0, i - j) for i, j in zip(key_shape, self[key].shape)
+                        ),
                     )
                 )
                 self[key][iteration] = value
@@ -194,7 +203,9 @@ class AcquisitionLoop(DH5):
     ):
         if length is None:
             if not hasattr(iterable, "__len__"):
-                raise TypeError("Iterable should has __len__ method or length should be provided")
+                raise TypeError(
+                    "Iterable should has __len__ method or length should be provided"
+                )
             length = len(iterable)  # type: ignore
 
         def loop_iter(array, length):
@@ -274,7 +285,9 @@ class AcquisitionLoop(DH5):
         """
         if key is None:
             if not self._save_indexes:
-                raise ValueError("As indexes are not saved with the Loop, key should be provided.")
+                raise ValueError(
+                    "As indexes are not saved with the Loop, key should be provided."
+                )
             key = f"__index_{self._level}__"
 
         iteration = tuple(self._iteration[: self._level])
