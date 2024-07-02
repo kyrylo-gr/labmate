@@ -572,10 +572,10 @@ class AcquisitionAnalysisManagerParceTest(AnalysisDataParceTest):
         self.aqm = AcquisitionAnalysisManager(
             DATA_DIR, use_magic=False, save_files=False, save_on_edit=True, shell=shell
         )  # type: ignore
-        self.aqm.set_default_config_files(("config.txt",))
+        self.aqm.set_default_config_files(("config.txt", "imported_config.py"))
 
         # self.config = (os.path.join(TEST_DIR, "data/config.txt"))
-        self.config = (
+        self.config = [
             os.path.join(
                 TEST_DIR,
                 "data/config.txt",
@@ -584,7 +584,7 @@ class AcquisitionAnalysisManagerParceTest(AnalysisDataParceTest):
                 TEST_DIR,
                 "data/imported_config.py",
             ),
-        )
+        ]
         self.aqm.set_config_file(self.config)
         self.aqm.new_acquisition(self.experiment_name)
         self.aqm.save_acquisition(x=[1, 2, 3], y=[[1, 2], [3, 4], [4, 5]])
@@ -610,6 +610,20 @@ class AcquisitionAnalysisManagerParceTest(AnalysisDataParceTest):
         cfg = AnalysisData(self.aqm.current_filepath).cfg
         self.assertEqual(cfg["float"], 123.45)
         self.assertEqual(cfg.float, 123.45)  # type: ignore
+        self.assertEqual(cfg.param_int, 1)  # type: ignore
+
+    def test_update_config_file(self):
+        shutil.copyfile(
+            os.path.join(TEST_DIR, "data/imported_config.py"),
+            os.path.join(DATA_DIR, "new_config.py"),
+        )
+        self.aqm.set_config_file(os.path.join(DATA_DIR, "new_config.py"))
+        self.aqm.set_default_config_files(("new_config.py",))
+        self.aqm.new_acquisition(self.experiment_name)
+        self.aqm.update_config_params_on_disk({"param_int": 789})
+        self.aqm.acquisition_cell(self.experiment_name)
+        self.aqm.analysis_cell()
+        self.assertEqual(self.aqm.data.cfg.get("param_int"), 789, msg=self.aqm.data.cfg)
 
 
 class LoadCreateIndependentFilesTest(unittest.TestCase):

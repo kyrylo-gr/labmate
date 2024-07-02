@@ -545,6 +545,23 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             links += link + "<br/>"
         return display.display_html(links)
 
+    def update_config_params_on_disk(self, params: Dict[str, Any]):
+        # params_per_files = {}
+        # for param, value in params.items():
+        #     res = self.find_param_in_data_config(param)
+        #     if res is None:
+        #         raise ValueError(
+        #             f"Parameter '{param}' cannot be found in default config files."
+        #         )
+        #     file, _ = res
+        #     params_per_files.setdefault(file, {})[param] = value
+
+        for file in self.config_files:
+            file = self._config_files_names_to_path.get(file, file)
+            utils.file_read.update_file_variable(file, params)
+
+        return self
+
     def connect_default_widget(
         self,
         objs: Union[
