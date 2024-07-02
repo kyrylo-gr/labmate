@@ -61,7 +61,7 @@ class AcquisitionManagerTest(unittest.TestCase):
     def test_cell_saved(self):
         self.aqm.new_acquisition(self.experiment_name, cell=self.acquisition_cell)
         sd = self.load_data()
-        self.assertEqual(sd.get("acquisition_cell"), self.acquisition_cell)
+        self.assertEqual(sd.get("acquisition_cell", {}).get("1"), self.acquisition_cell)
 
     def test_cell_file_created(self):
         self.aqm._save_files = True  # pylint: disable=protected-access

@@ -1,9 +1,10 @@
 """Module that contains NotebookAcquisitionData class."""
+
 from typing import Dict, List, Optional, Union
 
 from dh5 import DH5
-from ..utils.file_read import read_files
 
+from ..utils.file_read import read_files
 from .logger_setup import logger
 
 
@@ -13,6 +14,9 @@ class NotebookAcquisitionData(DH5):
     `configs` is a list of the paths to the files that saved by `save_config_files` function.
     `cell` is a str. It saves using `save_cell` function that will save it to `..._CELL.py` file
     """
+
+    _current_step: int
+    _cells: Dict[int, Optional[str]]
 
     def __init__(
         self,
@@ -58,10 +62,11 @@ class NotebookAcquisitionData(DH5):
         self._config = configs
         self.save_configs()
 
-        self._cell = cell
-        self.save_cell(cell=cell)
+        self._cells = {1: cell}
+        self.save_cell(cell=cell, suffix="1")
 
         self.experiment_name = experiment_name
+        self.current_step = 1
 
         self["useful"] = False
 
@@ -95,7 +100,12 @@ class NotebookAcquisitionData(DH5):
             with open(filepath + "_" + name, "w", encoding="utf-8") as file:
                 file.write(value)
 
-    def save_cell(self, cell: Optional[str] = None, filepath: Optional[str] = None):
+    def save_cell(
+        self,
+        cell: Optional[str] = None,
+        filepath: Optional[str] = None,
+        suffix: Optional[str] = None,
+    ):
         """Save the cell code to the h5 file and possibly to a file.
 
         If `save_files` during init was set to True, then it will create a '.py' file near
@@ -108,14 +118,15 @@ class NotebookAcquisitionData(DH5):
              the desired location, i.e. it should end with the file prefix to which the suffix and
              'py' extension will be added. Defaults to save filepath as h5 file.
         """
-        cell = cell or self._cell
         if cell == "none":
             return
         if cell is None or cell == "":
             logger.warning("Acquisition cell is not set. Nothing to save")
             return
-
-        self["acquisition_cell"] = cell
+        if suffix is not None:
+            self[f"acquisition_cell/{suffix}"] = cell
+        else:
+            self["acquisition_cell/0"] = cell
 
         if not self._save_files:
             return
@@ -124,13 +135,26 @@ class NotebookAcquisitionData(DH5):
         with open(filepath + "_CELL.py", "w", encoding="utf-8") as file:
             file.write(cell)
 
+    def save_cells(
+        self,
+        cells: Optional[Dict[int, Optional[str]]] = None,
+        filepath: Optional[str] = None,
+    ):
+        """Save all sells that are provided or pushed into self._cells array."""
+        cells = cells or self._cells
+        # if len(cells) == 1:
+        #     self.save_cell(cells.popitem()[1], filepath)
+        #     return
+        for i, cell in cells.items():
+            self.save_cell(cell, filepath, suffix=str(i))
+
     def save_additional_info(self):
         """Save all additional information, i.e. cell code, configs. Put useful key to True."""
         self["useful"] = True
 
         if not self._save_files:
             return
-        self.save_cell()
+        self.save_cells()
         self.save_configs()
 
     def save_acquisition(self, **kwds) -> "NotebookAcquisitionData":
@@ -140,3 +164,18 @@ class NotebookAcquisitionData(DH5):
         if self.save_on_edit is False:
             self.save()
         return self
+
+    @property
+    def current_step(self):
+        """Return the current step of the acquisition."""
+        return self._current_step
+
+    @current_step.setter
+    def current_step(self, value: int):
+        self._current_step = value
+
+    def set_cell(self, cell: Optional[str], step: Optional[int] = None):
+        """Set the cell code."""
+        if step is None:
+            step = self.current_step
+        self._cells[step] = cell

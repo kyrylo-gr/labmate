@@ -88,7 +88,22 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
         self.create_acquisition_cell()
 
         sd = DH5(self.aqm.aq.filepath)
-        self.assertEqual(sd.get("acquisition_cell"), self.cell_text)
+        self.assertEqual(sd.get("acquisition_cell", {}).get("1"), self.cell_text)
+
+    def test_acquisition_cell_saved_with_steps(self):
+        self.aqm.acquisition_cell(
+            self.experiment_name, step=1, cell=self.cell_text + "1"
+        )
+        self.aqm.acquisition_cell(
+            self.experiment_name, step=2, cell=self.cell_text + "2"
+        )
+        self.aqm.save_acquisition(x=1, y=2)
+
+        sd = DH5(self.aqm.aq.filepath)
+        self.assertEqual(sd.get("acquisition_cell", {}).get("1"), self.cell_text + "1")
+        self.assertEqual(sd.get("acquisition_cell", {}).get("2"), self.cell_text + "2")
+        self.assertEqual(sd.get("x"), 1)
+        self.assertEqual(sd.get("y"), 2)
 
     def test_analysis_cell_saved(self):
         self.create_acquisition_cell()
@@ -348,7 +363,8 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
         assert self.aqm.current_analysis
 
         self.assertEqual(
-            self.aqm.current_analysis.get("acquisition_cell"), self.cell_text
+            self.aqm.current_analysis.get("acquisition_cell", {}).get("1"),
+            self.cell_text,
         )
 
     def test_save_acquisition_creates_am(self):
@@ -389,7 +405,8 @@ class AcquisitionAnalysisManagerWithSaveOnEditOffTest(unittest.TestCase):
         )
         self.aqm.save_acquisition()
         self.assertEqual(
-            DH5(self.aqm.aq.filepath).get("acquisition_cell"), self.cell_text
+            DH5(self.aqm.aq.filepath).get("acquisition_cell", {}).get("1"),
+            self.cell_text,
         )
 
     def test_save_inside_analysis_data(self):

@@ -1,10 +1,10 @@
 import os
 import shutil
 
-
 from labmate.acquisition_notebook import AcquisitionAnalysisManager
-from .utils import ShellEmulator, TEST_DIR, DATA_DIR, aqm_logger, LogTest
 from labmate.display import logger as display_logger
+
+from .utils import DATA_DIR, TEST_DIR, LogTest, ShellEmulator, aqm_logger
 
 
 class AcquisitionAnalysisIpyDisplayTest(LogTest):
@@ -30,8 +30,7 @@ class AcquisitionAnalysisIpyDisplayTest(LogTest):
             self.assert_logs(logs, f">{link_text}<", 20)
         if after_text:
             self.assert_logs(logs, f"</a> {after_text}", 20)
-
-        self.assert_logs(logs, "href='config.txt:7'", 20)
+        self.assert_logs(logs, "data/config.txt:7", 20)
 
     def test_display_param_link_error(self):
         with self.assertLogs(aqm_logger) as captured:
