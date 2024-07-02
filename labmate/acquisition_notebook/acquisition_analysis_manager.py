@@ -290,6 +290,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         cell: Optional[str] = None,
         prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
         save_on_edit: Optional[bool] = None,
+        step: int = 1,
     ) -> "AcquisitionAnalysisManager":
         self._analysis_cell_str = None
         self._analysis_data = None
@@ -297,8 +298,19 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self._acquisition_started = time.time()
 
         cell = cell or get_current_cell(self.shell)
-
-        self.new_acquisition(name=name, cell=cell, save_on_edit=save_on_edit)
+        if step != 1 and self._current_acquisition is not None:
+            if self._current_acquisition.experiment_name != name:
+                raise ValueError(
+                    f"Current acquisition ('{self.current_experiment_name}') "
+                    f"isn't the one expected ('{name}') for this acquisition. "
+                    f"Possible solutions: run acquisition '{name}' with step 1; "
+                    f"or change current acquisition name to '{self.current_experiment_name}'"
+                )
+            self._current_acquisition.current_step = step
+            self._current_acquisition.set_cell(cell, step=step)
+            self._current_acquisition.save_cell(cell, suffix=str(step))
+        else:
+            self.new_acquisition(name=name, cell=cell, save_on_edit=save_on_edit)
 
         logger.info(self.current_filepath.basename)
 
@@ -528,6 +540,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 )
                 continue
             file, line_no = res
+            file = self._config_files_names_to_path.get(file, file)
             link = display.links.create_link(param_text, file, line_no, after_text)
             links += link + "<br/>"
         return display.display_html(links)

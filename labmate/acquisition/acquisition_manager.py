@@ -132,6 +132,9 @@ class AcquisitionManager:
             filename = [str(filename)]
 
         self.config_files = list(filename)
+        self._config_files_names_to_path = {
+            os.path.basename(file): file for file in self.config_files
+        }
 
         for config_file in self.config_files:
             if not os.path.exists(config_file):
