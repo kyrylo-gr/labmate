@@ -1,18 +1,36 @@
-"""Module with widgets that can be displayed with AcquisitionAnalysisManager."""
-
 import os
 from typing import TYPE_CHECKING, List, Optional, Protocol, TypeVar
 
 from .. import display as lm_display
 from ..display import platform_utils
 
-# import abc
-
-
 if TYPE_CHECKING:
     from labmate.acquisition_notebook import AcquisitionAnalysisManager
 
 _T = TypeVar("_T")
+
+
+def _get_filepath(aqm: "AcquisitionAnalysisManager") -> Optional[str]:
+    filepath = aqm.current_analysis or aqm.current_acquisition
+    return filepath.filepath if filepath else None
+
+
+def _create_file_link(aqm: "AcquisitionAnalysisManager", level_up) -> str:
+    filepath = _get_filepath(aqm)
+    if filepath is None:
+        return ""
+    link_name = os.path.basename(filepath)
+    link = "/".join(
+        os.path.abspath(filepath).replace("\\", "/").split("/")[-level_up:]
+    ).replace(" ", "%20")
+    link = f"[{link_name}](//kyrylo-gr.github.io/h5viewer/open?url={link})"
+    return link
+
+
+def display_widgets(objs: List["WidgetProtocol"], *args, **kwargs):
+    """Create (with *args, **kwargs) and display a list of widgets."""
+    widgets = [obj.create(*args, **kwargs) for obj in objs]
+    lm_display.display_widgets(widgets)  # type: ignore
 
 
 class WidgetProtocol(Protocol):
@@ -73,7 +91,7 @@ class BaseWidget:
         raise NotImplementedError("This method is not implemented for the base class.")
 
 
-class CopyFilePathButton(BaseWidget):
+class CopyFileURLPathButton(BaseWidget):
     """Create button to copy file path to clipboard.
 
     Examples:
@@ -180,32 +198,9 @@ class OpenFinderButton(BaseWidget):
                 path = path.replace("/", "\\")
                 subprocess.run(["explorer", "/select,", path], shell=True)
             elif sys.platform == "darwin":
-                subprocess.Popen(["open", "-R", path])
+                subprocess.Popen(["open", "-R", os.path.dirname(path)])
             else:
-                subprocess.Popen(["nautilus", "--select", path])
+                subprocess.Popen(["nautilus", "--select", os.path.dirname(path)])
 
         self.widget = lm_display.buttons.create_button(open_finder, name="Open finder")
         return self.widget
-
-
-def _get_filepath(aqm: "AcquisitionAnalysisManager") -> Optional[str]:
-    filepath = aqm.current_analysis or aqm.current_acquisition
-    return filepath.filepath if filepath else None
-
-
-def _create_file_link(aqm: "AcquisitionAnalysisManager", level_up) -> str:
-    filepath = _get_filepath(aqm)
-    if filepath is None:
-        return ""
-    link_name = os.path.basename(filepath)
-    link = "/".join(
-        os.path.abspath(filepath).replace("\\", "/").split("/")[-level_up:]
-    ).replace(" ", "%20")
-    link = f"[{link_name}](//kyrylo-gr.github.io/h5viewer/open?url={link})"
-    return link
-
-
-def display_widgets(objs: List["WidgetProtocol"], *args, **kwargs):
-    """Create (with *args, **kwargs) and display a list of widgets."""
-    widgets = [obj.create(*args, **kwargs) for obj in objs]
-    lm_display.display_widgets(widgets)  # type: ignore

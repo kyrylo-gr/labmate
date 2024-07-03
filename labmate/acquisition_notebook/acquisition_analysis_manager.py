@@ -314,7 +314,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         logger.info(self.current_filepath.basename)
 
-        utils.run_functions(self._acquisition_cell_prerun_hook)
+        if step == 1:
+            utils.run_functions(self._acquisition_cell_prerun_hook)
+
         utils.run_functions(prerun)
 
         return self
@@ -544,6 +546,40 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             link = display.links.create_link(param_text, file, line_no, after_text)
             links += link + "<br/>"
         return display.display_html(links)
+
+    def display_cfg_link(
+        self,
+        parameters: Dict[str, Any],
+    ):
+        from labmate.display import html_output
+
+        links = []
+        for param, value in parameters.items():
+            param_eq = f"{param.strip()} = "
+            res = self.find_param_in_config(param_eq)
+            if res is None:
+                logger.warning(
+                    "Parameter '%s' cannot be found in default config files.", param
+                )
+                continue
+            file, line_no = res
+            file = self._config_files_names_to_path.get(file, file)
+
+            def update_value(param, value):
+                self.update_config_params_on_disk({param: value})
+
+            buttons = [
+                display.buttons.create_button(update_value, param, value, name="Update")
+            ]
+
+            link = html_output.create_link_row(
+                link_text=f"{param} = ",
+                link_url=f"{file}:{line_no}",
+                text=str(value),
+                buttons=buttons,  # type: ignore
+            )
+            links.append(link)
+        return display.display_widgets_vertically(links, class_="labmate-params")
 
     def update_config_params_on_disk(self, params: Dict[str, Any]):
         # params_per_files = {}

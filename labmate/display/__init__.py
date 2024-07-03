@@ -2,9 +2,15 @@
 import importlib
 from typing import TYPE_CHECKING, Any
 
-from .main import display, display_html, display_widgets, logger
+from .main import (
+    display,
+    display_html,
+    display_widgets,
+    display_widgets_vertically,
+    logger,
+)
 
-__all__ = ["links", "buttons", "logger"]
+__all__ = ["links", "buttons", "logger", "html_output"]
 
 
 class _LazyModule:
@@ -28,7 +34,8 @@ class _LazyModule:
 
 links = _LazyModule("links")
 buttons = _LazyModule("buttons")
+html_output = _LazyModule("html_output")
 
 
 if TYPE_CHECKING:
-    from . import buttons, links
+    from . import buttons, html_output, links

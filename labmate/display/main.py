@@ -1,8 +1,8 @@
 """This submodule contains functions that help to display content in IPython."""
+
 import logging
 import sys
 from typing import Callable, List
-
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -18,9 +18,9 @@ try:
     if "pytest" in sys.modules:
         raise ImportError
 
-    from IPython.core.display import HTML  # type: ignore
-    from IPython.core import display  # type: ignore
     import ipywidgets as widgets  # pylint: disable=W0611 # type: ignore
+    from IPython.core import display  # type: ignore
+    from IPython.core.display import HTML  # type: ignore
 
     display = display.display_functions.display
 
@@ -49,8 +49,16 @@ except ImportError:
             def __init__(self, lst: list) -> None:  # noqa: D107
                 pass
 
+        class VBox:  # noqa: D106
+            def __init__(self, lst: list) -> None:  # noqa: D107
+                pass
+
         class CoreWidget:  # noqa: D106
             pass
+
+        class Layout:
+            def __init__(self, *args, **kwargs) -> None:
+                del args, kwargs
 
     # pylint: enable=C0115, C0103, R0903
 
@@ -63,4 +71,12 @@ def display_html(html):
 def display_widgets(objs: List[widgets.CoreWidget]):
     """Display the given list of widgets in a HBox ."""
     button_row = widgets.HBox(objs)
+    display(button_row)
+
+
+def display_widgets_vertically(objs: List[widgets.CoreWidget], class_: str = ""):
+    """Display the given list of widgets in a VBox ."""
+    button_row = widgets.VBox(objs)
+    if class_:
+        button_row.add_class(class_)  # type: ignore
     display(button_row)

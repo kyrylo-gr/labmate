@@ -232,6 +232,16 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
         self.create_acquisition_cell()
         self.assertTrue(func_class.function_run)
 
+    def test_acquisition_cell_prerun_hook_default_multisteps(self):
+        func_class = FunctionToRun()
+        self.aqm.set_acquisition_cell_prerun_hook(func_class.func)
+        self.assertFalse(func_class.function_run)
+        self.aqm.acquisition_cell(self.experiment_name, step=1)
+        self.assertTrue(func_class.function_run)
+        func_class.function_run = False
+        self.aqm.acquisition_cell(self.experiment_name, step=2)
+        self.assertFalse(func_class.function_run)
+
     def test_analysis_cell_prerun_hook(self):
         func_class = FunctionToRun()
         self.create_acquisition_cell()
