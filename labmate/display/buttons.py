@@ -1,5 +1,7 @@
 """This submodule contains functions that create Button widgets."""
+
 from typing import TypeVar
+
 from .main import display, widgets
 
 # from functools import wraps
@@ -68,6 +70,8 @@ def create_button(func, *args, name=None, **kwargs) -> "DisplayingButton":
 
     def on_button_click(_):
         func(*args, **kwargs)
+
+    button.style.button_color = "transparent"  # type: ignore
 
     button.on_click(on_button_click)
     return button

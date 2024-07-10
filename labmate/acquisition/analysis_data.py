@@ -1,10 +1,12 @@
 """AnalysisData class."""
 
+import json
 import os
-from typing import List, Literal, Optional, Protocol, Tuple, TypeVar, Union
+from typing import List, Literal, Optional, Protocol, Tuple, TypedDict, TypeVar, Union
 
 from dh5 import DH5
 from dh5.path import Path
+from matplotlib.backends.backend_pdf import PdfPages
 
 from .. import utils
 from .analysis_loop import AnalysisLoop
@@ -19,6 +21,13 @@ class FigureProtocol(Protocol):
 
     def savefig(self, fname, **kwds):
         """Save the figure to a file."""
+
+
+class PdfMetadataDict(TypedDict, total=False):
+    """Metadata for the pdf file."""
+
+    Subject: Union[str, dict]
+    Keywords: Union[str, dict]
 
 
 class AnalysisData(DH5):
@@ -167,6 +176,7 @@ class AnalysisData(DH5):
         name: Optional[Union[str, int]] = None,
         extensions: Optional[str] = None,
         tight_layout: bool = True,
+        metadata: Optional[PdfMetadataDict] = None,
         **kwargs,
     ) -> _T:
         """Save the figure with the filename (...)_FIG_name.
@@ -201,7 +211,23 @@ class AnalysisData(DH5):
                 )
         if tight_layout and hasattr(fig, "tight_layout"):
             fig.tight_layout()  # type: ignore
-        fig.savefig(full_fig_name, **kwargs)
+        if metadata is None:
+            fig.savefig(full_fig_name, **kwargs)
+        else:
+            if not full_fig_name.endswith(".pdf"):
+                raise ValueError("Metadata can be added only to pdf files.")
+            pdf_fig = PdfPages(full_fig_name)
+            fig.savefig(pdf_fig, format="pdf", **kwargs)  # type: ignore
+            metadata = metadata or {}
+            if not isinstance(metadata.get("Subject", ""), str):
+                metadata["Subject"] = json.dumps(metadata.get("Subject"))
+
+            if not isinstance(metadata.get("Keywords", ""), str):
+                metadata["Keywords"] = json.dumps(metadata.get("Keywords"))
+
+            pdf_metadata = pdf_fig.infodict()
+            pdf_metadata.update(metadata)
+            pdf_fig.close()
 
         self._figure_saved = True
 

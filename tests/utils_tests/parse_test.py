@@ -26,9 +26,9 @@ class UnitsFormatTest(unittest.TestCase):
 
     def test_format_title_working(self):
         values = [
-            ValueForPrint("speed", 123.12345, "m/s", "2f"),
+            ValueForPrint("speed", 123.12345, "m/s", ".2f"),
             ValueForPrint("distance", 234.4321, "meters", None),
-            ValueForPrint("time", 5432, None, "1e"),
+            ValueForPrint("time", 5432, None, ".1e"),
         ]
         txt = format_title(values, max_length=40)
         self.assertIn("speed = ", txt)
