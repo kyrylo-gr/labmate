@@ -2,7 +2,7 @@
 
 import json
 import os
-from typing import List, Literal, Optional, Protocol, Tuple, TypeVar, Union
+from typing import List, Literal, Optional, Protocol, Tuple, TypedDict, TypeVar, Union
 
 from dh5 import DH5
 from dh5.path import Path
@@ -21,6 +21,13 @@ class FigureProtocol(Protocol):
 
     def savefig(self, fname, **kwds):
         """Save the figure to a file."""
+
+
+class PdfMetadataDict(TypedDict, total=False):
+    """Metadata for the pdf file."""
+
+    Subject: Union[str, dict]
+    Keywords: Union[str, dict]
 
 
 class AnalysisData(DH5):
@@ -169,9 +176,7 @@ class AnalysisData(DH5):
         name: Optional[Union[str, int]] = None,
         extensions: Optional[str] = None,
         tight_layout: bool = True,
-        metadata: Optional[dict] = None,
-        description: Optional[Union[str, dict]] = None,
-        keywords: Optional[Union[str, dict]] = None,
+        metadata: Optional[PdfMetadataDict] = None,
         **kwargs,
     ) -> _T:
         """Save the figure with the filename (...)_FIG_name.
@@ -206,7 +211,7 @@ class AnalysisData(DH5):
                 )
         if tight_layout and hasattr(fig, "tight_layout"):
             fig.tight_layout()  # type: ignore
-        if metadata is None and description is None and keywords is None:
+        if metadata is None:
             fig.savefig(full_fig_name, **kwargs)
         else:
             if not full_fig_name.endswith(".pdf"):
@@ -214,16 +219,12 @@ class AnalysisData(DH5):
             pdf_fig = PdfPages(full_fig_name)
             fig.savefig(pdf_fig, format="pdf", **kwargs)  # type: ignore
             metadata = metadata or {}
-            if description is not None:
-                metadata["Subject"] = (
-                    description
-                    if isinstance(description, str)
-                    else json.dumps(description)
-                )
-            if keywords is not None:
-                metadata["Keywords"] = (
-                    keywords if isinstance(keywords, str) else json.dumps(keywords)
-                )
+            if not isinstance(metadata.get("Subject", ""), str):
+                metadata["Subject"] = json.dumps(metadata.get("Subject"))
+
+            if not isinstance(metadata.get("Keywords", ""), str):
+                metadata["Keywords"] = json.dumps(metadata.get("Keywords"))
+
             pdf_metadata = pdf_fig.infodict()
             pdf_metadata.update(metadata)
             pdf_fig.close()

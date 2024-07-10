@@ -42,15 +42,15 @@ class AttrDictMainTest(unittest.TestCase):
         )
 
     def test_output_1(self):
-        out = self.data.output(["int__m/s__3f"])
+        out = self.data.output(["int__m/s__.3f"])
         self.assertEqual("int = 123.000 (m/s)", out)
 
     def test_output_2(self):
-        out = self.data.output(["int__m/s__3f", "param_1__V"])
+        out = self.data.output(["int__m/s__.3f", "param_1__V"])
         self.assertEqual("int = 123.000 (m/s); param_1 = value_1 (V)", out)
 
     def test_output_str_end(self):
-        out = self.data.output(["int__m/s__3f", "param_1__V"], max_length=10)
+        out = self.data.output(["int__m/s__.3f", "param_1__V"], max_length=10)
         self.assertEqual("int = 123.000 (m/s)\nparam_1 = value_1 (V)", out)
 
 
