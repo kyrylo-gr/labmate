@@ -1,4 +1,6 @@
+# pylint: disable=W0611
 """Utils for testing."""
+
 
 import logging
 import os
@@ -8,7 +10,7 @@ from typing import List, Optional, Union
 import numpy as np
 from dh5.path import Path
 
-from labmate.acquisition_notebook.acquisition_analysis_manager import (
+from labmate.acquisition_notebook.acquisition_analysis_manager import (  # noqa: F401
     logger as aqm_logger,
 )
 
@@ -20,7 +22,7 @@ logging.basicConfig(level=logging.WARNING, force=True)
 logging.StreamHandler().setLevel(logging.WARNING)
 logging.getLogger().setLevel(logging.WARNING)
 
-aqm_logger.setLevel(logging.WARNING)
+# aqm_logger.setLevel(logging.WARNING)
 
 
 class ShellEmulator:

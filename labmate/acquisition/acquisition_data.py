@@ -4,8 +4,8 @@ from typing import Dict, List, Optional, Union
 
 from dh5 import DH5
 
+from ..logger import logger
 from ..utils.file_read import read_files
-from .logger_setup import logger
 
 
 class NotebookAcquisitionData(DH5):

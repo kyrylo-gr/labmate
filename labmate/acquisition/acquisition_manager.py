@@ -26,15 +26,17 @@ class AcquisitionManager:
     """AcquisitionManager."""
 
     _data_directory: Path
-    config_files = []
-    config_files_eval = {}
+    config_files: List[str] = []
+    config_files_eval: Dict[str, str] = {}
+    _configs_last_modified: List[float] = []
 
-    _current_acquisition = None
-    _current_filepath = None
+    _current_acquisition: Optional[NotebookAcquisitionData] = None
+    _current_filepath: Optional[str] = None
 
-    _save_files = False
-    _save_on_edit = True
+    _save_files: bool = False
+    _save_on_edit: bool = True
     _init_code = None
+    _once_saved: bool
 
     cell: Optional[str] = None
 
@@ -54,9 +56,11 @@ class AcquisitionManager:
 
         self._current_acquisition = None
         self._acquisition_tmp_data = None
+        self._once_saved = False
 
         self.config_files = []
         self.config_files_eval = {}
+        self._configs_last_modified = []
 
         if data_directory is not None:
             self.data_directory = Path(data_directory)
@@ -187,13 +191,19 @@ class AcquisitionManager:
             return None
         return AcquisitionTmpData(**jsn.read(path))
 
+    def _get_configs_last_modified(self) -> List[float]:
+        return [os.path.getmtime(file) for file in self.config_files]
+
     def new_acquisition(
         self, name: str, cell: Optional[str] = None, save_on_edit: Optional[bool] = None
     ) -> NotebookAcquisitionData:
         """Create a new acquisition with the given experiment name."""
         self._current_acquisition = None
+        self._once_saved = False
         self.cell = cell
         configs = read_files(self.config_files)
+        self._configs_last_modified = self._get_configs_last_modified()
+
         if self.config_files_eval:
             configs = append_values_from_modules_to_files(
                 configs, self.config_files_eval
@@ -310,4 +320,5 @@ class AcquisitionManager:
         acq_data.save_additional_info()
         if acq_data.save_on_edit is False:
             acq_data.save()
+        self._once_saved = True
         return self

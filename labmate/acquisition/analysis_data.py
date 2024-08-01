@@ -6,12 +6,11 @@ from typing import List, Literal, Optional, Protocol, Tuple, TypedDict, TypeVar,
 
 from dh5 import DH5
 from dh5.path import Path
-from matplotlib.backends.backend_pdf import PdfPages
 
 from .. import utils
+from ..logger import logger
 from .analysis_loop import AnalysisLoop
 from .config_file import ConfigFile
-from .logger_setup import logger
 
 _T = TypeVar("_T", bound="AnalysisData")
 
@@ -216,6 +215,9 @@ class AnalysisData(DH5):
         else:
             if not full_fig_name.endswith(".pdf"):
                 raise ValueError("Metadata can be added only to pdf files.")
+
+            from matplotlib.backends.backend_pdf import PdfPages
+
             pdf_fig = PdfPages(full_fig_name)
             fig.savefig(pdf_fig, format="pdf", **kwargs)  # type: ignore
             metadata = metadata or {}
