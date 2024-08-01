@@ -16,6 +16,7 @@ from typing import (
 
 from .. import display, utils
 from ..acquisition import AcquisitionManager, AnalysisData
+from ..logger import logger
 from . import display_widget
 
 if TYPE_CHECKING:
@@ -24,17 +25,15 @@ if TYPE_CHECKING:
     from ..acquisition import FigureProtocol
     from ..acquisition.config_file import ConfigFile
 
+    # from ..logger import Logger
+
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
-logger = logging.getLogger(__name__)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(levelname)s:%(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
-logger.propagate = False
 
 _CallableWithNoArgs = Callable[[], Any]
+
+
+CATCH_PRINT = True
 
 
 class AcquisitionAnalysisManager(AcquisitionManager):
@@ -126,12 +125,17 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self._save_on_edit_analysis = save_on_edit_analysis
         self._save_fig_inside_h5 = save_fig_inside_h5
 
+        self._logger = logger
         super().__init__(
             data_directory=str(data_directory),
             config_files=config_files,
             save_files=save_files,
             save_on_edit=save_on_edit,
         )
+
+    @property
+    def logger(self):
+        return self._logger
 
     @property
     def current_acquisition(self):
@@ -240,13 +244,19 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def save_acquisition(self, **kwds) -> "AcquisitionAnalysisManager":
         acquisition_finished = time.time()
-        additional_info: Dict[str, Any] = {
-            "acquisition_duration": acquisition_finished - self._acquisition_started
-        }
-        if self._default_config_files:
-            additional_info.update({"default_config_files": self._default_config_files})
+        if not self._once_saved:
+            additional_info: Dict[str, Any] = {
+                "acquisition_duration": acquisition_finished
+                - self._acquisition_started,
+                "logs": self.logger.getvalue(),
+                "prints": self.logger.get_stdout(),
+            }
+            if self._default_config_files:
+                additional_info.update(
+                    {"default_config_files": self._default_config_files}
+                )
 
-        kwds.update({"info": additional_info})
+            kwds.update({"info": additional_info})
 
         super().save_acquisition(**kwds)
         self._load_analysis_data()
@@ -309,10 +319,14 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             self._current_acquisition.current_step = step
             self._current_acquisition.set_cell(cell, step=step)
             self._current_acquisition.save_cell(cell, suffix=str(step))
+            self.logger.stdout_flush()
         else:
+            self.logger.reset()
             self.new_acquisition(name=name, cell=cell, save_on_edit=save_on_edit)
 
-        logger.info(self.current_filepath.basename)
+        self.logger.info(  # pylint: disable=W1203
+            f"{step}:{self.current_filepath.basename}"
+        )
 
         if step == 1:
             utils.run_functions(self._acquisition_cell_prerun_hook)
@@ -368,7 +382,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                     )
 
             filename = str(self.current_filepath)  # without h5
-        logger.info(os.path.basename(filename))
+        self.logger.info(os.path.basename(filename))
 
         if (
             (not self._is_old_data)
@@ -408,11 +422,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 run_on_call=custom_lint.on_call_functions,
             )
             for var in lint_result.external_vars:
-                logger.warning(
+                self.logger.warning(
                     "External variable used inside the analysis code: %s", var
                 )
             for error in lint_result.errors:
-                logger.warning(error)
+                self.logger.warning(error)
+
         utils.run_functions(self._analysis_cell_prerun_hook)
         utils.run_functions(prerun)
 
@@ -537,7 +552,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
             res = self.find_param_in_config(param_text)
             if res is None:
-                logger.warning(
+                self.logger.warning(
                     "Parameter '%s' cannot be found in default config files.", param
                 )
                 continue
@@ -558,7 +573,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             param_eq = f"{param.strip()} = "
             res = self.find_param_in_config(param_eq)
             if res is None:
-                logger.warning(
+                self.logger.warning(
                     "Parameter '%s' cannot be found in default config files.", param
                 )
                 continue

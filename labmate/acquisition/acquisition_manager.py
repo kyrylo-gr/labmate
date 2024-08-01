@@ -26,15 +26,16 @@ class AcquisitionManager:
     """AcquisitionManager."""
 
     _data_directory: Path
-    config_files = []
-    config_files_eval = {}
+    config_files: List[str] = []
+    config_files_eval: Dict[str, str] = {}
 
-    _current_acquisition = None
-    _current_filepath = None
+    _current_acquisition: Optional[NotebookAcquisitionData] = None
+    _current_filepath: Optional[str] = None
 
-    _save_files = False
-    _save_on_edit = True
+    _save_files: bool = False
+    _save_on_edit: bool = True
     _init_code = None
+    _once_saved: bool
 
     cell: Optional[str] = None
 
@@ -54,6 +55,7 @@ class AcquisitionManager:
 
         self._current_acquisition = None
         self._acquisition_tmp_data = None
+        self._once_saved = False
 
         self.config_files = []
         self.config_files_eval = {}
@@ -192,6 +194,7 @@ class AcquisitionManager:
     ) -> NotebookAcquisitionData:
         """Create a new acquisition with the given experiment name."""
         self._current_acquisition = None
+        self._once_saved = False
         self.cell = cell
         configs = read_files(self.config_files)
         if self.config_files_eval:
@@ -310,4 +313,5 @@ class AcquisitionManager:
         acq_data.save_additional_info()
         if acq_data.save_on_edit is False:
             acq_data.save()
+        self._once_saved = True
         return self
