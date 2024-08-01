@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 from typing import Any, Dict, List, Optional
 
 from ..parsing.brackets_score import BracketsScore
@@ -76,12 +77,20 @@ def update_file_variable(file, params: Dict[str, Any]):
             if param in params:
                 current_param = param
                 start_line = lines.index(line)
+
         brackets.update_from_str(line)
         if brackets.is_zero() and current_param is not None:
             end_line = lines.index(line)
-            end_comment = line.split("#")[-1].strip() if "#" in line else None
+            end_comment = "#".join(line.split("#")[1:]).strip() if "#" in line else None
             del lines[start_line : end_line + 1]
             value_str = json.JSONEncoder().encode(params[current_param])
+
+            print("value_str", value_str)
+            if re.match(
+                r"^['\"]?[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?['\"]?$", value_str
+            ):
+                value_str = value_str.replace('"', "")
+
             lines.insert(
                 start_line,
                 (
