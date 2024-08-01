@@ -319,6 +319,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             self._current_acquisition.current_step = step
             self._current_acquisition.set_cell(cell, step=step)
             self._current_acquisition.save_cell(cell, suffix=str(step))
+            configs_modified = self._get_configs_last_modified()
+            if configs_modified != self._configs_last_modified:
+                raise ValueError(
+                    "Config files were modified since the previous acquisition step. "
+                    "Please rerun the acquisition from the first step."
+                )
             self.logger.stdout_flush()
         else:
             self.logger.reset()

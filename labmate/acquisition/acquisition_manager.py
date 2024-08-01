@@ -28,6 +28,7 @@ class AcquisitionManager:
     _data_directory: Path
     config_files: List[str] = []
     config_files_eval: Dict[str, str] = {}
+    _configs_last_modified: List[float] = []
 
     _current_acquisition: Optional[NotebookAcquisitionData] = None
     _current_filepath: Optional[str] = None
@@ -59,6 +60,7 @@ class AcquisitionManager:
 
         self.config_files = []
         self.config_files_eval = {}
+        self._configs_last_modified = []
 
         if data_directory is not None:
             self.data_directory = Path(data_directory)
@@ -189,6 +191,9 @@ class AcquisitionManager:
             return None
         return AcquisitionTmpData(**jsn.read(path))
 
+    def _get_configs_last_modified(self) -> List[float]:
+        return [os.path.getmtime(file) for file in self.config_files]
+
     def new_acquisition(
         self, name: str, cell: Optional[str] = None, save_on_edit: Optional[bool] = None
     ) -> NotebookAcquisitionData:
@@ -197,6 +202,8 @@ class AcquisitionManager:
         self._once_saved = False
         self.cell = cell
         configs = read_files(self.config_files)
+        self._configs_last_modified = self._get_configs_last_modified()
+
         if self.config_files_eval:
             configs = append_values_from_modules_to_files(
                 configs, self.config_files_eval
