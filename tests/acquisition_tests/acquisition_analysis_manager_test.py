@@ -622,18 +622,40 @@ class AcquisitionAnalysisManagerParceTest(AnalysisDataParceTest):
         self.assertEqual(cfg.float, 123.45)  # type: ignore
         self.assertEqual(cfg.param_int, 1)  # type: ignore
 
-    def test_update_config_file(self):
+    def base_test_update_config_file(self, name, value, actual_value):
+        new_config_name = f"new_config_{name}.py"
+        param_name = "param_int"
         shutil.copyfile(
             os.path.join(TEST_DIR, "data/imported_config.py"),
-            os.path.join(DATA_DIR, "new_config.py"),
+            os.path.join(DATA_DIR, new_config_name),
         )
-        self.aqm.set_config_file(os.path.join(DATA_DIR, "new_config.py"))
-        self.aqm.set_default_config_files(("new_config.py",))
+        self.aqm.set_config_file(os.path.join(DATA_DIR, new_config_name))
+        self.aqm.set_default_config_files((new_config_name,))
         self.aqm.new_acquisition(self.experiment_name)
-        self.aqm.update_config_params_on_disk({"param_int": 789})
+        self.aqm.update_config_params_on_disk({param_name: value})
         self.aqm.acquisition_cell(self.experiment_name)
         self.aqm.analysis_cell()
-        self.assertEqual(self.aqm.data.cfg.get("param_int"), 789, msg=self.aqm.data.cfg)
+        self.assertEqual(
+            self.aqm.data.cfg.get(param_name), actual_value, msg=self.aqm.data.cfg
+        )
+
+    def test_update_config_file_int(self):
+        self.base_test_update_config_file("int", 789, 789)
+
+    def test_update_config_file_int_str(self):
+        self.base_test_update_config_file("int_str", "789", 789)
+
+    def test_update_config_file_float(self):
+        self.base_test_update_config_file("float", 789.123, 789.123)
+
+    def test_update_config_file_float_str(self):
+        self.base_test_update_config_file("float_str", "789.123", 789.123)
+
+    def test_update_config_file_exp(self):
+        self.base_test_update_config_file("exp", 1.123e6, 1.123e6)
+
+    def test_update_config_file_exp_str(self):
+        self.base_test_update_config_file("exp_str", "1.123e6", 1.123e6)
 
 
 class LoadCreateIndependentFilesTest(unittest.TestCase):
