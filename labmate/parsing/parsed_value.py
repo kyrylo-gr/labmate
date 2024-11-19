@@ -98,7 +98,7 @@ class ParsedValue:
 
     def __rsub__(self, other):
         other = self._convert_other(other)
-        return self.__sub__(other)
+        return -self.__sub__(other)
 
     def __mul__(self, other):
         other = self._convert_other(other)
