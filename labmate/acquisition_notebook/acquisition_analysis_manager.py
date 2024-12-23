@@ -240,9 +240,11 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 "Cannot save data to acquisition as current acquisition is None."
                 "Possibly because you have never run `acquisition_cell(..)` or it's an old data"
             )
-        acq_data[__key] = __value
+        acq_data[__key] = __value  # pylint: disable=E1137
 
-    def save_acquisition(self, **kwds) -> "AcquisitionAnalysisManager":
+    def save_acquisition(
+        self, update_: bool = True, /, file_suffix: Optional[str] = None, **kwds
+    ) -> "AcquisitionAnalysisManager":
         acquisition_finished = time.time()
         if not self._once_saved:
             additional_info: Dict[str, Any] = {
@@ -255,10 +257,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 additional_info.update(
                     {"default_config_files": self._default_config_files}
                 )
-
             kwds.update({"info": additional_info})
 
-        super().save_acquisition(**kwds)
+        super().save_acquisition(update_, file_suffix=file_suffix, **kwds)
         self._load_analysis_data()
         return self
 
@@ -273,6 +274,23 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return self._analysis_data
 
     def load_file(self, filename) -> "AnalysisData":
+        """
+        Loads an analysis data file.
+
+        Args:
+            filename (str): The name of the file to load.
+
+        Returns:
+            AnalysisData: An instance of AnalysisData containing the loaded data.
+
+        Raises:
+            ValueError: If the file cannot be found.
+
+        Notes:
+            - The method checks if the file exists with a ".h5" extension.
+            - If the data does not have a "useful" attribute set to True, it updates this attribute.
+            - If default configuration files are provided, they are set in the loaded data.
+        """
         filename = self._get_full_filename(filename)
         if not os.path.exists(
             filename if filename.endswith(".h5") else filename + ".h5"
@@ -284,6 +302,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             save_files=self._save_files,
             save_on_edit=self._save_on_edit_analysis,
             save_fig_inside_h5=self._save_fig_inside_h5,
+            open_on_init=False,
         )
 
         if not data.get("useful", True):
@@ -308,7 +327,16 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self._acquisition_started = time.time()
 
         cell = cell or get_current_cell(self.shell)
-        if step != 1 and self._current_acquisition is not None:
+        if step == 1:
+            self.logger.reset()
+            self.new_acquisition(name=name, cell=cell, save_on_edit=save_on_edit)
+        elif self._current_acquisition is None:
+            raise ValueError("Acquisition should start from step 1")
+        elif self._current_acquisition.current_step == step:
+            raise ValueError(
+                "This step was already run. Please run the next step or restart from step 1"
+            )
+        else:
             if self._current_acquisition.experiment_name != name:
                 raise ValueError(
                     f"Current acquisition ('{self.current_experiment_name}') "
@@ -326,9 +354,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                     "Please rerun the acquisition from the first step."
                 )
             self.logger.stdout_flush()
-        else:
-            self.logger.reset()
-            self.new_acquisition(name=name, cell=cell, save_on_edit=save_on_edit)
 
         self.logger.info(  # pylint: disable=W1203
             f"{step}:{self.current_filepath.basename}"
@@ -571,6 +596,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def display_cfg_link(
         self,
         parameters: Dict[str, Any],
+        update_button: bool = False,
     ):
         from labmate.display import html_output
 
@@ -589,9 +615,15 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             def update_value(param, value):
                 self.update_config_params_on_disk({param: value})
 
-            buttons = [
-                display.buttons.create_button(update_value, param, value, name="Update")
-            ]
+            buttons = (
+                [
+                    display.buttons.create_button(
+                        update_value, param, value, name="Update"
+                    )
+                ]
+                if update_button
+                else None
+            )
 
             link = html_output.create_link_row(
                 link_text=f"{param} = ",

@@ -84,6 +84,9 @@ class ParsedValue:
     def __float__(self) -> float:
         return float(self.value)  # type: ignore
 
+    def __neg__(self) -> float:
+        return -self.value  # type: ignore
+
     def __add__(self, other):
         other = self._convert_other(other)
         return self.value + other

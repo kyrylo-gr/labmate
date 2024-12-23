@@ -81,6 +81,7 @@ class AnalysisData(DH5):
         save_files: bool = False,
         save_on_edit: bool = True,
         save_fig_inside_h5: bool = False,
+        open_on_init: Optional[bool] = None,
     ):
         """Load data from a filepath and lock it to prevent any changes.
 
@@ -106,6 +107,7 @@ class AnalysisData(DH5):
             overwrite=False,
             read_only=False,
             save_on_edit=save_on_edit,
+            open_on_init=open_on_init,
         )
 
         self.lock_data()
@@ -305,16 +307,16 @@ class AnalysisData(DH5):
                         key_value, filename, key_units, key_format
                     )
                 )
-            elif key_value in config_data:
-                keys_with_values.append(
-                    utils.title_parsing.ValueForPrint(
-                        key_value, config_data[key_value], key_units, key_format
-                    )
-                )
             elif key_value in self:
                 keys_with_values.append(
                     utils.title_parsing.ValueForPrint(
                         key_value, self[key_value], key_units, key_format
+                    )
+                )
+            elif key_value in config_data:
+                keys_with_values.append(
+                    utils.title_parsing.ValueForPrint(
+                        key_value, config_data[key_value], key_units, key_format
                     )
                 )
             else:
@@ -382,7 +384,11 @@ class AnalysisData(DH5):
         )
 
     def get_analysis_code(
-        self, name: str = "default", /, update_code: bool = True
+        self,
+        name: str = "default",
+        /,
+        update_code: bool = True,
+        replace: Optional[dict] = None,
     ) -> str:
         code: Optional[dict] = self.get("analysis_cells")
         if code is None:
@@ -403,6 +409,9 @@ class AnalysisData(DH5):
             code_str = code_str.replace(
                 "aqm.analysis_cell()", f"aqm.analysis_cell('{self.filepath}')"
             )
+        if replace is not None:
+            for key, value in replace.items():
+                code_str = code_str.replace(key, value)
         return code_str
 
     def open_figs(self) -> list:
