@@ -115,45 +115,61 @@ class ParsedValue:
         other = self._convert_other(other)
         return self.value / other  # type: ignore
 
+    def __rtruediv__(self, other):
+        other = self._convert_other(other)
+        return other / self.value  # type: ignore
+
     def __floordiv__(self, other):
         other = self._convert_other(other)
         return self.value // other  # type: ignore
+
+    def __rfloordiv__(self, other):
+        other = self._convert_other(other)
+        return other // self.value  # type: ignore
 
     def __mod__(self, other):
         other = self._convert_other(other)
         return self.value % other
 
+    def __rmod__(self, other):
+        other = self._convert_other(other)
+        return other % self.value
+
     def __pow__(self, other):
         other = self._convert_other(other)
         return self.value**other
+
+    def __rpow__(self, other):
+        other = self._convert_other(other)
+        return other**self.value
 
     def __lt__(self, other):
         other = self._convert_other(other)
         if isinstance(self.value, complex):
             raise TypeError("Cannot compare complex values")
-        return self.value.__lt__(other)
+        return self.value < other
 
     def __gt__(self, other):
         other = self._convert_other(other)
         if isinstance(self.value, complex):
             raise TypeError("Cannot compare complex values")
-        return self.value.__gt__(other)
+        return self.value > other
 
     def __le__(self, other):
         other = self._convert_other(other)
         if isinstance(self.value, complex):
             raise TypeError("Cannot compare complex values")
-        return self.value.__le__(other)
+        return self.value <= other
 
     def __ge__(self, other):
         other = self._convert_other(other)
         if isinstance(self.value, complex):
             raise TypeError("Cannot compare complex values")
-        return self.value.__ge__(other)
+        return self.value >= other
 
     def __ne__(self, other):
         other = self._convert_other(other)
-        return self.value.__ne__(other)
+        return self.value != other
 
     @property
     def is_complex(self):
