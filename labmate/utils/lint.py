@@ -137,6 +137,7 @@ class NameVisitor(ast.NodeVisitor):
 
         if isinstance(node, ast.FunctionDef):
             variables = get_all_args_from_def(node.args)
+            self.local_vars.add(node.name)
             node.dont_parse = variables  # type: ignore
 
         if isinstance(node, ast.Lambda):
@@ -241,7 +242,7 @@ def find_variables_from_code(
             set(),
             [
                 "Syntax error is found during linting. Probably because #noqa is used. "
-                "#noqa removes line from the analisys, so don't use it with line breaks.\n"
+                "#noqa removes line from the analysis, so don't use it with line breaks.\n"
                 f"Error at line {exception.lineno} in {exception.text}"
             ],
         )
