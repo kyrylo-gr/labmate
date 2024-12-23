@@ -67,6 +67,7 @@ def update_file_variable(file, params: Dict[str, Any]):
     brackets = BracketsScore()
     current_param: Optional[str] = None
     # print(lines)
+    start_line = 0
     for line in lines:
         # print(line)
         if len(line) == 0:

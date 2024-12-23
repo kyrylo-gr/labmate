@@ -24,7 +24,7 @@ try:
 
     display = display.display_functions.display
 
-except ImportError:
+except (ImportError, AttributeError):
     # For testing purposes every IPython function should have a simpler version.
     # pylint: disable=C0115, C0103, R0903
 
@@ -56,8 +56,8 @@ except ImportError:
         class CoreWidget:  # noqa: D106
             pass
 
-        class Layout:
-            def __init__(self, *args, **kwargs) -> None:
+        class Layout:  # noqa: D106
+            def __init__(self, *args, **kwargs) -> None:  # noqa: D107
                 del args, kwargs
 
     # pylint: enable=C0115, C0103, R0903

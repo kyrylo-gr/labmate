@@ -382,7 +382,11 @@ class AnalysisData(DH5):
         )
 
     def get_analysis_code(
-        self, name: str = "default", /, update_code: bool = True
+        self,
+        name: str = "default",
+        /,
+        update_code: bool = True,
+        replace: Optional[dict] = None,
     ) -> str:
         code: Optional[dict] = self.get("analysis_cells")
         if code is None:
@@ -403,6 +407,9 @@ class AnalysisData(DH5):
             code_str = code_str.replace(
                 "aqm.analysis_cell()", f"aqm.analysis_cell('{self.filepath}')"
             )
+        if replace is not None:
+            for key, value in replace.items():
+                code_str = code_str.replace(key, value)
         return code_str
 
     def open_figs(self) -> list:
