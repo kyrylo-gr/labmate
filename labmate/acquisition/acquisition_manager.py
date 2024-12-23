@@ -167,18 +167,22 @@ class AcquisitionManager:
         experiment_path = Path(data_directory) / str(dic.experiment_name)
         if not experiment_path.exists():
             experiment_path.makedirs()
+        # Copy init_analyses code to the experiment directory if it does not exist
         if self._init_code and not os.path.exists(experiment_path / "init_analyse.py"):
             with open(
                 experiment_path / "init_analyse.py", "w", encoding="utf-8"
             ) as file:
                 file.write(self._init_code)
+
         filepath_original = filepath = (
             experiment_path / f"{dic.time_stamp}__{dic.experiment_name}"
         )
+
+        # If ignore existence is True, no check is required
         if ignore_existence:
             return filepath
-
-        index = 0
+        # If the file already exists, add a suffix to the name
+        index = 1
         while os.path.exists(filepath + ".h5"):
             filepath = filepath_original + f"__{index}"
             index += 1
@@ -307,7 +311,7 @@ class AcquisitionManager:
             experiment_name=acquisition_tmp_data.experiment_name,
         )
 
-    def save_acquisition(self, **kwds) -> "AcquisitionManager":
+    def save_acquisition(self, update_: bool = True, /, **kwds) -> "AcquisitionManager":
         acq_data = self.current_acquisition
         if acq_data is None:
             raise ValueError(
@@ -315,6 +319,10 @@ class AcquisitionManager:
                 Possibly because you have never run `acquisition_cell(..)` or it's an old data"
                 ""
             )
+        if update_ is False:
+            for key in list(kwds.keys()):
+                if key in acq_data:
+                    del kwds[key]
 
         acq_data.update(**kwds)
         acq_data.save_additional_info()

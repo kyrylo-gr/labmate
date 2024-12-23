@@ -307,16 +307,16 @@ class AnalysisData(DH5):
                         key_value, filename, key_units, key_format
                     )
                 )
-            elif key_value in config_data:
-                keys_with_values.append(
-                    utils.title_parsing.ValueForPrint(
-                        key_value, config_data[key_value], key_units, key_format
-                    )
-                )
             elif key_value in self:
                 keys_with_values.append(
                     utils.title_parsing.ValueForPrint(
                         key_value, self[key_value], key_units, key_format
+                    )
+                )
+            elif key_value in config_data:
+                keys_with_values.append(
+                    utils.title_parsing.ValueForPrint(
+                        key_value, config_data[key_value], key_units, key_format
                     )
                 )
             else:
