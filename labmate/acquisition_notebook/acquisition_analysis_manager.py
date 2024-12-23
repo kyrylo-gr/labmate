@@ -273,6 +273,23 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return self._analysis_data
 
     def load_file(self, filename) -> "AnalysisData":
+        """
+        Loads an analysis data file.
+
+        Args:
+            filename (str): The name of the file to load.
+
+        Returns:
+            AnalysisData: An instance of AnalysisData containing the loaded data.
+
+        Raises:
+            ValueError: If the file cannot be found.
+
+        Notes:
+            - The method checks if the file exists with a ".h5" extension.
+            - If the data does not have a "useful" attribute set to True, it updates this attribute.
+            - If default configuration files are provided, they are set in the loaded data.
+        """
         filename = self._get_full_filename(filename)
         if not os.path.exists(
             filename if filename.endswith(".h5") else filename + ".h5"
@@ -284,6 +301,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             save_files=self._save_files,
             save_on_edit=self._save_on_edit_analysis,
             save_fig_inside_h5=self._save_fig_inside_h5,
+            open_on_init=False,
         )
 
         if not data.get("useful", True):
@@ -308,7 +326,16 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self._acquisition_started = time.time()
 
         cell = cell or get_current_cell(self.shell)
-        if step != 1 and self._current_acquisition is not None:
+        if step == 1:
+            self.logger.reset()
+            self.new_acquisition(name=name, cell=cell, save_on_edit=save_on_edit)
+        elif self._current_acquisition is None:
+            raise ValueError("Acquisition should start from step 1")
+        elif self._current_acquisition.current_step == step:
+            raise ValueError(
+                "This step was already run. Please run the next step or restart from step 1"
+            )
+        else:
             if self._current_acquisition.experiment_name != name:
                 raise ValueError(
                     f"Current acquisition ('{self.current_experiment_name}') "
@@ -326,9 +353,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                     "Please rerun the acquisition from the first step."
                 )
             self.logger.stdout_flush()
-        else:
-            self.logger.reset()
-            self.new_acquisition(name=name, cell=cell, save_on_edit=save_on_edit)
 
         self.logger.info(  # pylint: disable=W1203
             f"{step}:{self.current_filepath.basename}"

@@ -81,6 +81,7 @@ class AnalysisData(DH5):
         save_files: bool = False,
         save_on_edit: bool = True,
         save_fig_inside_h5: bool = False,
+        open_on_init: Optional[bool] = None,
     ):
         """Load data from a filepath and lock it to prevent any changes.
 
@@ -106,6 +107,7 @@ class AnalysisData(DH5):
             overwrite=False,
             read_only=False,
             save_on_edit=save_on_edit,
+            open_on_init=open_on_init,
         )
 
         self.lock_data()
