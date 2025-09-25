@@ -50,6 +50,7 @@ def read_files(files: List[str], /) -> Dict[str, str]:
                 "Some of the files have the same name. So it cannot be pushed into dictionary to"
                 " preserve unique key"
             )
+        config_file = os.path.join(os.getcwd(), config_file)
         configs[config_file_name] = read_file(config_file)
     return configs
 

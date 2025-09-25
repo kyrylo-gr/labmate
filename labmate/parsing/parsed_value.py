@@ -195,3 +195,6 @@ class ParsedValue:
         if isinstance(other, ParsedValue):
             return other.value
         return other
+
+    def __hash__(self) -> int:
+        return hash(self.value)
