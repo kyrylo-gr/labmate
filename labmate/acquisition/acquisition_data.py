@@ -179,3 +179,22 @@ class NotebookAcquisitionData(DH5):
         if step is None:
             step = self.current_step
         self._cells[step] = cell
+        
+        
+    def backend_save(self) -> None:
+        """Hook for acquisition backends to serialise custom payloads.
+
+        Custom backends can override this hook to expose data that should be
+        included when persisting to a remote store.
+        """
+
+        pass
+
+    def backend_load(self) -> None:
+        """Hook for acquisition backends to hydrate from remote state.
+
+        Custom backends can override this hook to restore local state after a
+        backend has fetched remote payloads.
+        """
+
+        pass

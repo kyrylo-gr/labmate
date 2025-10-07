@@ -1,4 +1,5 @@
 import os
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 from dh5 import jsn
@@ -8,6 +9,7 @@ from ..parsing.saving import append_values_from_modules_to_files
 from ..utils import get_timestamp
 from ..utils.file_read import read_file, read_files
 from .acquisition_data import NotebookAcquisitionData
+from .backend import AcquisitionBackend
 
 
 class AcquisitionTmpData(NamedTuple):
@@ -39,6 +41,8 @@ class AcquisitionManager:
     _once_saved: bool
 
     cell: Optional[str] = None
+    _backend: Optional[AcquisitionBackend] = None
+    _executor: Optional[ThreadPoolExecutor] = None
 
     def __init__(
         self,
@@ -47,6 +51,7 @@ class AcquisitionManager:
         config_files: Optional[List[str]] = None,
         save_files: Optional[bool] = None,
         save_on_edit: Optional[bool] = None,
+        backend: Optional[AcquisitionBackend] = None,
     ):
         if save_files is not None:
             self._save_files = save_files
@@ -57,6 +62,8 @@ class AcquisitionManager:
         self._current_acquisition = None
         self._acquisition_tmp_data = None
         self._once_saved = False
+        self._backend = backend
+        self._executor = None
 
         self.config_files = []
         self.config_files_eval = {}
@@ -197,6 +204,33 @@ class AcquisitionManager:
 
     def _get_configs_last_modified(self) -> List[float]:
         return [os.path.getmtime(file) for file in self.config_files]
+    
+    def _ensure_executor(self) -> Optional[ThreadPoolExecutor]:
+        if self._backend is None:
+            return None
+        if self._executor is None:
+            self._executor = ThreadPoolExecutor(max_workers=1)
+        return self._executor
+
+    def _schedule_backend_save(
+        self, acquisition: NotebookAcquisitionData
+    ) -> Optional[Future]:
+        if self._backend is None:
+            return None
+        executor = self._ensure_executor()
+        if executor is None:
+            return None
+        return executor.submit(self._backend.save_snapshot, acquisition)
+
+    def _schedule_backend_load(
+        self, acquisition: NotebookAcquisitionData
+    ) -> Optional[Future]:
+        if self._backend is None:
+            return None
+        executor = self._ensure_executor()
+        if executor is None:
+            return None
+        return executor.submit(self._backend.load_snapshot, acquisition)
 
     def new_acquisition(
         self, name: str, cell: Optional[str] = None, save_on_edit: Optional[bool] = None
@@ -256,7 +290,7 @@ class AcquisitionManager:
         configs = configs if configs else None
         save_on_edit = save_on_edit if save_on_edit is not None else self._save_on_edit
 
-        return NotebookAcquisitionData(
+        acquisition = NotebookAcquisitionData(
             filepath=str(filepath),
             configs=configs,
             cell=cell or self.cell,
@@ -264,6 +298,10 @@ class AcquisitionManager:
             save_on_edit=save_on_edit,
             save_files=self._save_files,
         )
+
+        self._schedule_backend_load(acquisition)
+
+        return acquisition
 
     @property
     def current_acquisition(self) -> NotebookAcquisitionData:
@@ -301,7 +339,7 @@ class AcquisitionManager:
 
         save_on_edit = save_on_edit if save_on_edit is not None else self._save_on_edit
 
-        return NotebookAcquisitionData(
+        acquisition = NotebookAcquisitionData(
             filepath=str(filepath),
             configs=configs,
             cell=cell,
@@ -310,6 +348,10 @@ class AcquisitionManager:
             save_files=self._save_files,
             experiment_name=acquisition_tmp_data.experiment_name,
         )
+
+        self._schedule_backend_load(acquisition)
+
+        return acquisition
 
     def save_acquisition(self, update_: bool = True, /, **kwds) -> "AcquisitionManager":
         acq_data = self.current_acquisition
@@ -329,4 +371,11 @@ class AcquisitionManager:
         if acq_data.save_on_edit is False:
             acq_data.save()
         self._once_saved = True
+        self._schedule_backend_save(acq_data)
         return self
+
+    def close(self) -> None:
+        """Shutdown any background executor created for backend sync."""
+        if self._executor is not None:
+            self._executor.shutdown(wait=False)
+            self._executor = None
