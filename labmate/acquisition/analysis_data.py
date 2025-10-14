@@ -81,6 +81,7 @@ class AnalysisData(DH5):
         save_files: bool = False,
         save_on_edit: bool = True,
         save_fig_inside_h5: bool = False,
+        save_interactive_fig: bool = False,
         open_on_init: Optional[bool] = None,
     ):
         """Load data from a filepath and lock it to prevent any changes.
@@ -114,6 +115,7 @@ class AnalysisData(DH5):
 
         self._save_files = save_files
         self._save_fig_inside_h5 = save_fig_inside_h5
+        self._save_interactive_fig = save_interactive_fig
 
         self._default_config_files: Tuple[str, ...] = tuple()
         if "info" in self and "default_config_files" in self["info"]:
@@ -212,6 +214,10 @@ class AnalysisData(DH5):
                 )
         if tight_layout and hasattr(fig, "tight_layout"):
             fig.tight_layout()  # type: ignore
+        if (self._save_interactive_fig and kwargs.get("interactive", True)) or kwargs.get("interactive", False):
+            import pickle
+            with open(full_fig_name+".pkl", "wb") as file:
+                pickle.dump(fig, file)
         if metadata is None:
             fig.savefig(full_fig_name, **kwargs)
         else:
