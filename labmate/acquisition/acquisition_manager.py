@@ -196,7 +196,11 @@ class AcquisitionManager:
         return AcquisitionTmpData(**jsn.read(path))
 
     def _get_configs_last_modified(self) -> List[float]:
-        return [os.path.getmtime(file) for file in self.config_files]
+        return [
+            os.path.getmtime(os.path.join(os.getcwd(), file))
+            for file in self.config_files
+        ]
+        # return [os.path.getmtime(file) for file in self.config_files]
 
     def new_acquisition(
         self, name: str, cell: Optional[str] = None, save_on_edit: Optional[bool] = None
