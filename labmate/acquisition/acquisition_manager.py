@@ -204,7 +204,7 @@ class AcquisitionManager:
 
     def _get_configs_last_modified(self) -> List[float]:
         return [os.path.getmtime(file) for file in self.config_files]
-    
+
     def _ensure_executor(self) -> Optional[ThreadPoolExecutor]:
         if self._backend is None:
             return None

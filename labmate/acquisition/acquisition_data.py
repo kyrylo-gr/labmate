@@ -179,8 +179,7 @@ class NotebookAcquisitionData(DH5):
         if step is None:
             step = self.current_step
         self._cells[step] = cell
-        
-        
+
     def backend_save(self) -> None:
         """Hook for acquisition backends to serialise custom payloads.
 
