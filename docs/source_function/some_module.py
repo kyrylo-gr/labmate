@@ -2,7 +2,7 @@ import numpy as np
 import some_module2
 from some_module2 import test4
 
-external_variable = 1
+external_variable = 2
 
 
 def test():
@@ -12,7 +12,9 @@ def test():
 def test2(x):
     b = 2
     t = SomeClass()
-    return x + test() + external_variable + b + some_module2.test3() + test4() + t.test6()
+    return (
+        x + test() + external_variable + b + some_module2.test() + test4() + t.test6()
+    )
 
 
 class SomeClass:
