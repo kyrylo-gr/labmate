@@ -22,6 +22,7 @@ class FunctionAnalyzer:
 
     def _analyze_func(self, func):
         """Recursively analyze a function and its dependencies."""
+        print(f"Analyzing {func}")
         if not (inspect.isfunction(func) or inspect.ismethod(func)):
             return
         func_id = self._get_func_id(func)
@@ -31,7 +32,6 @@ class FunctionAnalyzer:
         source = self._get_source(func)
         file_path = self._get_file(func)
         used_names = self._get_used_names(source)
-        # Only access __globals__ for functions, not methods
         if inspect.isfunction(func):
             globals_dict = func.__globals__
         elif inspect.ismethod(func):
@@ -39,42 +39,45 @@ class FunctionAnalyzer:
         else:
             globals_dict = {}
         self.results[func_id] = {
-            'code': source,
-            'type': 'function',
-            'file': file_path,
-            'external_vars': [],
+            "value": source,
+            "type": "function",
+            "file": file_path,
+            "external_vars": [],
         }
         for name in used_names:
             if name in globals_dict:
                 value = globals_dict[name]
+                print(f"Value of {name} is {value}")
                 if inspect.isfunction(value):
                     sub_id = self._get_func_id(value)
-                    self.results[func_id]['external_vars'].append(sub_id)
+                    self.results[func_id]["external_vars"].append(sub_id)
                     self._analyze_func(value)
                 elif inspect.isclass(value):
                     sub_id = self._get_class_id(value)
                     if sub_id not in self.results:
                         self.results[sub_id] = {
-                            'code': self._get_source(value),
-                            'type': 'class',
-                            'file': self._get_file(value),
-                            'external_vars': [],
+                            "value": self._get_source(value),
+                            "type": "class",
+                            "file": self._get_file(value),
+                            "external_vars": [],
                         }
-                    self.results[func_id]['external_vars'].append(sub_id)
+                    self.results[func_id]["external_vars"].append(sub_id)
                 elif inspect.ismodule(value):
                     mod_id = value.__name__
                     # Don't save the module itself, just track it for external_vars
-                    self.results[func_id]['external_vars'].append(mod_id)
+                    self.results[func_id]["external_vars"].append(mod_id)
+                    print(f"Skipping {name} because it is a module")
                 else:
                     var_id = f"{func.__module__}.{name}"
                     if var_id not in self.results:
                         self.results[var_id] = {
-                            'type': 'variable',
-                            'value': repr(value),
+                            "type": "variable",
+                            "value": repr(value),
                         }
-                    self.results[func_id]['external_vars'].append(var_id)
+                    self.results[func_id]["external_vars"].append(var_id)
             else:
                 # Could be a builtin or closure, skip for now
+                print(f"Skipping {name} because it is not in globals_dict")
                 continue
 
     def _get_func_id(self, func):
@@ -90,14 +93,14 @@ class FunctionAnalyzer:
         try:
             return inspect.getsource(obj)
         except Exception:
-            return ''
+            return ""
 
     def _get_file(self, obj):
         """Get the file path of an object."""
         try:
             return inspect.getfile(obj)
         except Exception:
-            return 'unknown'
+            return "unknown"
 
     def _get_used_names(self, source):
         """Parse AST and collect all used names in the source code."""
