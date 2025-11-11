@@ -186,3 +186,4 @@ trash.*
 trash_*.*
 
 .vscode
+*.code-workspace

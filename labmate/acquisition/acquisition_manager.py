@@ -1,5 +1,15 @@
 import os
-from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+from concurrent.futures import Future, ThreadPoolExecutor
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Union,
+    Iterable,
+)
 
 from dh5 import jsn
 from dh5.path import Path
@@ -8,6 +18,9 @@ from ..parsing.saving import append_values_from_modules_to_files
 from ..utils import get_timestamp
 from ..utils.file_read import read_file, read_files
 from .acquisition_data import NotebookAcquisitionData
+
+if TYPE_CHECKING:
+    from .backend import AcquisitionBackend
 
 
 class AcquisitionTmpData(NamedTuple):
@@ -40,6 +53,8 @@ class AcquisitionManager:
 
     cell: Optional[str] = None
 
+    _backend: Optional[Tuple["AcquisitionBackend", ...]] = None
+
     def __init__(
         self,
         data_directory: Optional[Union[str, Path]] = None,
@@ -47,6 +62,9 @@ class AcquisitionManager:
         config_files: Optional[List[str]] = None,
         save_files: Optional[bool] = None,
         save_on_edit: Optional[bool] = None,
+        backend: Optional[
+            Union["AcquisitionBackend", Iterable["AcquisitionBackend"]]
+        ] = None,
     ):
         if save_files is not None:
             self._save_files = save_files
@@ -57,6 +75,14 @@ class AcquisitionManager:
         self._current_acquisition = None
         self._acquisition_tmp_data = None
         self._once_saved = False
+
+        self._backend = (
+            tuple(backend)
+            if isinstance(backend, Iterable)
+            else (backend,)
+            if backend is not None
+            else None
+        )
 
         self.config_files = []
         self.config_files_eval = {}
@@ -198,6 +224,48 @@ class AcquisitionManager:
     def _get_configs_last_modified(self) -> List[float]:
         return [os.path.getmtime(file) for file in self.config_files]
 
+    def _schedule_backend_save(
+        self, acquisition: NotebookAcquisitionData
+    ) -> Optional[Future]:
+        if self._backend is None:
+            return None
+
+        executor = ThreadPoolExecutor(max_workers=1)
+
+        def save_snapshot():
+            if self._backend is None:
+                return
+            for backend in self._backend:
+                backend.save_snapshot(acquisition)
+
+        def shutdown_executor(future: Future):
+            executor.shutdown(wait=False)
+
+        future = executor.submit(save_snapshot)
+        future.add_done_callback(shutdown_executor)
+        return future
+
+    def _schedule_backend_load(
+        self, acquisition: NotebookAcquisitionData
+    ) -> Optional[Future]:
+        if self._backend is None:
+            return None
+
+        executor = ThreadPoolExecutor(max_workers=1)
+
+        def load_snapshot():
+            if self._backend is None:
+                return
+            for backend in self._backend:
+                backend.load_snapshot(acquisition)
+
+        def shutdown_executor(future: Future):
+            executor.shutdown(wait=False)
+
+        future = executor.submit(load_snapshot)
+        future.add_done_callback(shutdown_executor)
+        return future
+
     def new_acquisition(
         self, name: str, cell: Optional[str] = None, save_on_edit: Optional[bool] = None
     ) -> NotebookAcquisitionData:
@@ -256,7 +324,7 @@ class AcquisitionManager:
         configs = configs if configs else None
         save_on_edit = save_on_edit if save_on_edit is not None else self._save_on_edit
 
-        return NotebookAcquisitionData(
+        acquisition = NotebookAcquisitionData(
             filepath=str(filepath),
             configs=configs,
             cell=cell or self.cell,
@@ -264,6 +332,10 @@ class AcquisitionManager:
             save_on_edit=save_on_edit,
             save_files=self._save_files,
         )
+        # TODO: chech if this gives the expected behaviour
+        self._schedule_backend_load(acquisition)
+
+        return acquisition
 
     @property
     def current_acquisition(self) -> NotebookAcquisitionData:
@@ -301,7 +373,7 @@ class AcquisitionManager:
 
         save_on_edit = save_on_edit if save_on_edit is not None else self._save_on_edit
 
-        return NotebookAcquisitionData(
+        acquisition = NotebookAcquisitionData(
             filepath=str(filepath),
             configs=configs,
             cell=cell,
@@ -310,6 +382,10 @@ class AcquisitionManager:
             save_files=self._save_files,
             experiment_name=acquisition_tmp_data.experiment_name,
         )
+
+        self._schedule_backend_load(acquisition)
+
+        return acquisition
 
     def save_acquisition(self, update_: bool = True, /, **kwds) -> "AcquisitionManager":
         acq_data = self.current_acquisition
@@ -329,4 +405,8 @@ class AcquisitionManager:
         if acq_data.save_on_edit is False:
             acq_data.save()
         self._once_saved = True
+        self._schedule_backend_save(acq_data)
         return self
+
+    def close(self) -> None:
+        pass
