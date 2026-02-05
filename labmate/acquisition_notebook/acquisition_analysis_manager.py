@@ -118,7 +118,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             self.shell = shell
 
         if use_magic:
-            from .acquisition_magic_class import load_ipython_extension  # pyright: ignore[reportMissingImports]
+            from .acquisition_magic_class import load_ipython_extension  # pyright: ignore[reportMissingImports]  # noqa: I001
 
             load_ipython_extension(aqm=self, shell=self.shell)
 

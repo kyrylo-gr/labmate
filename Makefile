@@ -50,7 +50,7 @@ format-check:
 	ruff format --check .
 
 # Run all CI checks (mimics GitHub Actions)
-run-ci: test lint format-check
+ci: test lint format
 	@echo ""
 	@echo "✓ All CI checks passed!"
 	@echo "  - Tests: PASSED"

@@ -45,8 +45,8 @@ class ConfigFile(attrdict.AttrDict):
             raise ValueError("Content is not defined")
 
         module = type(attrdict)("config_module")
-        cc = compile(self.content, "<string>", "exec")  # noqa: DUO110
-        eval(cc, module.__dict__)  # pylint: disable=W0123 # noqa: DUO104
+        cc = compile(self.content, "<string>", "exec")
+        eval(cc, module.__dict__)
         return module
 
     def eval_key(self, key) -> Any:
@@ -61,5 +61,5 @@ class ConfigFile(attrdict.AttrDict):
         """
         val = self.get(key)
         if val and val.value:
-            return eval(val.value)  # pylint: disable=W0123 # noqa: DUO104
+            return eval(val.value)
         return None
