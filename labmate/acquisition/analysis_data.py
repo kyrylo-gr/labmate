@@ -12,6 +12,7 @@ from ..logger import logger
 from .analysis_loop import AnalysisLoop
 from .config_file import ConfigFile
 
+
 _T = TypeVar("_T", bound="AnalysisData")
 
 
@@ -115,7 +116,7 @@ class AnalysisData(DH5):
         self._save_files = save_files
         self._save_fig_inside_h5 = save_fig_inside_h5
 
-        self._default_config_files: Tuple[str, ...] = tuple()
+        self._default_config_files: Tuple[str, ...] = ()
         if "info" in self and "default_config_files" in self["info"]:
             self._default_config_files = tuple(self["info"]["default_config_files"])
 
@@ -158,9 +159,9 @@ class AnalysisData(DH5):
             logger.warning("Analysis cell is not set. Nothing to save")
             return self
 
-        self.unlock_data(cell_name_key).update({cell_name_key: code}).lock_data(
-            cell_name_key
-        ).save([cell_name_key])
+        self.unlock_data(cell_name_key).update({cell_name_key: code}).lock_data(cell_name_key).save(
+            [cell_name_key]
+        )
 
         if self._save_files:
             assert self.filepath, "You must set self.filepath before saving"
@@ -198,18 +199,14 @@ class AnalysisData(DH5):
             "inside_h5", False
         ):
             try:
-                raise NotImplementedError(
-                    "save_fig_inside_h5 is not implemented for the moment."
-                )
+                raise NotImplementedError("save_fig_inside_h5 is not implemented for the moment.")
                 # import pltsave
 
                 # data = pltsave.dumps(fig).to_json()
                 # self[f"figures/{fig_name}"] = data
                 # self.save([f"figures/{fig_name}"])
             except Exception as error:
-                logger.exception(
-                    "Failed to save the figure inside h5 file due to %s", error
-                )
+                logger.exception("Failed to save the figure inside h5 file due to %s", error)
         if tight_layout and hasattr(fig, "tight_layout"):
             fig.tight_layout()  # type: ignore
         if metadata is None:
@@ -261,14 +258,12 @@ class AnalysisData(DH5):
                 name = str(name)
             if not name.isnumeric() and name[0] != "_":
                 name = "_" + name
-            if os.path.splitext(name)[-1] == "":
+            if Path(name).suffix == "":  # check if name has no extension
                 name = f"{name}.{extensions}"
 
         return "FIG" + name
 
-    def parse_config(
-        self, config_files: Optional[Tuple[str, ...]] = None
-    ) -> "ConfigFile":
+    def parse_config(self, config_files: Optional[Tuple[str, ...]] = None) -> "ConfigFile":
         """Parse config files. If `config_files` are not provided takes `default_config_files`."""
 
         config_files = config_files or self._default_config_files
@@ -303,9 +298,7 @@ class AnalysisData(DH5):
             if key_value == "filename" or key_value == "file" or key_value == "f":
                 filename = os.path.split(self.filepath)[-1]
                 keys_with_values.append(
-                    utils.title_parsing.ValueForPrint(
-                        key_value, filename, key_units, key_format
-                    )
+                    utils.title_parsing.ValueForPrint(key_value, filename, key_units, key_format)
                 )
             elif key_value in self:
                 keys_with_values.append(
@@ -358,9 +351,7 @@ class AnalysisData(DH5):
                 )
 
             if config_file_name in self._parsed_configs:
-                self._parsed_configs[original_config_name] = self._parsed_configs[
-                    config_file_name
-                ]
+                self._parsed_configs[original_config_name] = self._parsed_configs[config_file_name]
                 return self._parsed_configs[config_file_name]
 
         else:
@@ -393,16 +384,14 @@ class AnalysisData(DH5):
         code: Optional[dict] = self.get("analysis_cells")
         if code is None:
             raise ValueError(
-                f"There is no field 'analysis_cells' inside the data file. "
+                "There is no field 'analysis_cells' inside the data file. "
                 f"Possible keys are {tuple(self.keys())}."
             )
 
         # if isinstance(code, bytes):
         #     code = code.decode()
         if name not in code:
-            raise KeyError(
-                f"Cannot get cell '{name}'. Possible cells are: {tuple(code.keys())}"
-            )
+            raise KeyError(f"Cannot get cell '{name}'. Possible cells are: {tuple(code.keys())}")
 
         code_str: str = code[name]
         if update_code:
@@ -426,7 +415,8 @@ class AnalysisData(DH5):
         return figures
 
         # raise NotImplementedError(
-        # "Not implemented for the moment. If you want to open an old figure. Use open_old_figs function")
+        # "Not implemented for the moment. If you want to open an old figure.
+        # Use open_old_figs function" )
 
     def pull(self, force_pull: bool = False):
         self._reset_attrs()

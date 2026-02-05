@@ -2,9 +2,11 @@
 
 The goal it to have a single interface for all such functions.
 """
+
 import os
-import sys
 import subprocess
+import sys
+
 
 if os.name == "nt":
     from . import windows_utils as current_utils

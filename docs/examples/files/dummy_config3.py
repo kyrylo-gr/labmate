@@ -1,5 +1,5 @@
 def abc(p):
-    return p*2
+    return p * 2
 
 
 d1 = 2
@@ -8,9 +8,9 @@ d3 = abc(d1)
 
 
 def local_switch(param):
-    if param == 'a':
-        return 'param_a'
-    return 'param_b'
+    if param == "a":
+        return "param_a"
+    return "param_b"
 
 
 str_1 = "a"

@@ -1,15 +1,15 @@
-import os
 import shutil
 import unittest
 from concurrent.futures import Future
-from unittest.mock import Mock, patch
+from pathlib import Path
 
 from labmate.acquisition import AcquisitionManager
 from labmate.acquisition.acquisition_data import NotebookAcquisitionData
 from labmate.acquisition.backend import AcquisitionBackend
 
-TEST_DIR = os.path.dirname(__file__)
-DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
+
+TEST_DIR = Path(__file__).parent
+DATA_DIR = TEST_DIR / "tmp_test_data"
 
 
 class MockBackend(AcquisitionBackend):
@@ -70,9 +70,7 @@ class BackendTest(unittest.TestCase):
 
         # Verify backend was called
         self.assertTrue(mock_backend.save_snapshot_called)
-        self.assertEqual(
-            mock_backend.save_snapshot_acquisition, self.aqm.current_acquisition
-        )
+        self.assertEqual(mock_backend.save_snapshot_acquisition, self.aqm.current_acquisition)
 
     def test_schedule_backend_load_single_backend(self):
         """Test that _schedule_backend_load calls backend.load_snapshot."""
@@ -89,9 +87,7 @@ class BackendTest(unittest.TestCase):
 
         # Verify backend was called
         self.assertTrue(mock_backend.load_snapshot_called)
-        self.assertEqual(
-            mock_backend.load_snapshot_acquisition, self.aqm.current_acquisition
-        )
+        self.assertEqual(mock_backend.load_snapshot_acquisition, self.aqm.current_acquisition)
 
     def test_schedule_backend_save_multiple_backends(self):
         """Test that _schedule_backend_save calls all backends."""
@@ -109,12 +105,8 @@ class BackendTest(unittest.TestCase):
         # Verify both backends were called
         self.assertTrue(mock_backend1.save_snapshot_called)
         self.assertTrue(mock_backend2.save_snapshot_called)
-        self.assertEqual(
-            mock_backend1.save_snapshot_acquisition, self.aqm.current_acquisition
-        )
-        self.assertEqual(
-            mock_backend2.save_snapshot_acquisition, self.aqm.current_acquisition
-        )
+        self.assertEqual(mock_backend1.save_snapshot_acquisition, self.aqm.current_acquisition)
+        self.assertEqual(mock_backend2.save_snapshot_acquisition, self.aqm.current_acquisition)
 
     def test_schedule_backend_load_multiple_backends(self):
         """Test that _schedule_backend_load calls all backends."""
@@ -133,12 +125,8 @@ class BackendTest(unittest.TestCase):
         # Verify both backends were called
         self.assertTrue(mock_backend1.load_snapshot_called)
         self.assertTrue(mock_backend2.load_snapshot_called)
-        self.assertEqual(
-            mock_backend1.load_snapshot_acquisition, self.aqm.current_acquisition
-        )
-        self.assertEqual(
-            mock_backend2.load_snapshot_acquisition, self.aqm.current_acquisition
-        )
+        self.assertEqual(mock_backend1.load_snapshot_acquisition, self.aqm.current_acquisition)
+        self.assertEqual(mock_backend2.load_snapshot_acquisition, self.aqm.current_acquisition)
 
     def test_schedule_backend_save_executor_shutdown(self):
         """Test that executor is shut down after save completes."""
@@ -218,7 +206,7 @@ class BackendTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Remove tmp_test_data directory once all tests finished."""
-        if os.path.exists(DATA_DIR):
+        if DATA_DIR.exists():
             shutil.rmtree(DATA_DIR)
         return super().tearDownClass()
 

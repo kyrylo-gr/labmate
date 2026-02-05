@@ -1,5 +1,7 @@
 """ConfigFile class."""
+
 from typing import Any
+
 from .. import attrdict
 
 

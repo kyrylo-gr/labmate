@@ -1,9 +1,7 @@
 """This submodule contains functions that are specific for windows."""
 
 
-def copy_fig(
-    fig=None, format_=None, text_to_copy=None, **kwargs
-):  # pragma: no cover <--
+def copy_fig(fig=None, format_=None, text_to_copy=None, **kwargs):  # pragma: no cover <--
     """Copy fig to the clipboard.
 
     Parameters
@@ -73,9 +71,7 @@ def copy_fig(
                 im = Image.open(buf)
                 with BytesIO() as output:
                     im.convert("RGB").save(output, "BMP")
-                    data = output.getvalue()[
-                        14:
-                    ]  # The file header off-set of BMP is 14 bytes
+                    data = output.getvalue()[14:]  # The file header off-set of BMP is 14 bytes
                     format_id = win32clipboard.CF_DIB  # DIB = device independent bitmap
 
             except ImportError:
@@ -89,8 +85,6 @@ def copy_fig(
     win32clipboard.EmptyClipboard()
     win32clipboard.SetClipboardData(format_id, data)
     if text_to_copy:
-        win32clipboard.SetClipboardData(
-            win32clipboard.CF_TEXT, text_to_copy.encode("utf-8")
-        )
+        win32clipboard.SetClipboardData(win32clipboard.CF_TEXT, text_to_copy.encode("utf-8"))
 
     win32clipboard.CloseClipboard()

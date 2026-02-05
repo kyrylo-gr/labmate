@@ -1,0 +1,82 @@
+[project]
+name = "labmate"
+
+[tool.ruff]
+# Set the maximum line length to 127 to match your flake8 config
+line-length = 100
+target-version = "py38"
+
+# Exclude common directories
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+]
+
+[tool.ruff.lint]
+# Enable recommended rules plus additional useful checks
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort (import sorting)
+    "N",      # pep8-naming
+    "UP",     # pyupgrade (modernize Python code)
+    "B",      # flake8-bugbear (find likely bugs)
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+    "RET",    # flake8-return
+    "PTH",    # flake8-use-pathlib
+    "NPY",    # numpy-specific rules
+]
+
+# Ignore specific rules (mapping from your flake8 config)
+ignore = [
+    "E265",   # block comment should start with '# '
+    "E731",   # do not assign a lambda expression
+    "PTH123", # allow to open with open(...)
+    "PTH110", # allow os.path.exists
+    "UP037",  # allow quoted-annotation
+]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.mccabe]
+# Set maximum complexity to 10 (matching your flake8 config)
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+# Configure import sorting
+known-first-party = ["labmate"]
+force-single-line = false
+lines-after-imports = 2
+
+[tool.ruff.lint.per-file-ignores]
+# Allow certain rules to be violated in test files
+"tests/**/*.py" = [
+    "N802",   # function name should be lowercase
+    "N803",   # argument name should be lowercase
+    "B008",   # do not perform function calls in argument defaults
+    "PTH", # allow os.path.exists
+]
+
+# Allow certain rules in example notebooks
+"docs/examples/**/*.py" = [
+    "E501",   # line too long (examples may have long lines for clarity)
+]
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+# Indent with spaces
+indent-style = "space"
+# Use Unix line endings
+line-ending = "auto"

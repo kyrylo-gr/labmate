@@ -16,6 +16,7 @@ from labmate.acquisition.acquisition_loop import AcquisitionLoop
 
 from .utils import compare_np_array
 
+
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
 
@@ -55,7 +56,9 @@ class BasicTest(unittest.TestCase):
         self.assertAlmostEqual(np.abs(data.get("y") - np.sin(x)).sum(), 0)
 
     def test_manager_die(self):
-        """Save, make reload on AcquisitionManager and verify that it will found current acquisition."""
+        """
+        Save, make reload on AcquisitionManager and verify that it will found current acquisition.
+        """
         x = np.linspace(0, 20 * np.pi, 101)
         y = np.sin(x)
         self.aqm.save_acquisition(x=x, y=y)
@@ -215,9 +218,7 @@ class AcquisitionLoopTest(unittest.TestCase):
         loop_freq = data.get("loop_freq")
         assert loop_freq is not None, "Cannot get LoopData from saved data."
 
-        self.assertAlmostEqual(
-            compare_np_array(self.data["freq"], loop_freq.get("freq")), 0
-        )
+        self.assertAlmostEqual(compare_np_array(self.data["freq"], loop_freq.get("freq")), 0)
         self.assertAlmostEqual(compare_np_array(self.data["y"], loop_freq.get("y")), 0)
         self.assertAlmostEqual(compare_np_array(self.data["x"], loop_freq.get("x")), 0)
 
@@ -256,12 +257,8 @@ class AnalysisLoopTest(AcquisitionLoopTest):
         self.assertAlmostEqual(compare_np_array(self.data["x"], loop_freq.x), 0)  # type: ignore
 
         # print(loop_freq['freq'][5])
-        self.assertAlmostEqual(
-            self.data["freq"][5], loop_freq["freq"][5]
-        )  # pylint: disable=E1136
-        self.assertAlmostEqual(
-            compare_np_array(self.data["y"][5], loop_freq[4:7]["y"][1]), 0
-        )  # pylint: disable=E1136
+        self.assertAlmostEqual(self.data["freq"][5], loop_freq["freq"][5])  # pylint: disable=E1136
+        self.assertAlmostEqual(compare_np_array(self.data["y"][5], loop_freq[4:7]["y"][1]), 0)  # pylint: disable=E1136
 
         self.assertEqual(len(loop_freq), len(self.data["freq"]))
 

@@ -86,7 +86,7 @@ class NameVisitor(ast.NodeVisitor):
         external_vars (Set[str]): A set of external variable names.
         errors (List[str]): A list of errors encountered during traversal.
         run_on_call (Optional[Callable]): A function to run on each function call node.
-        special_functions_db (Dict[str, Any]): A dictionary of special functions and their attributes.
+        special_functions_db (Dict[str, Any]): A dict of special functions and their attributes.
     """
 
     parent = None
@@ -107,9 +107,9 @@ class NameVisitor(ast.NodeVisitor):
         self.local_vars = ignore_var.copy() if ignore_var else set()
         self.builtins = set(__builtins__.keys())
         self.external_vars = set()
-        self.errors = list()
+        self.errors = []
         self.run_on_call = kwargs.get("run_on_call")
-        self.special_functions_db = dict()
+        self.special_functions_db = {}
         super().__init__()
 
     def visit(self, node, parent=None):
@@ -199,10 +199,9 @@ class LintResult(NamedTuple):
     errors: List[str]
 
 
-def find_variables_from_node(
-    node, ignore_var: Optional[set] = None, **kwargs
-) -> LintResult:
-    """Walk through ast.node and find the variable that was never declared inside this node, but used.
+def find_variables_from_node(node, ignore_var: Optional[set] = None, **kwargs) -> LintResult:
+    """
+    Walk through ast.node and find variables that were never declared inside the node, but are used.
 
     Variables from ingore_var set is allowed external variables to use.
     Returns (local_vars, external_vars)
@@ -246,8 +245,7 @@ def find_variables_from_code(
                 f"Error at line {exception.lineno} in {exception.text}"
             ],
         )
-    lint_results = find_variables_from_node(node, ignore_var, run_on_call=run_on_call)
-    return lint_results
+    return find_variables_from_node(node, ignore_var, run_on_call=run_on_call)
 
 
 def find_variables_from_file(
@@ -260,12 +258,12 @@ def find_variables_from_file(
     Args:
         file: A string representing the path to the file to be analyzed.
         ignore_var: An optional set of variable names to ignore during analysis.
-        run_on_call: An optional callable object to be run on each function call found during analysis.
+        run_on_call: An optional callable object to run on each function call found during analysis.
 
     Returns:
         A LintResult object containing the used and unused variables,
             and any errors encountered during analysis.
     """
-    with open(file, "r", encoding="utf-8") as f:
+    with open(file, encoding="utf-8") as f:
         code = f.read()
     return find_variables_from_code(code, ignore_var, run_on_call=run_on_call)

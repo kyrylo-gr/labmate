@@ -27,9 +27,7 @@ def append_values_from_modules_to_files(
     return configs
 
 
-def append_values_from_module_to_file(
-    body: str, module, separator="  # value: "
-) -> str:
+def append_values_from_module_to_file(body: str, module, separator="  # value: ") -> str:
     """Add values from a module to a given file body.
 
     Args:
@@ -68,9 +66,7 @@ def append_values_from_module_to_file(
         for key, (val, _) in parse_str(line).items():
             real_val = variables.get(key, "")
             if (
-                isinstance(val, str)
-                and isinstance(real_val, str)
-                and real_val != val.strip("\"'")
+                isinstance(val, str) and isinstance(real_val, str) and real_val != val.strip("\"'")
             ) or (
                 isinstance(val, str)
                 and isinstance(real_val, (float, int, complex))

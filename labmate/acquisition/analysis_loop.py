@@ -2,7 +2,7 @@
 It has mainly __iter__ method and __getitem__ method for slicing.
 """
 
-from typing import Any, Iterable, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
 from dh5 import DH5
 
@@ -39,16 +39,14 @@ class AnalysisLoop(DH5):
 
     """
 
-    def __init__(
-        self, data: Optional[dict] = None, loop_shape: Optional[List[int]] = None
-    ):
+    def __init__(self, data: Optional[dict] = None, loop_shape: Optional[List[int]] = None):
         """Initialize an AnalysisLoop object.
 
         Args:
             data (Optional[dict]): A dictionary containing data to initialize the object with.
-            loop_shape (Optional[List[int]]): A list of integers representing the shape of the analysis loop.
+            loop_shape (list[int] | None): A list of ints representing the shape of the analysis loop.
                 If not provided, the shape is retrieved from the object's '__loop_shape__' attribute.
-        """
+        """  # noqa: E501
         super().__init__(data=data)
         if loop_shape is None:
             loop_shape = self.get("__loop_shape__")
@@ -86,7 +84,11 @@ class AnalysisLoop(DH5):
                     child_kwds[key] = value[index]
 
                 val = child_kwds[key]
-                if isinstance(val, (Iterable)) and len(val) == 1 and not isinstance(val[0], (Iterable)):  # type: ignore
+                if (
+                    isinstance(val, (Sequence))
+                    and len(val) == 1
+                    and not isinstance(val[0], (Sequence))
+                ):  # type: ignore
                     child_kwds[key] = val[0]  # type: ignore
 
             if len(self._loop_shape) > 1:

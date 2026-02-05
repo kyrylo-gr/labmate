@@ -2,19 +2,20 @@
 
 import setuptools
 
+
 NAME = "labmate"
 AUTHOR = "kyrylo.gr | LKB-OMQ"
 AUTHOR_EMAIL = "git@kyrylo.gr"
 DESCRIPTION = "Data management library to save data and plots to hdf5 files"
 
 
-with open("README.md", "r", encoding="utf-8") as fh:
+with open("README.md", encoding="utf-8") as fh:
     long_description = fh.read()
 
 
 def get_version() -> str:
     """Get version from __config__.py."""
-    with open(f"{NAME}/__config__.py", "r", encoding="utf-8") as file:
+    with open(f"{NAME}/__config__.py", encoding="utf-8") as file:
         for line in file.readlines():
             if line.startswith("__version__"):
                 return line.split("=")[1].strip().strip('"').strip("'")

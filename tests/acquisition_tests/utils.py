@@ -1,22 +1,23 @@
 # pylint: disable=W0611
 """Utils for testing."""
 
-
 import logging
-import os
 import unittest
+
+# from dh5.path import Path
+from pathlib import Path
 from typing import List, Optional, Union
 
 import numpy as np
-from dh5.path import Path
 
 from labmate.acquisition_notebook.acquisition_analysis_manager import (  # noqa: F401
     logger as aqm_logger,
 )
 
-TEST_DIR = Path(os.path.dirname(__file__))
-DATA_DIR = Path(os.path.join(TEST_DIR, "tmp_test_data"))
-DATA_FILE_PATH = Path(os.path.join(DATA_DIR, "some_data.h5"))
+
+TEST_DIR = Path(__file__).parent
+DATA_DIR = TEST_DIR / "tmp_test_data"
+DATA_FILE_PATH = DATA_DIR / "some_data.h5"
 
 logging.basicConfig(level=logging.WARNING, force=True)
 logging.StreamHandler().setLevel(logging.WARNING)
@@ -136,7 +137,8 @@ class LogTest(unittest.TestCase):
 
             self.assertTrue(
                 self.check_logs(logs, msg, level),
-                msg=f"No '{msg}' at level {level} inside: {[(log.message, log.levelno) for log in logs]}",
+                msg=f"No '{msg}' at level {level} inside: "
+                f"{[f'{log.levelno}:{log.message}' for log in logs]}",
             )
 
         else:

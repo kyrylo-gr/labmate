@@ -10,10 +10,11 @@ Examples:
 
 
 """
+
 from typing import Dict
 
-from .parsed_value import ParsedValue
 from .brackets_score import BracketsScore
+from .parsed_value import ParsedValue
 
 
 def parse_str(file: str, /) -> Dict[str, ParsedValue]:
@@ -36,10 +37,7 @@ def parse_str(file: str, /) -> Dict[str, ParsedValue]:
         if not brackets.is_zero():
             continue
 
-        if "# value: " in value:
-            value_eval = value[value.rfind("# value: ") + 9 :]
-        else:
-            value_eval = None
+        value_eval = value[value.rfind("# value: ") + 9 :] if ("# value: " in value) else None
 
         value = value.split("#")[0].strip()
 

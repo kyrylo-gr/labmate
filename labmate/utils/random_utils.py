@@ -7,6 +7,7 @@ from dh5.utils.random_utils import (  # pylint: disable=unused-import # noqa: F4
     get_timestamp,
 )
 
+
 _CallableWithNoArgs = Callable[[], Any]
 
 

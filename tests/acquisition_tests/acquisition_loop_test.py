@@ -7,13 +7,13 @@ everything is good.
 
 import os
 import shutil
-
 import unittest
-import numpy as np
 
+import numpy as np
 from dh5 import DH5
 
 from labmate.acquisition import AcquisitionLoop, AcquisitionManager
+
 from .utils import compare_np_array
 
 

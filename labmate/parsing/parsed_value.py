@@ -16,14 +16,14 @@ def parse_value(value: str) -> Union[str, int, float]:
             value_without_underscores[0] == "-" and value[1:].isdigit()
         ):
             return int(value)
-        elif value_without_underscores.replace(".", "").isdigit() or (
-            value[0] == "-" and value_without_underscores[1:].replace(".", "").isdigit()
-        ):
-            return float(value)
         elif (
-            (value[0].isdigit() or (value[0] == "-" and value[1].isdigit()))
-            and value[-1].isdigit()
-            and "e" in value
+            value_without_underscores.replace(".", "").isdigit()
+            or (value[0] == "-" and value_without_underscores[1:].replace(".", "").isdigit())
+            or (
+                (value[0].isdigit() or (value[0] == "-" and value[1].isdigit()))
+                and value[-1].isdigit()
+                and "e" in value
+            )
         ):
             return float(value)
     except ValueError:
