@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, List, Optional, Protocol, TypeVar
 from .. import display as lm_display
 from ..display import platform_utils
 
+
 if TYPE_CHECKING:
     from labmate.acquisition_notebook import AcquisitionAnalysisManager
 
@@ -19,12 +20,11 @@ def _create_file_link(aqm: "AcquisitionAnalysisManager", level_up) -> str:
     filepath = _get_filepath(aqm)
     if filepath is None:
         return ""
-    link_name = os.path.basename(filepath)
-    link = "/".join(
-        os.path.abspath(filepath).replace("\\", "/").split("/")[-level_up:]
-    ).replace(" ", "%20")
-    link = f"[{link_name}](//kyrylo-gr.github.io/h5viewer/open?url={link})"
-    return link
+    link_name = os.path.basename(filepath)  # noqa: PTH119
+    link = "/".join(os.path.abspath(filepath).replace("\\", "/").split("/")[-level_up:]).replace(  # noqa: PTH100
+        " ", "%20"
+    )
+    return f"[{link_name}](//kyrylo-gr.github.io/h5viewer/open?url={link})"
 
 
 def display_widgets(objs: List["WidgetProtocol"], *args, **kwargs):
@@ -193,14 +193,14 @@ class OpenFinderButton(BaseWidget):
         import sys
 
         def open_finder():
-            path = os.path.abspath(filepath) + ".h5"
+            path = os.path.abspath(filepath) + ".h5"  # noqa: PTH100
             if sys.platform == "win32":
                 path = path.replace("/", "\\")
                 subprocess.run(["explorer", "/select,", path], shell=True)
             elif sys.platform == "darwin":
-                subprocess.Popen(["open", "-R", os.path.dirname(path)])
+                subprocess.Popen(["open", "-R", os.path.dirname(path)])  # noqa: PTH120
             else:
-                subprocess.Popen(["nautilus", "--select", os.path.dirname(path)])
+                subprocess.Popen(["nautilus", "--select", os.path.dirname(path)])  # noqa: PTH120
 
         self.widget = lm_display.buttons.create_button(open_finder, name="Open finder")
         return self.widget

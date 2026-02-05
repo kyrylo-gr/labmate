@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
+
 
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only
     from .acquisition_data import NotebookAcquisitionData

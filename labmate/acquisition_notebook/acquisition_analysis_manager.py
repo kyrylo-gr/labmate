@@ -19,10 +19,12 @@ from ..acquisition import AcquisitionManager, AnalysisData
 from ..logger import logger
 from . import display_widget
 
+
 if TYPE_CHECKING:
     from dh5.path import Path
-    from ..acquisition.backend import AcquisitionBackend
+
     from ..acquisition import FigureProtocol
+    from ..acquisition.backend import AcquisitionBackend
     from ..acquisition.config_file import ConfigFile
 
     # from ..logger import Logger
@@ -65,7 +67,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     _analysis_cell_str = None
     _is_old_data = False
     _last_fig_name = None
-    _default_config_files: Tuple[str, ...] = tuple()
+    _default_config_files: Tuple[str, ...] = ()
     _acquisition_started = 0
     _linting_external_vars = None
     _analysis_cell_prerun_hook: Optional[Tuple[_CallableWithNoArgs, ...]] = None
@@ -83,9 +85,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         save_on_edit_analysis: Optional[bool] = None,
         save_fig_inside_h5: bool = False,
         shell: Any = True,
-        backend: Optional[
-            Union["AcquisitionBackend", Iterable["AcquisitionBackend"]]
-        ] = None,
+        backend: Optional[Union["AcquisitionBackend", Iterable["AcquisitionBackend"]]] = None,
     ):
         """
         AcquisitionAnalysisManager.
@@ -118,7 +118,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             self.shell = shell
 
         if use_magic:
-            from .acquisition_magic_class import load_ipython_extension
+            from .acquisition_magic_class import load_ipython_extension  # pyright: ignore[reportMissingImports]  # noqa: I001
 
             load_ipython_extension(aqm=self, shell=self.shell)
 
@@ -177,7 +177,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         Args:
             fig (Figure, optional): Figure that should be saved. Figure could be any class with
              function save_fig implemented. By default gets plt.gcf().
-            name (str, optional): Name of the fig. It's a suffix that will be added to the filename. Defaults to None.
+            name (str, optional): Name of the fig. It's a suffix that will be added to the filename.
+                Defaults to None.
             extensions(str, optional): Extensions of the file. Defaults to `pdf`.
             tight_layout(bool, optional): True to call fig.tight_layout(). Defaults to True.
 
@@ -256,15 +257,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         acquisition_finished = time.time()
         if not self._once_saved:
             additional_info: Dict[str, Any] = {
-                "acquisition_duration": acquisition_finished
-                - self._acquisition_started,
+                "acquisition_duration": acquisition_finished - self._acquisition_started,
                 "logs": self.logger.getvalue(),
                 "prints": self.logger.get_stdout(),
             }
             if self._default_config_files:
-                additional_info.update(
-                    {"default_config_files": self._default_config_files}
-                )
+                additional_info.update({"default_config_files": self._default_config_files})
             kwds.update({"info": additional_info})
 
         super().save_acquisition(update_, file_suffix=file_suffix, **kwds)
@@ -300,9 +298,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             - If default configuration files are provided, they are set in the loaded data.
         """
         filename = self._get_full_filename(filename)
-        if not os.path.exists(
-            filename if filename.endswith(".h5") else filename + ".h5"
-        ):
+        if not os.path.exists(filename if filename.endswith(".h5") else filename + ".h5"):  # noqa: PTH110
             raise ValueError(f"File {filename} cannot be found")
 
         data = AnalysisData(
@@ -394,9 +390,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 display_warning("Old data analysis")
 
             filename = str(filepath or self._get_full_filename(filename))  # type: ignore
-            filename = (
-                (filename.rsplit(".h5", 1)[0]) if filename.endswith(".h5") else filename
-            )
+            filename = (filename.rsplit(".h5", 1)[0]) if filename.endswith(".h5") else filename
 
         else:
             self._is_old_data = False
@@ -411,8 +405,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                     )
                     or (
                         acquisition_name[0] == r"^"
-                        and re.match(acquisition_name, self.current_experiment_name)
-                        is None
+                        and re.match(acquisition_name, self.current_experiment_name) is None
                     )
                 ):
                     raise ValueError(
@@ -421,7 +414,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                     )
 
             filename = str(self.current_filepath)  # without h5
-        self.logger.info(os.path.basename(filename))
+        self.logger.info(os.path.basename(filename))  # noqa: PTH119
 
         if (
             (not self._is_old_data)
@@ -436,7 +429,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 "Check if everything is ok and executive again"
             )
 
-        if os.path.exists(filename + ".h5"):
+        if os.path.exists(filename + ".h5"):  # noqa: PTH110
             self._load_analysis_data(filename)
         else:
             if self._is_old_data:
@@ -446,9 +439,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if cell is not None:
             self.save_analysis_cell(cell=cell)
 
-        if (self._analysis_cell_str is not None) and (
-            self._linting_external_vars is not None
-        ):
+        if (self._analysis_cell_str is not None) and (self._linting_external_vars is not None):
             from ..acquisition import custom_lint
             from ..utils import lint
 
@@ -461,9 +452,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 run_on_call=custom_lint.on_call_functions,
             )
             for var in lint_result.external_vars:
-                self.logger.warning(
-                    "External variable used inside the analysis code: %s", var
-                )
+                self.logger.warning("External variable used inside the analysis code: %s", var)
             for error in lint_result.errors:
                 self.logger.warning(error)
 
@@ -488,15 +477,13 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         filepath = utils.get_path_from_filename(filename)
         if isinstance(filepath, tuple):
-            return os.path.join(self.data_directory, *filepath)
+            return os.path.join(self.data_directory, *filepath)  # noqa: PTH118
         return filepath
 
     def parse_config_file(self, config_file_name: str, /) -> "ConfigFile":
         return self.data.parse_config_file(config_file_name)
 
-    def parse_config(
-        self, config_files: Optional[Tuple[str, ...]] = None
-    ) -> "ConfigFile":
+    def parse_config(self, config_files: Optional[Tuple[str, ...]] = None) -> "ConfigFile":
         return self.data.parse_config(config_files=config_files)
 
     @property
@@ -518,16 +505,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     ):
         from ..utils import lint
 
-        allowed_variables = (
-            set() if allowed_variables is None else set(allowed_variables)
-        )
+        allowed_variables = set() if allowed_variables is None else set(allowed_variables)
         if init_file is not None:
             allowed_variables.update(lint.find_variables_from_file(init_file)[0])
         self._linting_external_vars = allowed_variables
 
-    def set_default_config_files(
-        self, config_files: Union[str, Tuple[str, ...], List[str]], /
-    ):
+    def set_default_config_files(self, config_files: Union[str, Tuple[str, ...], List[str]], /):
         self._default_config_files = (
             (config_files,) if isinstance(config_files, str) else tuple(config_files)
         )
@@ -574,7 +557,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if after_text is not None:
             if not isinstance(params, str):
                 raise ValueError(
-                    "Cannot use after_text with multiple params"
+                    "Cannot use after_text with multiple params. "
                     "Use params=[(param, after_text), ...] instead."
                 )
             return self.display_param_link(params=[(params, after_text)], title=title)
@@ -624,11 +607,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 self.update_config_params_on_disk({param: value})
 
             buttons = (
-                [
-                    display.buttons.create_button(
-                        update_value, param, value, name="Update"
-                    )
-                ]
+                [display.buttons.create_button(update_value, param, value, name="Update")]
                 if update_button
                 else None
             )
@@ -661,9 +640,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def connect_default_widget(
         self,
-        objs: Union[
-            "display_widget.WidgetProtocol", List["display_widget.WidgetProtocol"]
-        ],
+        objs: Union["display_widget.WidgetProtocol", List["display_widget.WidgetProtocol"]],
     ):
         if not isinstance(objs, (list, tuple)):
             objs = [objs]

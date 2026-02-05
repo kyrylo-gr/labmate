@@ -4,6 +4,7 @@ from typing import TypeVar
 
 from .main import display, widgets
 
+
 # from functools import wraps
 # def add_display_method(func):
 #     """If a function changes the data it should be saved.

@@ -13,9 +13,7 @@ class AcquisitionAnalysisIpyDisplayTest(LogTest):
 
     def setUp(self):
         shell = ShellEmulator(self.cell_text)
-        self.aqm = AcquisitionAnalysisManager(
-            DATA_DIR, save_on_edit=True, shell=shell
-        )  # type: ignore
+        self.aqm = AcquisitionAnalysisManager(DATA_DIR, save_on_edit=True, shell=shell)  # type: ignore
         self.aqm.set_default_config_files(("config.txt",))
 
         # self.config = (os.path.join(TEST_DIR, "data/config.txt"))

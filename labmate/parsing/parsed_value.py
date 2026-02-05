@@ -2,6 +2,8 @@
 
 from typing import Any, Union
 
+import numpy as np
+
 
 def parse_value(value: str) -> Union[str, int, float]:
     """Convert str to int or float if possible."""
@@ -16,14 +18,14 @@ def parse_value(value: str) -> Union[str, int, float]:
             value_without_underscores[0] == "-" and value[1:].isdigit()
         ):
             return int(value)
-        elif value_without_underscores.replace(".", "").isdigit() or (
-            value[0] == "-" and value_without_underscores[1:].replace(".", "").isdigit()
-        ):
-            return float(value)
         elif (
-            (value[0].isdigit() or (value[0] == "-" and value[1].isdigit()))
-            and value[-1].isdigit()
-            and "e" in value
+            value_without_underscores.replace(".", "").isdigit()
+            or (value[0] == "-" and value_without_underscores[1:].replace(".", "").isdigit())
+            or (
+                (value[0].isdigit() or (value[0] == "-" and value[1].isdigit()))
+                and value[-1].isdigit()
+                and "e" in value
+            )
         ):
             return float(value)
     except ValueError:
@@ -44,9 +46,11 @@ class ParsedValue:
 
     Examples:
         >>> v1 = ParsedValue("1", 1)
-        >>> v2 = ParsedValue("2", 2)
+        >>> v2 = ParsedValue("6/3", 2)
         >>> v1 + v2
         3
+        >>> v2.unpack()
+        ('6/3', 2)
 
     """
 
@@ -63,8 +67,11 @@ class ParsedValue:
         self.original = parse_value(original)
         self.value = parse_value(value)
 
-    def __iter__(self):
-        return iter((self.original, self.value))
+    # def __iter__(self):
+    #     return iter((self.original, self.value))
+
+    def unpack(self):
+        return self.original, self.value
 
     def __str__(self) -> str:
         return str(self.value)
@@ -81,8 +88,17 @@ class ParsedValue:
     def __abs__(self) -> float:
         return abs(self.value)  # type: ignore
 
+    def __int__(self) -> int:
+        return int(self.value)  # type: ignore
+
     def __float__(self) -> float:
         return float(self.value)  # type: ignore
+
+    def __array__(self, dtype=None, **kwargs):
+        # So numpy/matplotlib can use it: np.asarray(obj) works
+        if dtype is not None:
+            return np.array(self.value, dtype=dtype, **kwargs)
+        return np.array(self.value, **kwargs)
 
     def __neg__(self) -> float:
         return -self.value  # type: ignore
@@ -195,3 +211,7 @@ class ParsedValue:
         if isinstance(other, ParsedValue):
             return other.value
         return other
+
+    def __hash__(self) -> int:
+        return hash(self.value)
+        # return hash((self.original, self.value))

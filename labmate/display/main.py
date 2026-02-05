@@ -4,6 +4,7 @@ import logging
 import sys
 from typing import Callable, List
 
+
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.WARNING)
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -28,13 +29,13 @@ except (ImportError, AttributeError):
     # For testing purposes every IPython function should have a simpler version.
     # pylint: disable=C0115, C0103, R0903
 
-    def HTML(text):  # noqa: D103
+    def HTML(text):  # noqa: D103, N802
         return text
 
     def display(text):  # noqa: D103
         logger.info(text)
 
-    class widgets:  # noqa: D101
+    class widgets:  # noqa: D101, N801
         class Button:  # noqa: D106
             func: str
             description: str

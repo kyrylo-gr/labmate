@@ -7,6 +7,7 @@ from dh5 import DH5
 from labmate.acquisition import AcquisitionManager, AnalysisData
 from labmate.acquisition.acquisition_manager import read_files
 
+
 TEST_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(TEST_DIR, "tmp_test_data")
 DATA_FILE_PATH = os.path.join(DATA_DIR, "some_data.h5")
@@ -51,9 +52,7 @@ class AnalysisDataTest(unittest.TestCase):
         self.assertEqual(code, self.analysis_cell)
 
     def test_analysis_cell_file(self):
-        self.ad = AnalysisData(
-            self.aqm.current_filepath, cell=self.analysis_cell, save_files=True
-        )
+        self.ad = AnalysisData(self.aqm.current_filepath, cell=self.analysis_cell, save_files=True)
         with open(
             self.aqm.current_filepath + "_ANALYSIS_CELL_default.py", encoding="utf-8"
         ) as file:

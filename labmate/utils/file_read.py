@@ -1,8 +1,8 @@
 """Different method to read files."""
 
 import json
-import os
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ..parsing.brackets_score import BracketsScore
@@ -20,13 +20,13 @@ def read_file(file: str, /) -> str:
     Raises:
         ValueError: If the file does not exist or is not a file.
     """
-    if not os.path.isfile(file):
+    if not Path(file).is_file():
         raise ValueError(
-            "Cannot read a file if it doesn't exist or it's not a file."
-            f"Path: {os.path.abspath(file)}"
+            "Cannot read a file if it doesn't exist or it's not a file. "
+            f"Path: {Path(file).absolute()}"
         )
 
-    with open(file, "r", encoding="utf-8") as file_opened:
+    with open(file, encoding="utf-8") as file_opened:
         return file_opened.read()
 
 
@@ -40,15 +40,16 @@ def read_files(files: List[str], /) -> Dict[str, str]:
         A dictionary where the keys are the file names and the values are the contents of the files.
 
     Raises:
-        ValueError: If some of the files have the same name, which would cause a key collision in the dictionary.
+        ValueError: If some of the files have the same name,
+            which would cause a key collision in the dict.
     """
     configs: Dict[str, str] = {}
     for config_file in files:
-        config_file_name = os.path.basename(config_file)
+        config_file_name = Path(config_file).name
         if config_file_name in configs:
             raise ValueError(
-                "Some of the files have the same name. So it cannot be pushed into dictionary to"
-                " preserve unique key"
+                "Some of the files have the same name. "
+                "So it cannot be pushed into dict to preserve unique key"
             )
         configs[config_file_name] = read_file(config_file)
     return configs
@@ -62,7 +63,7 @@ def update_file_variable(file, params: Dict[str, Any]):
         file (str): The path to the file to update.
         params (Dict[str, Any]): The parameters to update the file with.
     """
-    with open(file, "r", encoding="utf-8") as file_opened:
+    with open(file, encoding="utf-8") as file_opened:
         lines = file_opened.readlines()
     brackets = BracketsScore()
     current_param: Optional[str] = None
@@ -87,9 +88,7 @@ def update_file_variable(file, params: Dict[str, Any]):
             value_str = json.JSONEncoder().encode(params[current_param])
 
             print("value_str", value_str)
-            if re.match(
-                r"^['\"]?[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?['\"]?$", value_str
-            ):
+            if re.match(r"^['\"]?[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?['\"]?$", value_str):
                 value_str = value_str.replace('"', "")
 
             lines.insert(

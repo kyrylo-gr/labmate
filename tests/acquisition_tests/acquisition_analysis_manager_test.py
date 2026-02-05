@@ -91,12 +91,8 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
         self.assertEqual(sd.get("acquisition_cell", {}).get("1"), self.cell_text)
 
     def test_acquisition_cell_saved_with_steps(self):
-        self.aqm.acquisition_cell(
-            self.experiment_name, step=1, cell=self.cell_text + "1"
-        )
-        self.aqm.acquisition_cell(
-            self.experiment_name, step=2, cell=self.cell_text + "2"
-        )
+        self.aqm.acquisition_cell(self.experiment_name, step=1, cell=self.cell_text + "1")
+        self.aqm.acquisition_cell(self.experiment_name, step=2, cell=self.cell_text + "2")
         self.aqm.save_acquisition(x=1, y=2)
 
         sd = DH5(self.aqm.aq.filepath)
@@ -635,9 +631,7 @@ class AcquisitionAnalysisManagerParceTest(AnalysisDataParceTest):
         self.aqm.update_config_params_on_disk({param_name: value})
         self.aqm.acquisition_cell(self.experiment_name)
         self.aqm.analysis_cell()
-        self.assertEqual(
-            self.aqm.data.cfg.get(param_name), actual_value, msg=self.aqm.data.cfg
-        )
+        self.assertEqual(self.aqm.data.cfg.get(param_name), actual_value, msg=self.aqm.data.cfg)
 
     def test_update_config_file_int(self):
         self.base_test_update_config_file("int", 789, 789)

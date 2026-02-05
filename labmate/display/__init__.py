@@ -10,6 +10,7 @@ from .main import (
     logger,
 )
 
+
 __all__ = ["links", "buttons", "logger", "html_output"]
 
 
@@ -20,9 +21,7 @@ class _LazyModule:
 
     def __getattr__(self, name):
         if self.__module is None:
-            self.__module = importlib.import_module(
-                f".{self.__name}", package=__package__
-            )
+            self.__module = importlib.import_module(f".{self.__name}", package=__package__)
         return getattr(self.__module, name)
 
     # @property

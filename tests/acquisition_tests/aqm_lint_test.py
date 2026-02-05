@@ -46,7 +46,7 @@ class LintingTest(LogTest):
 
     def test_lint_save_acquisition_simple(self):
         code = """\
-        aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")    
+        aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")
         if aqm.current_acquisition is not None:
             x, y = fetch_new_data() # noqa
             aqm.save_acquisition(x=x, y=y, const=const)
@@ -56,7 +56,7 @@ class LintingTest(LogTest):
 
     def test_lint_save_acquisition_wrong(self):
         code = """\
-        aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")    
+        aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")
         if aqm.current_acquisition is not None:
             x, y = fetch_new_data() # noqa
             aqm.save_acquisition(x=x, y=y, const=const)
@@ -67,7 +67,7 @@ class LintingTest(LogTest):
 
     def test_lint_save_acquisition_right(self):
         code = """\
-        aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")    
+        aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")
         if aqm.current_acquisition is not None:
             x, y = fetch_new_data() # noqa
             aqm.save_acquisition(x=x, y=y, const=const)
@@ -78,7 +78,7 @@ class LintingTest(LogTest):
 
     def test_lint_save_acquisition_class(self):
         code = """\
-        aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")    
+        aqm.analysis_cell("2023_02_21__10_39_48__sine_qm")
         if aqm.current_acquisition is not None:
             x, y = fetch_new_data() # noqa
             aqm.save_acquisition(x=x, cls1=cls.func1(), cls2=cls.func2, cls3=cls.func3.func4())

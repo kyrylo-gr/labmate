@@ -187,3 +187,5 @@ trash_*.*
 
 .vscode
 *.code-workspace
+
+_*.ipynb

@@ -12,7 +12,9 @@ import labmate.utils.autoreload
 ```
 
 """
+
 from IPython.core.getipython import get_ipython
+
 
 shell = get_ipython()
 if shell:

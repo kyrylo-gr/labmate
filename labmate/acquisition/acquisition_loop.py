@@ -96,9 +96,7 @@ class AcquisitionLoop(DH5):
     ) -> Iterator:
         """Return np.arange(start, stop, step) given a start, stop and step."""
 
-    def __call__(
-        self, *args, iterable: Optional[Iterable] = None, **kwds
-    ) -> Optional[Iterator]:
+    def __call__(self, *args, iterable: Optional[Iterable] = None, **kwds) -> Optional[Iterator]:
         """Append_data or arange.
 
         If kwds are provided then is same as calling append_data(kwds),
@@ -115,10 +113,11 @@ class AcquisitionLoop(DH5):
             return None
 
         if iterable is None:
-            if isinstance(args[0], (int, float, np.int_, np.floating)):  # type: ignore
-                iterable = np.arange(*args)
-            else:
-                iterable = args[0]
+            iterable = (
+                np.arange(*args)
+                if isinstance(args[0], (int, float, np.int_, np.floating))  # type: ignore
+                else args[0]
+            )
 
         if iterable is None:
             raise ValueError("You should provide an iterable")
@@ -166,8 +165,8 @@ class AcquisitionLoop(DH5):
                 if len(key_shape) < len(self[key].shape):
                     raise ValueError(
                         f"Object {key} hasn't the same shape as before. Now it's"
-                        f" {key_shape[len(shape):]},"
-                        f" but before it was {self[key].shape[len(shape):]}."
+                        f" {key_shape[len(shape) :]},"
+                        f" but before it was {self[key].shape[len(shape) :]}."
                     )
                 if len(key_shape) > len(self[key].shape):
                     raise ValueError(
@@ -178,9 +177,7 @@ class AcquisitionLoop(DH5):
                 self[key] = SyncNp(
                     np.pad(
                         self[key],
-                        pad_width=tuple(
-                            (0, i - j) for i, j in zip(key_shape, self[key].shape)
-                        ),
+                        pad_width=tuple((0, i - j) for i, j in zip(key_shape, self[key].shape)),
                     )
                 )
                 self[key][iteration] = value
@@ -201,9 +198,7 @@ class AcquisitionLoop(DH5):
     ):
         if length is None:
             if not hasattr(iterable, "__len__"):
-                raise TypeError(
-                    "Iterable should has __len__ method or length should be provided"
-                )
+                raise TypeError("Iterable should has __len__ method or length should be provided")
             length = len(iterable)  # type: ignore
 
         def loop_iter(array, length):
@@ -283,9 +278,7 @@ class AcquisitionLoop(DH5):
         """
         if key is None:
             if not self._save_indexes:
-                raise ValueError(
-                    "As indexes are not saved with the Loop, key should be provided."
-                )
+                raise ValueError("As indexes are not saved with the Loop, key should be provided.")
             key = f"__index_{self._level}__"
 
         iteration = tuple(self._iteration[: self._level])
