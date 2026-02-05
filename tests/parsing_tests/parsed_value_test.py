@@ -1,5 +1,8 @@
 import unittest
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 from labmate.parsing import ParsedValue
 
 
@@ -135,6 +138,37 @@ class ParsedValueRightComplexOperationTest(ComplexTests, ParsedValueRightOperati
 
     v1 = 2
     v2 = 3 + 1j * 6
+
+
+class ParsedValuePlotTest(unittest.TestCase):
+    """Test ParsedValue plotting."""
+
+    def setUp(self) -> None:
+        self.x = np.linspace(0, 10, 100)
+        self.y = np.sin(self.x)
+        self.pv = ParsedValue("2*2", 4)
+        return super().setUp()
+
+    def test_plot(self):
+        fig, ax = plt.subplots()
+        ax.plot(self.x, self.y)
+        ax.axvline(x=self.pv, color="red")
+        plt.close(fig)
+
+    # As "wrapper" is not installed or available, manually parameterize the test
+    def test_plot_after_operation(self):
+        operations = [lambda x: x + 20, lambda x: x * 2, lambda x: x - 10]
+        for operation in operations:
+            fig, ax = plt.subplots()
+            ax.plot(self.x, self.y)
+            ax.axvline(x=operation(self.pv), color="red")
+            plt.close(fig)
+
+    def test_plot_with_format(self):
+        fig, ax = plt.subplots()
+        ax.plot(self.x, self.y)
+        ax.axvline(x=self.pv.value, color="red")
+        plt.close(fig)
 
 
 if __name__ == "__main__":
