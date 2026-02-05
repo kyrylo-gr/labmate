@@ -1,0 +1,1164 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://kyrylo-gr.github.io/labmate/releases/0.7.0/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/labmate-logo-small.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Version 0.7.0. What's new? - Labmate</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#version-070-whats-new" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Labmate" class="md-header__button md-logo" aria-label="Labmate" data-md-component="logo">
+      
+  <img src="../../images/labmate-logo-small.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Labmate
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Version 0.7.0. What's new?
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kyrylo-gr/labmate" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Labmate" class="md-nav__button md-logo" aria-label="Labmate" data-md-component="logo">
+      
+  <img src="../../images/labmate-logo-small.png" alt="logo">
+
+    </a>
+    Labmate
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kyrylo-gr/labmate" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../starting_guide/install" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../starting_guide/first_steps" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    First steps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../starting_guide/fine_tune/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fine tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../starting_guide/advanced_examples" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/acquisition_notebook_manager" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AcquisitionNotebookManager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/acquisition_manager" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AcquisitionManager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/acquisition_loop" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AcquisitionLoop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/analysis_data" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AnalysisData
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/linting" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Linting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code/parsing_config" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parsing config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/kyrylo-gr/labmate/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quickly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quickly:
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cleaner-usage-of-aqm-save-and-load-more-than-one-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleaner usage of aqm. Save and load more than one file.
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cleaner usage of aqm. Save and load more than one file.">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cleaner-usage-of-aqm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleaner usage of aqm.
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#save-and-load-more-than-one-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Save and load more than one file.
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-of-str-and-object-can-also-be-saved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List of str and object can also be saved
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#saved-config-files-can-be-imported" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saved config files can be imported.
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Saved config files can be imported.">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multiline-parsing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiline parsing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#functions-can-be-saved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions can be saved
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configfile-has-find-and-output-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConfigFile has find and output methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ConfigFile has find and output methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#find" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Find
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#short-way-to-call-enumerateloop-loopenum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Short way to call enumerate(loop(...)) -&gt; loop.enum(...)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#figures-can-again-be-saved-inside-h5-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Figures can again be saved inside h5 file.
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Figures can again be saved inside h5 file.">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage-as-before" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage (as before):
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#minor-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minor features
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="version-070-whats-new">Version 0.7.0. What's new?</h1>
+<h2 id="quickly">Quickly:</h2>
+<ul>
+<li>Cleaner usage of <code>aqm</code>. Save and load more than one file.</li>
+<li>List of str and object can also be saved.</li>
+<li>Saved config files can be imported. Parsing of multiline values.</li>
+<li>Functions can be saved.</li>
+<li><code>ConfigFile</code> has find and output methods.</li>
+<li>Short way to call enumerate(loop(...)) -&gt; loop.enum(...).</li>
+<li>Figures can again be saved inside h5 file.</li>
+</ul>
+<h2 id="cleaner-usage-of-aqm-save-and-load-more-than-one-file">Cleaner usage of <code>aqm</code>. Save and load more than one file.</h2>
+<h3 id="cleaner-usage-of-aqm">Cleaner usage of <code>aqm</code>.</h3>
+<p>Now it's easy to create and analyze data outside of acquisition_cell and analysis_cell
+Load file:</p>
+<pre><code class="language-python">data = aqm.load_file(&quot;2023_01_31__12_34_56__simple_sine&quot;)
+
+type(data) # -&gt; 'AnalysisData'
+</code></pre>
+<p>Create a new file:</p>
+<pre><code class="language-python">aq = aqm.create_acquisition('list_item')
+aq['x'] = 123
+aq.save_acquisition(y=456)
+</code></pre>
+<h3 id="save-and-load-more-than-one-file">Save and load more than one file.</h3>
+<p>Acquisition cell:</p>
+<pre><code class="language-python">aqm.acquisition_cell('list')
+files = []
+for i in range(5):
+    aq = aqm.create_acquisition('list_item')
+    x, y = take_some_data(param=i)
+    aq.save_acquisition(
+        x=x, y=y,
+        func_code=take_some_data, # keep track of the function you used
+        parent=aqm.current_filepath.str) # optional, but good to keep a trace of the files
+
+    files.append(aq.filepath)
+    aqm['files'] = files
+
+aqm.save_acquisition() # optional, but good practice
+</code></pre>
+<p>Analysis cell</p>
+<pre><code class="language-python">aqm.analysis_cell(acquisition_name=r&quot;^list&quot;)
+for file in aqm.data.files:
+    data = aqm.load_file(file)
+    data.x, data.y
+</code></pre>
+<h2 id="list-of-str-and-object-can-also-be-saved">List of str and object can also be saved</h2>
+<p>Any list that can be converted to json can be saved now.
+Examples:</p>
+<pre><code class="language-python">['a', 'b', 'c']
+['a', 'b', {'p1': 'c', 'p2': 'd'}]
+['a', 'b', [1, 2, 3]]
+</code></pre>
+<h2 id="saved-config-files-can-be-imported">Saved config files can be imported.</h2>
+<p>If you need to import a module that you have saved as a string inside the file, you can do so.</p>
+<p>While the use of the eval function can be debatable, it is still very explicit.</p>
+<p>Example of a config file <code>config1.py</code></p>
+<pre><code class="language-python">def abc(a):
+    return 3*a
+param1 = 123
+</code></pre>
+<p>Saving:</p>
+<pre><code class="language-python">aqm.set_default_config_files([&quot;config1.py&quot;]) # run ones on aqm initialization
+</code></pre>
+<p>Reading:</p>
+<pre><code class="language-python">cfg = aqm.data.parse_config_file('config1.py')
+
+cfg.param1 # -&gt; 123  # file is parsed by default without being evaluated
+
+cfg_module = cfg.eval_as_module()
+
+# now cfg_module works as if you imported config1.py
+cfg_module.abc(2) # -&gt; 4
+cfg_module.param1 # -&gt; 123
+</code></pre>
+<h3 id="multiline-parsing">Multiline parsing</h3>
+<p>Values that are written in multiple lines inside config files are now parsed. But still, there are not evaluated, so if you saved a dictionary it will be a string when parsed.
+To convert a string to a dictionary you can use <code>eval_key</code> method that evaluates the string.</p>
+<pre><code class="language-python">aqm.data.parse_config_file('config1.py').eval_key('param1')
+</code></pre>
+<h2 id="functions-can-be-saved">Functions can be saved</h2>
+<p>It's possible to save a simple function now.</p>
+<pre><code class="language-python">aqm.acquisition_cell('simple_sine')
+
+def acquire_data(size):
+    import numpy as np
+    x = np.linspace(0, 10*np.pi, size)
+    y = np.sin(x)
+    return x, y
+
+aqm.save_acquisition(acquire_data=acquire_data);
+</code></pre>
+<pre><code class="language-python">aqm.analysis_cell(acquisition_name=r&quot;^simple_\w&quot;)
+aqm.d.acquire_data.code # return code of the function
+
+aqm.d.acquire_data.eval(101) # evaluate the function with given args and kwds
+</code></pre>
+<p>Functions are saved as a string inside the h5 file and are evaluated on the first eval method call. Not when the file is loaded. Therefore, use of eval function is still explicit.</p>
+<h2 id="configfile-has-find-and-output-methods">ConfigFile has find and output methods</h2>
+<p><code>ConfigFile</code>(subclass of an <code>AttrDict</code>) is a class used when a config file is loaded. It's a classical dict, but with possibility to access items as attributes.</p>
+<p>Now you can find items inside dict and output values.</p>
+<h3 id="find">Find</h3>
+<pre><code class="language-python">data =  AttrDict({'param_1': 'value1', 'param_2': 'value2'})
+data.find('param') # -&gt; ('param_1', 'value1')
+data.find_all('param') # -&gt; [('param_1', 'value1'), ('param_2', 'value2')]
+</code></pre>
+<h3 id="output">Output</h3>
+<p>The syntax is the same as <code>parse_config_str</code> function.</p>
+<pre><code class="language-python">data =  AttrDict({'param_1': 123.43})
+
+data.output([&quot;param_1&quot;]) # -&gt; param_1 = 123.43
+data.output([&quot;param_1__m/s__1f&quot;]) # -&gt; param_1 = 123.4 (m/s)
+</code></pre>
+<h2 id="short-way-to-call-enumerateloop-loopenum">Short way to call enumerate(loop(...)) -&gt; loop.enum(...)</h2>
+<p>As easy as the title says. No need to call enumerate on loop just use <code>loop.enum(...)</code></p>
+<pre><code class="language-python">aqm.acquisition_cell('simple_sine')
+
+aqm['some_loop'] = loop = AcquisitionLoop()
+
+for i, q in loop.enum(1, 5, .5):
+    loop.append(x=i, y=q)
+</code></pre>
+<pre><code class="language-python">aqm.analysis_cell(acquisition_name=r&quot;^simple_\w&quot;)
+aqm.d.some_loop.x  # -&gt; [0., 1., 2., 3.]
+aqm.d.some_loop.y  # -&gt; [1. , 1.5, 2. , 2.5]
+</code></pre>
+<h2 id="figures-can-again-be-saved-inside-h5-file">Figures can again be saved inside h5 file.</h2>
+<p>Before, figures were saved with pickle library. But then figures cannot be opened on different systems. So a new library <code>pltsave</code> was used. This allows to save and open the figure on different systems.</p>
+<h3 id="usage-as-before">Usage (as before):</h3>
+<p>To save a particular figure use <code>inside_h5</code> keyword:</p>
+<pre><code class="language-python">aqm.save_fig(fig, inside_h5=True)
+</code></pre>
+<p>To save every figure, set <code>save_fig_inside_h5</code> keyword during init of <code>AcquisitionAnalysisManager</code> to True:</p>
+<pre><code class="language-python">aqm = AcquisitionAnalysisManager(..., save_fig_inside_h5=True)
+</code></pre>
+<h2 id="minor-features">Minor features</h2>
+<ul>
+<li>Fix saving complex numbers inside AcquisitionLoop</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.sections", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

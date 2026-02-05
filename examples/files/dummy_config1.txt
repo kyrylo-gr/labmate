@@ -1,0 +1,14 @@
+for i in range(10):
+    print(1)
+    a = 2
+
+a = 12
+b = 123_000
+c = dasd
+a=123
+#b=3123
+
+d= 1.3e7
+r=2e9
+w=e2
+ww=2e2e2
