@@ -429,12 +429,54 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 "Check if everything is ok and executive again"
             )
 
-        if os.path.exists(filename + ".h5"):  # noqa: PTH110
+        full_h5 = filename + ".h5"
+
+        if not os.path.exists(full_h5):  # noqa: PTH110
+            backends = self._backend
+
+            # backend can be a single backend or an iterable of backends
+            if backends is None:
+                backend_list = []
+            elif isinstance(backends, (list, tuple)):
+                backend_list = list(backends)
+            else:
+                backend_list = [backends]
+
+            for be in backend_list:
+                ensure = getattr(be, "ensure_local_file", None)
+                if ensure is None:
+                    continue
+                self.logger.info(
+                    "File %s not found locally; asking backend %s to fetch it",
+                    full_h5,
+                    be.__class__.__name__,
+                )
+                try:
+                    fetched = bool(ensure(full_h5))
+                except Exception as exc:
+                    self.logger.warning(
+                        "Backend %s failed to fetch %s: %s",
+                        be.__class__.__name__,
+                        full_h5,
+                        exc,
+                    )
+                    fetched = False
+
+                if fetched and os.path.exists(full_h5):  # noqa: PTH110
+                    self.logger.info(
+                        "File %s fetched successfully by backend %s",
+                        full_h5,
+                        be.__class__.__name__,
+                    )
+                    break
+
+        if os.path.exists(full_h5):  # noqa: PTH110
             self._load_analysis_data(filename)
         else:
             if self._is_old_data:
                 raise ValueError(f"Cannot load data from {filename}")
             self._analysis_data = None
+
 
         if cell is not None:
             self.save_analysis_cell(cell=cell)

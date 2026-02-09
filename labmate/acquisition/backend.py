@@ -19,6 +19,15 @@ class AcquisitionBackend:
         """Hydrate the acquisition from a remote snapshot."""
 
         pass
+    
+    def ensure_local_file(self, filepath: str) -> bool:
+        """
+        Ensure that filepath exists locally.
+        Called by labmate if a required file is missing.
+        Return True if the file was fetched/created.
+        Default: do nothing.
+        """
+        return False
 
 
 __all__ = ["AcquisitionBackend"]
