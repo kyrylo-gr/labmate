@@ -477,7 +477,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 raise ValueError(f"Cannot load data from {filename}")
             self._analysis_data = None
 
-
         if cell is not None:
             self.save_analysis_cell(cell=cell)
 

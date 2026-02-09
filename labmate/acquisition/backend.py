@@ -19,7 +19,7 @@ class AcquisitionBackend:
         """Hydrate the acquisition from a remote snapshot."""
 
         pass
-    
+
     def ensure_local_file(self, filepath: str) -> bool:
         """
         Ensure that filepath exists locally.

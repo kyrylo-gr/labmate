@@ -25,7 +25,6 @@ def create_link_row(
     text: str,
     buttons: Optional[List[widgets.Button]] = None,
 ):
-
     # Create the HTML link with custom styling
     link_widget = widgets.HTML(
         value=f'<a href="{link_url}" target="_blank" onclick="return false;">{link_text}</a>'
