@@ -482,7 +482,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def parse_config_str(self, values: list[str], /, max_length: int | None = None) -> str:
         return self.data.parse_config_str(values, max_length=max_length)
 
-    def linting(self, allowed_variables: "Iterable[str]" | None = None, init_file: str | None = None):
+    def linting(
+        self, allowed_variables: "Iterable[str]" | None = None, init_file: str | None = None
+    ):
         from ..utils import lint
 
         allowed = set() if allowed_variables is None else set(allowed_variables)
@@ -501,13 +503,17 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self,
         hook: _CallableWithNoArgs | list[_CallableWithNoArgs] | tuple[_CallableWithNoArgs, ...],
     ):
-        self._analysis_cell_prerun_hook = tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
+        self._analysis_cell_prerun_hook = (
+            tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
+        )
 
     def set_acquisition_cell_prerun_hook(
         self,
         hook: _CallableWithNoArgs | list[_CallableWithNoArgs] | tuple[_CallableWithNoArgs, ...],
     ):
-        self._acquisition_cell_prerun_hook = tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
+        self._acquisition_cell_prerun_hook = (
+            tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
+        )
 
     def find_param_in_config(self, param: str) -> tuple[str, int] | None:
         for file in self._default_config_files:
@@ -542,7 +548,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
             res = self.find_param_in_config(param_text)
             if res is None:
-                self.logger.warning("Parameter '%s' cannot be found in default config files.", param)
+                self.logger.warning(
+                    "Parameter '%s' cannot be found in default config files.", param
+                )
                 continue
 
             file, line_no = res
@@ -559,7 +567,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             param_eq = f"{param.strip()} = "
             res = self.find_param_in_config(param_eq)
             if res is None:
-                self.logger.warning("Parameter '%s' cannot be found in default config files.", param)
+                self.logger.warning(
+                    "Parameter '%s' cannot be found in default config files.", param
+                )
                 continue
 
             file, line_no = res
