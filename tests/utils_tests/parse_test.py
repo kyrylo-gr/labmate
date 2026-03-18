@@ -12,6 +12,15 @@ class UnitsFormatTest(unittest.TestCase):
     def test_parse_get_format_3args_semicolon(self):
         self.assertTupleEqual(parse_get_format("speed;km/s;2f"), ("speed", "km/s", "2f"))
 
+    def test_parse_get_format_mixed_separators(self):
+        self.assertTupleEqual(parse_get_format("speed,km/s;2f"), ("speed", "km/s", "2f"))
+        self.assertTupleEqual(parse_get_format("speed;km/s,2f"), ("speed", "km/s", "2f"))
+
+    def test_parse_get_format_escaped_separator(self):
+        # backslash escapes the comma/semicolon so it becomes part of the field value
+        self.assertTupleEqual(parse_get_format(r"speed;unit\,comment"), ("speed", "unit,comment", None))
+        self.assertTupleEqual(parse_get_format(r"speed,unit\;comment"), ("speed", "unit;comment", None))
+
     def test_parse_get_format_2args(self):
         self.assertTupleEqual(parse_get_format("speed,km/s"), ("speed", "km/s", None))
 
