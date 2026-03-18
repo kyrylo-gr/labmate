@@ -8,13 +8,25 @@ from typing import Any, List, NamedTuple, Optional, Tuple
 def parse_get_format(key: str) -> Tuple[str, Optional[str], Optional[str]]:
     """Convert a key into a key, units, format.
 
+    The separator can be a comma (``,``) or semicolon (``;``). Comma takes
+    precedence if both are present. A plain key with no separator is returned as-is,
+    allowing variable names that contain double underscores.
+
     Example:
-        >>> speed__km/s__2f -> (speed, km/s, 2f)
+        >>> speed,km/s,2f -> (speed, km/s, 2f)
         >>> speed -> (speed, None, None)
-        >>> speed__2f -> (speed, None, '2f')
-        >>> speed__km/s -> (speed, 'km/s', None)
+        >>> speed,2f -> (speed, None, '2f')
+        >>> speed,km/s -> (speed, 'km/s', None)
+        >>> speed;km/s;2f -> (speed, km/s, 2f)
+        >>> double__underscore -> (double__underscore, None, None)
     """
-    args = key.split("__")
+    if "," in key:
+        sep = ","
+    elif ";" in key:
+        sep = ";"
+    else:
+        return key, None, None
+    args = key.split(sep)
     if len(args) >= 3:
         return args[0], args[1], args[2]
     if len(args) == 2 and len(args[1]) > 0 and (args[1][0].isdigit() or args[1][0] in (".", "_")):

@@ -19,3 +19,5 @@ int_with_comment = 123 # comment
 
 for 1 in range(10):
     tab_variable = 'nothing'
+
+double__underscore = 456

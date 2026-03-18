@@ -78,16 +78,16 @@ class AttrDict(dict):
         """Ouput the given keys with provided format.
 
         It's possible to provide a unit and a format to parse config function.
-        Use the such structure for the string `key__unit__format`.
+        Use comma or semicolon as separator: `key,unit,format` or `key;unit;format`.
 
         Examples:
         ----------
             >>> data =  AttrDict({'param_1': 123.43})
             >>> data.output(["param_1"]) # -> param_1 = 123.43
-            >>> data.output(["param_1__m/s__1f"]) # -> param_1 = 123.4 (m/s)
-            >>> data.output(["param_1__m/s"]) # -> 'param_1 = 123.43 (m/s)'
-            >>> data.output(["param_1__2f"]) # -> 'param_1 = 123.43'
-            >>> data.output(["param_1__2e"]) # -> 'param_1 = 1.23e+02'
+            >>> data.output(["param_1,m/s,1f"]) # -> param_1 = 123.4 (m/s)
+            >>> data.output(["param_1,m/s"]) # -> 'param_1 = 123.43 (m/s)'
+            >>> data.output(["param_1,2f"]) # -> 'param_1 = 123.43'
+            >>> data.output(["param_1,2e"]) # -> 'param_1 = 1.23e+02'
         """
         keys_with_values = self.__get_value_for_output(keys)
         return utils_parse.format_title(keys_with_values, max_length=max_length)

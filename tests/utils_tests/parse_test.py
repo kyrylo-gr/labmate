@@ -7,18 +7,24 @@ class UnitsFormatTest(unittest.TestCase):
     """Test utils format function."""
 
     def test_parse_get_format_3args(self):
-        self.assertTupleEqual(parse_get_format("speed__km/s__2f"), ("speed", "km/s", "2f"))
+        self.assertTupleEqual(parse_get_format("speed,km/s,2f"), ("speed", "km/s", "2f"))
+
+    def test_parse_get_format_3args_semicolon(self):
+        self.assertTupleEqual(parse_get_format("speed;km/s;2f"), ("speed", "km/s", "2f"))
 
     def test_parse_get_format_2args(self):
-        self.assertTupleEqual(parse_get_format("speed__km/s"), ("speed", "km/s", None))
+        self.assertTupleEqual(parse_get_format("speed,km/s"), ("speed", "km/s", None))
 
-        self.assertTupleEqual(parse_get_format("speed__2e"), ("speed", None, "2e"))
+        self.assertTupleEqual(parse_get_format("speed,2e"), ("speed", None, "2e"))
 
     def test_parse_get_format_1arg(self):
         self.assertTupleEqual(parse_get_format("speed"), ("speed", None, None))
 
+    def test_parse_get_format_double_underscore(self):
+        self.assertTupleEqual(parse_get_format("double__underscore"), ("double__underscore", None, None))
+
     def test_parse_get_format_errors(self):
-        self.assertTupleEqual(parse_get_format("speed__km/s__2f__abc"), ("speed", "km/s", "2f"))
+        self.assertTupleEqual(parse_get_format("speed,km/s,2f,abc"), ("speed", "km/s", "2f"))
 
     def test_format_title_working(self):
         values = [
