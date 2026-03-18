@@ -10,16 +10,16 @@ _SEP_RE = re.compile(r"(?<!\\)[,;]")
 
 
 def parse_get_format(key: str) -> Tuple[str, Optional[str], Optional[str]]:
-    """Convert a key into a key, units, format.
+    r"""Convert a key into a key, units, format.
 
     Both comma (``,``) and semicolon (``;``) work as field separators and can
     be mixed freely within a single string.  To include a literal separator
-    character inside a field, escape it with a backslash.  Because Python
-    already interprets ``\\`` in regular strings, you must either double the
-    backslash or use a raw string::
+    character inside a field, escape it with a backslash.  In a regular Python
+    string one backslash is written as ``\\``; a raw string requires no
+    doubling::
 
-        'speed;unit\\\\,comment'   # regular string  -> speed | unit,comment
-        r'speed;unit\\,comment'    # raw string       -> speed | unit,comment
+        r'speed;unit\,comment'    # raw string     -> (speed, unit,comment, None)
+        'speed;unit\\,comment'    # regular string -> (speed, unit,comment, None)
 
     A plain key with no separator is returned as-is, so variable names that
     contain double underscores work without any special treatment.

@@ -45,8 +45,10 @@ class AttrDictMainTest(unittest.TestCase):
         self.assertEqual("int = 123.000 (m/s)", out)
 
     def test_output_format_with_digits_before_dot(self):
-        out = self.data.output(["int,m/s,5.3f"])
-        self.assertEqual("int = 123.000 (m/s)", out)
+        self.assertEqual(self.data.output(["int,m/s,5.3f"]), "int = 123.000 (m/s)")
+        self.assertEqual(self.data.output(["int,m/s,10.3f"]), "int =    123.000 (m/s)")
+        self.assertEqual(self.data.output(["int,m/s,010.3f"]), "int = 000123.000 (m/s)")
+        self.assertEqual(self.data.output(["int,m/s,5d"]), "int =   123 (m/s)")
 
     def test_output_2(self):
         out = self.data.output(["int,m/s,.3f", "param_1,V"])
