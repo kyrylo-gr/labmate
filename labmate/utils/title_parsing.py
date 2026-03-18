@@ -5,6 +5,7 @@
 import re
 from typing import Any, List, NamedTuple, Optional, Tuple
 
+
 # Matches an unescaped comma or semicolon (not preceded by a backslash).
 _SEP_RE = re.compile(r"(?<!\\)[,;]")
 
