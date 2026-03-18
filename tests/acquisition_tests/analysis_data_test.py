@@ -286,6 +286,13 @@ class AnalysisDataParceTest(unittest.TestCase):
         self.assertIn("in_self_data", data)
         self.assertIn("789", data)
 
+    def test_parse_config_str_double_underscore(self):
+        """Variables with double underscores in their names should be parsed correctly."""
+        self.ad.set_default_config_files(("config.txt",))
+        data = self.ad.parse_config_str(["double__underscore"])
+        self.assertIn("double__underscore", data)
+        self.assertIn("456", data)
+
     def test_eval_key(self):
         cfg = self.ad.parse_config_file("imported_config.py")
 
