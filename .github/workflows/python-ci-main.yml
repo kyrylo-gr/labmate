@@ -72,18 +72,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Get PR branch version
-        id: get_pr_version
-        run: |
-          pr_version=$(grep '__version__' ${{env.package-name}}/__config__.py | cut -d'"' -f2)
-          echo "PR branch version: $pr_version"
-          echo "pr_version=$pr_version" >> "$GITHUB_OUTPUT"
+        with:
+          fetch-depth: 0
 
       - name: Get main branch version
         id: get_main_version
         run: |
-          git fetch origin
+          git fetch origin main
           echo "Config file:"
           git show origin/main:${{env.package-name}}/__config__.py
           main_version=$(git show origin/main:${{env.package-name}}/__config__.py | grep '__version__' | cut -d'"' -f2)
@@ -92,13 +87,4 @@ jobs:
 
       - name: Compare versions
         run: |
-          echo "Main branch version: ${{ steps.get_main_version.outputs.main_version }}"
-          echo "PR branch version: ${{ steps.get_pr_version.outputs.pr_version }}"
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            if [ "${{ steps.get_main_version.outputs.main_version }}" = "${{ steps.get_pr_version.outputs.pr_version }}" ]; then
-              echo "Error: Version is the same as on the main branch"
-              exit 1
-            else
-              echo "Ok: Version is different from the main branch"
-            fi
-          fi
+          python scripts/sync_version.py "${{ steps.get_main_version.outputs.main_version }}" --check
