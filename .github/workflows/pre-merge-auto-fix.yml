@@ -63,20 +63,27 @@ jobs:
           echo "Main branch version: $main_version"
           echo "PR branch version: $pr_version"
 
-          if [ "$main_version" = "$pr_version" ]; then
-            echo "Version is the same as main, bumping patch version..."
-            if ! echo "$pr_version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-              echo "Error: version '$pr_version' does not match expected X.Y.Z format"
-              exit 1
-            fi
-            IFS='.' read -r major minor patch <<< "$pr_version"
+          # semver_gt returns 0 (true) when $1 > $2
+          semver_gt() {
+            [ "$(printf '%s\n%s' "$1" "$2" | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)" = "$1" ] && [ "$1" != "$2" ]
+          }
+
+          if ! echo "$main_version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Error: main version '$main_version' does not match expected X.Y.Z format"
+            exit 1
+          fi
+
+          # Bump is needed when PR version is not strictly greater than main version
+          if semver_gt "$pr_version" "$main_version"; then
+            echo "PR version ($pr_version) is already ahead of main ($main_version), no bump needed."
+            echo "version_fixed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "PR version ($pr_version) is not ahead of main ($main_version), bumping from main..."
+            IFS='.' read -r major minor patch <<< "$main_version"
             new_version="$major.$minor.$((patch + 1))"
             echo "New version: $new_version"
             sed -i "s/__version__ = \"$pr_version\"/__version__ = \"$new_version\"/" ${{ env.package-name }}/__config__.py
             echo "version_fixed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Version is already different from main, no bump needed."
-            echo "version_fixed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Commit fixes
