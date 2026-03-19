@@ -2,19 +2,43 @@
 (parsing expected units and format, creating title)
 """
 
+import re
 from typing import Any, List, NamedTuple, Optional, Tuple
 
 
+# Matches an unescaped comma or semicolon (not preceded by a backslash).
+_SEP_RE = re.compile(r"(?<!\\)[,;]")
+
+
 def parse_get_format(key: str) -> Tuple[str, Optional[str], Optional[str]]:
-    """Convert a key into a key, units, format.
+    r"""Convert a key into a key, units, format.
+
+    Both comma (``,``) and semicolon (``;``) work as field separators and can
+    be mixed freely within a single string.  To include a literal separator
+    character inside a field, escape it with a backslash.  In a regular Python
+    string one backslash is written as ``\\``; a raw string requires no
+    doubling::
+
+        r'speed;unit\,comment'    # raw string     -> (speed, unit,comment, None)
+        'speed;unit\\,comment'    # regular string -> (speed, unit,comment, None)
+
+    A plain key with no separator is returned as-is, so variable names that
+    contain double underscores work without any special treatment.
 
     Example:
-        >>> speed__km/s__2f -> (speed, km/s, 2f)
+        >>> speed,km/s,2f -> (speed, km/s, 2f)
         >>> speed -> (speed, None, None)
-        >>> speed__2f -> (speed, None, '2f')
-        >>> speed__km/s -> (speed, 'km/s', None)
+        >>> speed,2f -> (speed, None, '2f')
+        >>> speed,km/s -> (speed, 'km/s', None)
+        >>> speed;km/s;2f -> (speed, km/s, 2f)
+        >>> speed,km/s;2f -> (speed, km/s, 2f)
+        >>> double__underscore -> (double__underscore, None, None)
     """
-    args = key.split("__")
+    args = _SEP_RE.split(key)
+    if len(args) == 1:
+        return key, None, None
+    # Unescape \, and \; in each part
+    args = [a.replace("\\,", ",").replace("\\;", ";") for a in args]
     if len(args) >= 3:
         return args[0], args[1], args[2]
     if len(args) == 2 and len(args[1]) > 0 and (args[1][0].isdigit() or args[1][0] in (".", "_")):
