@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from dh5.path import Path
 
     from ..acquisition import FigureProtocol
-    from ..acquisition.backend import AcquisitionBackend
     from ..acquisition.config_file import ConfigFile
 
     # from ..logger import Logger
@@ -85,7 +84,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         save_on_edit_analysis: Optional[bool] = None,
         save_fig_inside_h5: bool = False,
         shell: Any = True,
-        backend: Optional[Union["AcquisitionBackend", Iterable["AcquisitionBackend"]]] = None,
     ):
         """
         AcquisitionAnalysisManager.
@@ -134,7 +132,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             config_files=config_files,
             save_files=save_files,
             save_on_edit=save_on_edit,
-            backend=backend,
         )
 
     @property
@@ -225,10 +222,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 fig = fig or fig_or_name
         self.save_fig_only(fig=fig, name=name, **kwds)
         self.save_analysis_cell(name=name, cell=cell)
-
-        if self.current_acquisition is not None:
-            self._schedule_backend_save(self.current_acquisition)
-
         if self._connected_widgets:
             display_widget.display_widgets(
                 self._connected_widgets,
@@ -420,8 +413,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             (not self._is_old_data)
             and (self.shell is not None)
             and (
-                "acquisition_cell(" in self.shell.last_execution_result.info.raw_cell  # type: ignore
-                and not self.shell.last_execution_result.success  # type: ignore
+                "acquisition_cell(" in self.shell.last_execution_result.info.raw_cell
+                and not self.shell.last_execution_result.success
             )
         ):
             raise ChildProcessError(

@@ -189,3 +189,7 @@ trash_*.*
 *.code-workspace
 
 _*.ipynb
+
+
+_*\.ipynb
+_[^_]*\.py

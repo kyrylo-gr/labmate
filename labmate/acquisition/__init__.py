@@ -4,4 +4,3 @@ from .acquisition_loop import AcquisitionLoop
 from .acquisition_manager import AcquisitionManager
 from .analysis_data import AnalysisData, FigureProtocol
 from .analysis_loop import AnalysisLoop
-from .backend import AcquisitionBackend
