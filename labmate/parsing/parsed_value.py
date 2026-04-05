@@ -214,3 +214,4 @@ class ParsedValue:
 
     def __hash__(self) -> int:
         return hash(self.value)
+        # return hash((self.original, self.value))
