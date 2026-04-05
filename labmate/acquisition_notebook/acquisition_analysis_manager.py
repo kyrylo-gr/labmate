@@ -16,6 +16,7 @@ from typing import (
 
 from .. import display, utils
 from ..acquisition import AcquisitionManager, AnalysisData
+from ..acquisition.hooks import LifecycleHooks
 from ..logger import logger
 from . import display_widget
 
@@ -26,13 +27,10 @@ if TYPE_CHECKING:
     from ..acquisition import FigureProtocol
     from ..acquisition.config_file import ConfigFile
 
-    # from ..logger import Logger
-
 
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
 _CallableWithNoArgs = Callable[[], Any]
-
 
 CATCH_PRINT = True
 
@@ -59,7 +57,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     plt.plot(aqm.d.x, aqm.d.y)
     aqm.save_fig()
     ```
-
     """
 
     _analysis_data: Optional[AnalysisData] = None
@@ -69,8 +66,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     _default_config_files: Tuple[str, ...] = ()
     _acquisition_started = 0
     _linting_external_vars = None
-    _analysis_cell_prerun_hook: Optional[Tuple[_CallableWithNoArgs, ...]] = None
-    _acquisition_cell_prerun_hook: Optional[Tuple[_CallableWithNoArgs, ...]] = None
     _connected_widgets: Optional[List["display_widget.WidgetProtocol"]] = None
 
     def __init__(
@@ -84,26 +79,30 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         save_on_edit_analysis: Optional[bool] = None,
         save_fig_inside_h5: bool = False,
         shell: Any = True,
+        hooks: Optional[LifecycleHooks] = None,
     ):
         """
         AcquisitionAnalysisManager.
 
         Args:
-            data_directory (Optional[str], optional):
+            data_directory:
                 Path to data_directory. Should be explicitly set here or as environ parameter.
-            config_files (Optional[List[str]], optional):
+            config_files:
                 List of paths to config files. Defaults to empty.
-            save_files (bool, optional):
+            save_files:
                 True to additionally save config files and the cells to files. Defaults to False.
                 So all information is saved inside the h5 file.
-            use_magic (bool, optional):
+            use_magic:
                 True to register the magic cells. Defaults to False.
-            save_on_edit (bool. Defaults to True):
+            save_on_edit:
                 True to save data for every change.
-            save_on_edit_analysis (bool. Defaults to same as save_on_edit):
+            save_on_edit_analysis:
                 save_on_edit parameter for AnalysisManager i.e. data inside analysis_cell
-            shell (InteractiveShell | None, optional. Defaults to True):
+            shell:
                 could be provided or explicitly set to None. Defaults to get_ipython().
+            hooks:
+                Optional shared :class:`~labmate.acquisition.hooks.LifecycleHooks`.
+                If omitted, a new instance is created on the base manager.
         """
         if shell is False or shell is True:  # behavior by default shell
             try:
@@ -116,7 +115,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             self.shell = shell
 
         if use_magic:
-            from .acquisition_magic_class import load_ipython_extension  # pyright: ignore[reportMissingImports]  # noqa: I001
+            from .acquisition_magic_class import (  # noqa: I001
+                load_ipython_extension,
+            )
 
             load_ipython_extension(aqm=self, shell=self.shell)
 
@@ -132,6 +133,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             config_files=config_files,
             save_files=save_files,
             save_on_edit=save_on_edit,
+            hooks=hooks,
         )
 
     @property
@@ -169,22 +171,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         extensions: Optional[str] = None,
         **kwds,
     ) -> "AcquisitionAnalysisManager":
-        """Save the figure as a file.
-
-        Args:
-            fig (Figure, optional): Figure that should be saved. Figure could be any class with
-             function save_fig implemented. By default gets plt.gcf().
-            name (str, optional): Name of the fig. It's a suffix that will be added to the filename.
-                Defaults to None.
-            extensions(str, optional): Extensions of the file. Defaults to `pdf`.
-            tight_layout(bool, optional): True to call fig.tight_layout(). Defaults to True.
-
-        Raises:
-            ValueError: if analysis_data is not loaded
-
-        Return:
-            self
-        """
+        """Save the figure as a file."""
         self.data.save_fig(fig=fig, name=name, extensions=extensions, **kwds)
         return self
 
@@ -200,9 +187,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             name = str(name)
 
         cell = cell or self._analysis_cell_str
-
         self.data.save_analysis_cell(code=cell, code_name=name)
-
         return self
 
     def save_fig(
@@ -220,8 +205,13 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 name = name or fig_or_name
             else:
                 fig = fig or fig_or_name
+
         self.save_fig_only(fig=fig, name=name, **kwds)
         self.save_analysis_cell(name=name, cell=cell)
+
+        if self.current_acquisition is not None:
+            self.hooks.dispatch_figure_saved(self.current_acquisition)
+
         if self._connected_widgets:
             display_widget.display_widgets(
                 self._connected_widgets,
@@ -245,7 +235,11 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         acq_data[__key] = __value  # pylint: disable=E1137
 
     def save_acquisition(
-        self, update_: bool = True, /, file_suffix: Optional[str] = None, **kwds
+        self,
+        update_: bool = True,
+        /,
+        file_suffix: Optional[str] = None,
+        **kwds,
     ) -> "AcquisitionAnalysisManager":
         acquisition_finished = time.time()
         if not self._once_saved:
@@ -273,23 +267,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return self._analysis_data
 
     def load_file(self, filename) -> "AnalysisData":
-        """
-        Loads an analysis data file.
-
-        Args:
-            filename (str): The name of the file to load.
-
-        Returns:
-            AnalysisData: An instance of AnalysisData containing the loaded data.
-
-        Raises:
-            ValueError: If the file cannot be found.
-
-        Notes:
-            - The method checks if the file exists with a ".h5" extension.
-            - If the data does not have a "useful" attribute set to True, it updates this attribute.
-            - If default configuration files are provided, they are set in the loaded data.
-        """
         filename = self._get_full_filename(filename)
         if not os.path.exists(filename if filename.endswith(".h5") else filename + ".h5"):  # noqa: PTH110
             raise ValueError(f"File {filename} cannot be found")
@@ -352,15 +329,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 )
             self.logger.stdout_flush()
 
-        self.logger.info(  # pylint: disable=W1203
-            f"{step}:{self.current_filepath.basename}"
-        )
+        self.logger.info(f"{step}:{self.current_filepath.basename}")  # pylint: disable=W1203
 
         if step == 1:
-            utils.run_functions(self._acquisition_cell_prerun_hook)
+            self.hooks.dispatch_acquisition_cell_ready()
 
         utils.run_functions(prerun)
-
         return self
 
     def analysis_cell(
@@ -372,8 +346,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         filepath: Optional[Union[str, "Path"]] = None,
         prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
     ) -> "AcquisitionAnalysisManager":
-        # self.shell.get_local_scope(1)['result'].info.raw_cell  # type: ignore
-
         self._analysis_cell_str = cell or get_current_cell(self.shell)
         if filename or filepath:  # getting old data
             self._is_old_data = True
@@ -382,9 +354,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
                 display_warning("Old data analysis")
 
-            filename = str(filepath or self._get_full_filename(filename))  # type: ignore
+            filename = str(filepath or self._get_full_filename(filename))  # type: ignore[arg-type]
             filename = (filename.rsplit(".h5", 1)[0]) if filename.endswith(".h5") else filename
-
         else:
             self._is_old_data = False
             if acquisition_name is not None:
@@ -405,16 +376,16 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                         f"Current acquisition ('{self.current_experiment_name}') "
                         f"isn't the one expected ('{acquisition_name}') for this analysis"
                     )
-
             filename = str(self.current_filepath)  # without h5
+
         self.logger.info(os.path.basename(filename))  # noqa: PTH119
 
         if (
             (not self._is_old_data)
             and (self.shell is not None)
             and (
-                "acquisition_cell(" in self.shell.last_execution_result.info.raw_cell
-                and not self.shell.last_execution_result.success
+                "acquisition_cell(" in self.shell.last_execution_result.info.raw_cell  # type: ignore
+                and not self.shell.last_execution_result.success  # type: ignore
             )
         ):
             raise ChildProcessError(
@@ -422,7 +393,11 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 "Check if everything is ok and executive again"
             )
 
-        if os.path.exists(filename + ".h5"):  # noqa: PTH110
+        full_h5 = filename + ".h5"
+
+        self.hooks.dispatch_analysis_data_loading(full_h5)
+
+        if os.path.exists(full_h5):  # noqa: PTH110
             self._load_analysis_data(filename)
         else:
             if self._is_old_data:
@@ -436,9 +411,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             from ..acquisition import custom_lint
             from ..utils import lint
 
-            # _, external_vars = lint.find_variables_from_code(
-            #     self._analysis_cell_str, self._linting_external_vars
-            # )
             lint_result = lint.find_variables_from_code(
                 self._analysis_cell_str,
                 self._linting_external_vars,
@@ -449,9 +421,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             for error in lint_result.errors:
                 self.logger.warning(error)
 
-        utils.run_functions(self._analysis_cell_prerun_hook)
+        self.hooks.dispatch_analysis_cell_ready()
         utils.run_functions(prerun)
-
         return self
 
     def get_analysis_code(self, look_inside: bool = True) -> str:
@@ -460,9 +431,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if self.shell is not None:
             self.shell.set_next_input(code)  # type: ignore
         return code
-
-    # def open_analysis_fig(self) -> List[FigureProtocol]:
-    #     return self.data.open_fig()
 
     def _get_full_filename(self, filename: Union[str, "Path"]) -> str:
         if filename is None:
@@ -483,12 +451,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def cfg(self) -> "ConfigFile":
         return self.data.cfg
 
-    def parse_config_str(
-        self,
-        values: List[str],
-        /,
-        max_length: Optional[int] = None,
-    ) -> str:
+    def parse_config_str(self, values: List[str], /, max_length: Optional[int] = None) -> str:
         return self.data.parse_config_str(values, max_length=max_length)
 
     def linting(
@@ -498,10 +461,10 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     ):
         from ..utils import lint
 
-        allowed_variables = set() if allowed_variables is None else set(allowed_variables)
+        allowed = set() if allowed_variables is None else set(allowed_variables)
         if init_file is not None:
-            allowed_variables.update(lint.find_variables_from_file(init_file)[0])
-        self._linting_external_vars = allowed_variables
+            allowed.update(lint.find_variables_from_file(init_file)[0])
+        self._linting_external_vars = allowed
 
     def set_default_config_files(self, config_files: Union[str, Tuple[str, ...], List[str]], /):
         self._default_config_files = (
@@ -518,9 +481,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             Tuple[_CallableWithNoArgs, ...],
         ],
     ):
-        self._analysis_cell_prerun_hook = (
-            tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
-        )
+        self.hooks.set_analysis_cell_ready(hook)
 
     def set_acquisition_cell_prerun_hook(
         self,
@@ -530,9 +491,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             Tuple[_CallableWithNoArgs, ...],
         ],
     ):
-        self._acquisition_cell_prerun_hook = (
-            tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
-        )
+        self.hooks.set_acquisition_cell_ready(hook)
 
     def find_param_in_config(self, param: str) -> Optional[Tuple[str, int]]:
         for file in self._default_config_files:
@@ -571,17 +530,14 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                     "Parameter '%s' cannot be found in default config files.", param
                 )
                 continue
+
             file, line_no = res
             file = self._config_files_names_to_path.get(file, file)
             link = display.links.create_link(param_text, file, line_no, after_text)
             links += link + "<br/>"
         return display.display_html(links)
 
-    def display_cfg_link(
-        self,
-        parameters: Dict[str, Any],
-        update_button: bool = False,
-    ):
+    def display_cfg_link(self, parameters: Dict[str, Any], update_button: bool = False):
         from labmate.display import html_output
 
         links = []
@@ -593,6 +549,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                     "Parameter '%s' cannot be found in default config files.", param
                 )
                 continue
+
             file, line_no = res
             file = self._config_files_names_to_path.get(file, file)
 
@@ -615,20 +572,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         return display.display_widgets_vertically(links, class_="labmate-params")
 
     def update_config_params_on_disk(self, params: Dict[str, Any]):
-        # params_per_files = {}
-        # for param, value in params.items():
-        #     res = self.find_param_in_data_config(param)
-        #     if res is None:
-        #         raise ValueError(
-        #             f"Parameter '{param}' cannot be found in default config files."
-        #         )
-        #     file, _ = res
-        #     params_per_files.setdefault(file, {})[param] = value
-
         for file in self.config_files:
             file = self._config_files_names_to_path.get(file, file)
             utils.file_read.update_file_variable(file, params)
-
         return self
 
     def connect_default_widget(
