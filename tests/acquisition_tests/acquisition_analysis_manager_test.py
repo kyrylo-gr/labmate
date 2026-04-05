@@ -8,7 +8,7 @@ from labmate.acquisition import AnalysisData
 from labmate.acquisition_notebook import AcquisitionAnalysisManager
 
 from .analysis_data_test import AnalysisDataParceTest
-from .utils import DATA_DIR, TEST_DIR, FunctionToRun, LocalFig, ShellEmulator
+from .utils import DATA_DIR, TEST_DIR, FunctionToRun, FunctionToRunLegacy, LocalFig, ShellEmulator
 
 
 class AcquisitionAnalysisManagerTest(unittest.TestCase):
@@ -228,6 +228,14 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
         self.create_acquisition_cell()
         self.assertTrue(func_class.function_run)
 
+    def test_acquisition_cell_prerun_hook_default_legacy_warns_and_runs(self):
+        func_class = FunctionToRunLegacy()
+        with self.assertWarns(FutureWarning):
+            self.aqm.set_acquisition_cell_prerun_hook(func_class.func)
+        self.assertFalse(func_class.function_run)
+        self.create_acquisition_cell()
+        self.assertTrue(func_class.function_run)
+
     def test_acquisition_cell_prerun_hook_default_multisteps(self):
         func_class = FunctionToRun()
         self.aqm.set_acquisition_cell_prerun_hook(func_class.func)
@@ -257,6 +265,15 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
     def test_analysis_cell_prerun_hook_default(self):
         func_class = FunctionToRun()
         self.aqm.set_analysis_cell_prerun_hook(func_class.func)
+        self.create_acquisition_cell()
+        self.assertFalse(func_class.function_run)
+        self.aqm.analysis_cell()
+        self.assertTrue(func_class.function_run)
+
+    def test_analysis_cell_prerun_hook_default_legacy_warns_and_runs(self):
+        func_class = FunctionToRunLegacy()
+        with self.assertWarns(FutureWarning):
+            self.aqm.set_analysis_cell_prerun_hook(func_class.func)
         self.create_acquisition_cell()
         self.assertFalse(func_class.function_run)
         self.aqm.analysis_cell()

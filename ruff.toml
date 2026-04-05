@@ -1,5 +1,6 @@
 # Set the maximum line length to 127 to match your flake8 config
 line-length = 100
+
 target-version = "py38"
 
 # Exclude common directories
@@ -38,16 +39,18 @@ ignore = [
     "E731",   # do not assign a lambda expression
     "PTH123", # allow to open with open(...)
     "PTH110", # allow os.path.exists
-    "UP037",  # allow quoted-annotation
+    "UP006",  # keep List/Tuple/Dict etc. from typing (not bare list/tuple/dict) — py38 style
+    "UP007",  # keep Union[X, Y] instead of X | Y — py38 style
+    "UP035",  # keep imports from typing (not collections.abc) — py38 style
+    "UP037",  # allow quoted annotations for TYPE_CHECKING-only types
+    "UP045",  # keep Optional[X] instead of X | None — py38 style
 ]
 
 # Allow autofix for all enabled rules
 fixable = ["ALL"]
 unfixable = []
 
-[lint.mccabe]
-# Set maximum complexity to 10 (matching your flake8 config)
-max-complexity = 10
+
 
 [lint.isort]
 # Configure import sorting

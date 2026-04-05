@@ -1,16 +1,5 @@
 import os
-from concurrent.futures import Future, ThreadPoolExecutor
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 from dh5 import jsn
 from dh5.path import Path
@@ -19,10 +8,7 @@ from ..parsing.saving import append_values_from_modules_to_files
 from ..utils import get_timestamp
 from ..utils.file_read import read_file, read_files
 from .acquisition_data import NotebookAcquisitionData
-
-
-if TYPE_CHECKING:
-    from .backend import AcquisitionBackend
+from .hooks import LifecycleHooks
 
 
 class AcquisitionTmpData(NamedTuple):
@@ -55,7 +41,7 @@ class AcquisitionManager:
 
     cell: Optional[str] = None
 
-    _backend: Optional[Tuple["AcquisitionBackend", ...]] = None
+    hooks: LifecycleHooks
 
     def __init__(
         self,
@@ -64,7 +50,7 @@ class AcquisitionManager:
         config_files: Optional[List[str]] = None,
         save_files: Optional[bool] = None,
         save_on_edit: Optional[bool] = None,
-        backend: Optional[Union["AcquisitionBackend", Iterable["AcquisitionBackend"]]] = None,
+        hooks: Optional[LifecycleHooks] = None,
     ):
         if save_files is not None:
             self._save_files = save_files
@@ -76,13 +62,7 @@ class AcquisitionManager:
         self._acquisition_tmp_data = None
         self._once_saved = False
 
-        self._backend = (
-            tuple(backend)
-            if isinstance(backend, Iterable)
-            else (backend,)
-            if backend is not None
-            else None
-        )
+        self.hooks = hooks if hooks is not None else LifecycleHooks()
 
         self.config_files = []
         self.config_files_eval = {}
@@ -218,44 +198,6 @@ class AcquisitionManager:
     def _get_configs_last_modified(self) -> List[float]:
         return [Path(file).stat().st_mtime for file in self.config_files]
 
-    def _schedule_backend_save(self, acquisition: NotebookAcquisitionData) -> Optional[Future]:
-        if self._backend is None:
-            return None
-
-        executor = ThreadPoolExecutor(max_workers=1)
-
-        def save_snapshot():
-            if self._backend is None:
-                return
-            for backend in self._backend:
-                backend.save_snapshot(acquisition)
-
-        def shutdown_executor(future: Future):
-            executor.shutdown(wait=False)
-
-        future = executor.submit(save_snapshot)
-        future.add_done_callback(shutdown_executor)
-        return future
-
-    def _schedule_backend_load(self, acquisition: NotebookAcquisitionData) -> Optional[Future]:
-        if self._backend is None:
-            return None
-
-        executor = ThreadPoolExecutor(max_workers=1)
-
-        def load_snapshot():
-            if self._backend is None:
-                return
-            for backend in self._backend:
-                backend.load_snapshot(acquisition)
-
-        def shutdown_executor(future: Future):
-            executor.shutdown(wait=False)
-
-        future = executor.submit(load_snapshot)
-        future.add_done_callback(shutdown_executor)
-        return future
-
     def new_acquisition(
         self, name: str, cell: Optional[str] = None, save_on_edit: Optional[bool] = None
     ) -> NotebookAcquisitionData:
@@ -316,8 +258,7 @@ class AcquisitionManager:
             save_on_edit=save_on_edit,
             save_files=self._save_files,
         )
-        # TODO: chech if this gives the expected behaviour
-        self._schedule_backend_load(acquisition)
+        self.hooks.dispatch_acquisition_data_loaded(acquisition)
 
         return acquisition
 
@@ -363,7 +304,7 @@ class AcquisitionManager:
             experiment_name=acquisition_tmp_data.experiment_name,
         )
 
-        self._schedule_backend_load(acquisition)
+        self.hooks.dispatch_acquisition_data_loaded(acquisition)
 
         return acquisition
 
@@ -385,7 +326,7 @@ class AcquisitionManager:
         if acq_data.save_on_edit is False:
             acq_data.save()
         self._once_saved = True
-        self._schedule_backend_save(acq_data)
+        self.hooks.dispatch_acquisition_saved(acq_data)
         return self
 
     def close(self) -> None:

@@ -16,6 +16,7 @@ from typing import (
 
 from .. import display, utils
 from ..acquisition import AcquisitionManager, AnalysisData
+from ..acquisition.hooks import LifecycleHooks
 from ..logger import logger
 from . import display_widget
 
@@ -24,7 +25,6 @@ if TYPE_CHECKING:
     from dh5.path import Path
 
     from ..acquisition import FigureProtocol
-    from ..acquisition.backend import AcquisitionBackend
     from ..acquisition.config_file import ConfigFile
 
 
@@ -66,8 +66,6 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     _default_config_files: Tuple[str, ...] = ()
     _acquisition_started = 0
     _linting_external_vars = None
-    _analysis_cell_prerun_hook: Optional[Tuple[_CallableWithNoArgs, ...]] = None
-    _acquisition_cell_prerun_hook: Optional[Tuple[_CallableWithNoArgs, ...]] = None
     _connected_widgets: Optional[List["display_widget.WidgetProtocol"]] = None
 
     def __init__(
@@ -81,7 +79,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         save_on_edit_analysis: Optional[bool] = None,
         save_fig_inside_h5: bool = False,
         shell: Any = True,
-        backend: Optional[Union["AcquisitionBackend", Iterable["AcquisitionBackend"]]] = None,
+        hooks: Optional[LifecycleHooks] = None,
     ):
         """
         AcquisitionAnalysisManager.
@@ -102,6 +100,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
                 save_on_edit parameter for AnalysisManager i.e. data inside analysis_cell
             shell:
                 could be provided or explicitly set to None. Defaults to get_ipython().
+            hooks:
+                Optional shared :class:`~labmate.acquisition.hooks.LifecycleHooks`.
+                If omitted, a new instance is created on the base manager.
         """
         if shell is False or shell is True:  # behavior by default shell
             try:
@@ -132,7 +133,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             config_files=config_files,
             save_files=save_files,
             save_on_edit=save_on_edit,
-            backend=backend,
+            hooks=hooks,
         )
 
     @property
@@ -209,7 +210,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self.save_analysis_cell(name=name, cell=cell)
 
         if self.current_acquisition is not None:
-            self._schedule_backend_save(self.current_acquisition)
+            self.hooks.dispatch_figure_saved(self.current_acquisition)
 
         if self._connected_widgets:
             display_widget.display_widgets(
@@ -331,7 +332,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self.logger.info(f"{step}:{self.current_filepath.basename}")  # pylint: disable=W1203
 
         if step == 1:
-            utils.run_functions(self._acquisition_cell_prerun_hook)
+            self.hooks.dispatch_acquisition_cell_ready()
 
         utils.run_functions(prerun)
         return self
@@ -394,44 +395,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
         full_h5 = filename + ".h5"
 
-        if not os.path.exists(full_h5):  # noqa: PTH110
-            backends = self._backend
-
-            if backends is None:
-                backend_list: List[Any] = []
-            elif isinstance(backends, (list, tuple)):
-                backend_list = list(backends)
-            else:
-                backend_list = [backends]
-
-            for be in backend_list:
-                ensure = getattr(be, "ensure_local_file", None)
-                if ensure is None:
-                    continue
-
-                self.logger.info(
-                    "File %s not found locally; asking backend %s to fetch it",
-                    full_h5,
-                    be.__class__.__name__,
-                )
-                try:
-                    fetched = bool(ensure(full_h5))
-                except Exception as exc:
-                    self.logger.warning(
-                        "Backend %s failed to fetch %s: %s",
-                        be.__class__.__name__,
-                        full_h5,
-                        exc,
-                    )
-                    fetched = False
-
-                if fetched and os.path.exists(full_h5):  # noqa: PTH110
-                    self.logger.info(
-                        "File %s fetched successfully by backend %s",
-                        full_h5,
-                        be.__class__.__name__,
-                    )
-                    break
+        self.hooks.dispatch_analysis_data_loading(full_h5)
 
         if os.path.exists(full_h5):  # noqa: PTH110
             self._load_analysis_data(filename)
@@ -457,7 +421,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             for error in lint_result.errors:
                 self.logger.warning(error)
 
-        utils.run_functions(self._analysis_cell_prerun_hook)
+        self.hooks.dispatch_analysis_cell_ready()
         utils.run_functions(prerun)
         return self
 
@@ -517,9 +481,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             Tuple[_CallableWithNoArgs, ...],
         ],
     ):
-        self._analysis_cell_prerun_hook = (
-            tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
-        )
+        self.hooks.set_analysis_cell_ready(hook)
 
     def set_acquisition_cell_prerun_hook(
         self,
@@ -529,9 +491,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             Tuple[_CallableWithNoArgs, ...],
         ],
     ):
-        self._acquisition_cell_prerun_hook = (
-            tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
-        )
+        self.hooks.set_acquisition_cell_ready(hook)
 
     def find_param_in_config(self, param: str) -> Optional[Tuple[str, int]]:
         for file in self._default_config_files:
