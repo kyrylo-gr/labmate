@@ -1,18 +1,26 @@
-from __future__ import annotations
-
 import logging
 import os
 import time
-from typing import TYPE_CHECKING, Any, Callable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+)
 
 from .. import display, utils
 from ..acquisition import AcquisitionManager, AnalysisData
 from ..logger import logger
 from . import display_widget
 
-if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
 
+if TYPE_CHECKING:
     from dh5.path import Path
 
     from ..acquisition import FigureProtocol
@@ -51,29 +59,29 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     ```
     """
 
-    _analysis_data: AnalysisData | None = None
+    _analysis_data: Optional[AnalysisData] = None
     _analysis_cell_str = None
     _is_old_data = False
     _last_fig_name = None
-    _default_config_files: tuple[str, ...] = ()
+    _default_config_files: Tuple[str, ...] = ()
     _acquisition_started = 0
     _linting_external_vars = None
-    _analysis_cell_prerun_hook: tuple[_CallableWithNoArgs, ...] | None = None
-    _acquisition_cell_prerun_hook: tuple[_CallableWithNoArgs, ...] | None = None
-    _connected_widgets: list["display_widget.WidgetProtocol"] | None = None
+    _analysis_cell_prerun_hook: Optional[Tuple[_CallableWithNoArgs, ...]] = None
+    _acquisition_cell_prerun_hook: Optional[Tuple[_CallableWithNoArgs, ...]] = None
+    _connected_widgets: Optional[List["display_widget.WidgetProtocol"]] = None
 
     def __init__(
         self,
-        data_directory: str | Any | None = None,
+        data_directory: Optional[Union[str, Any]] = None,
         *,
-        config_files: list[str] | None = None,
+        config_files: Optional[List[str]] = None,
         save_files: bool = False,
         use_magic: bool = False,
         save_on_edit: bool = True,
-        save_on_edit_analysis: bool | None = None,
+        save_on_edit_analysis: Optional[bool] = None,
         save_fig_inside_h5: bool = False,
         shell: Any = True,
-        backend: AcquisitionBackend | Iterable[AcquisitionBackend] | None = None,
+        backend: Optional[Union["AcquisitionBackend", Iterable["AcquisitionBackend"]]] = None,
     ):
         """
         AcquisitionAnalysisManager.
@@ -157,9 +165,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def save_fig_only(
         self,
-        fig: FigureProtocol | None = None,
-        name: str | int | None = None,
-        extensions: str | None = None,
+        fig: Optional["FigureProtocol"] = None,
+        name: Optional[Union[str, int]] = None,
+        extensions: Optional[str] = None,
         **kwds,
     ) -> "AcquisitionAnalysisManager":
         """Save the figure as a file."""
@@ -168,8 +176,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def save_analysis_cell(
         self,
-        name: str | int | None = None,
-        cell: str | "Literal['none']" | None = None,
+        name: Optional[Union[str, int]] = None,
+        cell: Optional[Union[str, Literal["none"]]] = None,
     ) -> "AcquisitionAnalysisManager":
         if name is None:
             name = self.data.figure_last_name
@@ -183,12 +191,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def save_fig(
         self,
-        fig_or_name: FigureProtocol | str | int | None = None,
+        fig_or_name: Optional[Union["FigureProtocol", str, int]] = None,
         /,
         *,
-        fig: FigureProtocol | None = None,
-        name: str | int | None = None,
-        cell: str | None = None,
+        fig: Optional["FigureProtocol"] = None,
+        name: Optional[Union[str, int]] = None,
+        cell: Optional[str] = None,
         **kwds,
     ) -> "AcquisitionAnalysisManager":
         if fig_or_name is not None:
@@ -229,12 +237,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self,
         update_: bool = True,
         /,
-        file_suffix: str | None = None,
+        file_suffix: Optional[str] = None,
         **kwds,
     ) -> "AcquisitionAnalysisManager":
         acquisition_finished = time.time()
         if not self._once_saved:
-            additional_info: dict[str, Any] = {
+            additional_info: Dict[str, Any] = {
                 "acquisition_duration": acquisition_finished - self._acquisition_started,
                 "logs": self.logger.getvalue(),
                 "prints": self.logger.get_stdout(),
@@ -247,7 +255,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self._load_analysis_data()
         return self
 
-    def _load_analysis_data(self, filepath: str | None = None):
+    def _load_analysis_data(self, filepath: Optional[str] = None):
         filepath = filepath or str(self.current_filepath)
 
         self._analysis_data = self.load_file(filepath)
@@ -281,9 +289,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def acquisition_cell(
         self,
         name: str,
-        cell: str | None = None,
-        prerun: _CallableWithNoArgs | list[_CallableWithNoArgs] | None = None,
-        save_on_edit: bool | None = None,
+        cell: Optional[str] = None,
+        prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
+        save_on_edit: Optional[bool] = None,
         step: int = 1,
     ) -> "AcquisitionAnalysisManager":
         self._analysis_cell_str = None
@@ -330,12 +338,12 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def analysis_cell(
         self,
-        filename: str | Path | None = None,
+        filename: Optional[Union[str, "Path"]] = None,
         *,
         acquisition_name=None,
-        cell: str | None = None,
-        filepath: str | Path | None = None,
-        prerun: _CallableWithNoArgs | list[_CallableWithNoArgs] | None = None,
+        cell: Optional[str] = None,
+        filepath: Optional[Union[str, "Path"]] = None,
+        prerun: Optional[Union[_CallableWithNoArgs, List[_CallableWithNoArgs]]] = None,
     ) -> "AcquisitionAnalysisManager":
         self._analysis_cell_str = cell or get_current_cell(self.shell)
         if filename or filepath:  # getting old data
@@ -390,7 +398,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             backends = self._backend
 
             if backends is None:
-                backend_list: list[Any] = []
+                backend_list: List[Any] = []
             elif isinstance(backends, (list, tuple)):
                 backend_list = list(backends)
             else:
@@ -460,7 +468,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             self.shell.set_next_input(code)  # type: ignore
         return code
 
-    def _get_full_filename(self, filename: str | Path) -> str:
+    def _get_full_filename(self, filename: Union[str, "Path"]) -> str:
         if filename is None:
             raise ValueError("Filename cannot be None")
 
@@ -472,18 +480,20 @@ class AcquisitionAnalysisManager(AcquisitionManager):
     def parse_config_file(self, config_file_name: str, /) -> "ConfigFile":
         return self.data.parse_config_file(config_file_name)
 
-    def parse_config(self, config_files: tuple[str, ...] | None = None) -> "ConfigFile":
+    def parse_config(self, config_files: Optional[Tuple[str, ...]] = None) -> "ConfigFile":
         return self.data.parse_config(config_files=config_files)
 
     @property
     def cfg(self) -> "ConfigFile":
         return self.data.cfg
 
-    def parse_config_str(self, values: list[str], /, max_length: int | None = None) -> str:
+    def parse_config_str(self, values: List[str], /, max_length: Optional[int] = None) -> str:
         return self.data.parse_config_str(values, max_length=max_length)
 
     def linting(
-        self, allowed_variables: "Iterable[str]" | None = None, init_file: str | None = None
+        self,
+        allowed_variables: Optional[Iterable[str]] = None,
+        init_file: Optional[str] = None,
     ):
         from ..utils import lint
 
@@ -492,7 +502,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             allowed.update(lint.find_variables_from_file(init_file)[0])
         self._linting_external_vars = allowed
 
-    def set_default_config_files(self, config_files: str | tuple[str, ...] | list[str], /):
+    def set_default_config_files(self, config_files: Union[str, Tuple[str, ...], List[str]], /):
         self._default_config_files = (
             (config_files,) if isinstance(config_files, str) else tuple(config_files)
         )
@@ -501,7 +511,11 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def set_analysis_cell_prerun_hook(
         self,
-        hook: _CallableWithNoArgs | list[_CallableWithNoArgs] | tuple[_CallableWithNoArgs, ...],
+        hook: Union[
+            _CallableWithNoArgs,
+            List[_CallableWithNoArgs],
+            Tuple[_CallableWithNoArgs, ...],
+        ],
     ):
         self._analysis_cell_prerun_hook = (
             tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
@@ -509,13 +523,17 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def set_acquisition_cell_prerun_hook(
         self,
-        hook: _CallableWithNoArgs | list[_CallableWithNoArgs] | tuple[_CallableWithNoArgs, ...],
+        hook: Union[
+            _CallableWithNoArgs,
+            List[_CallableWithNoArgs],
+            Tuple[_CallableWithNoArgs, ...],
+        ],
     ):
         self._acquisition_cell_prerun_hook = (
             tuple(hook) if isinstance(hook, (list, tuple)) else (hook,)
         )
 
-    def find_param_in_config(self, param: str) -> tuple[str, int] | None:
+    def find_param_in_config(self, param: str) -> Optional[Tuple[str, int]]:
         for file in self._default_config_files:
             for line_no, line in enumerate(self.d["configs", file].split("\n")):
                 if line.startswith(param):
@@ -524,9 +542,9 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def display_param_link(
         self,
-        params: str | list[str] | list[tuple[str, str]],
-        after_text: str | None = None,
-        title: str | None = None,
+        params: Union[str, List[str], List[Tuple[str, str]]],
+        after_text: Optional[str] = None,
+        title: Optional[str] = None,
     ):
         if after_text is not None:
             if not isinstance(params, str):
@@ -559,7 +577,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             links += link + "<br/>"
         return display.display_html(links)
 
-    def display_cfg_link(self, parameters: dict[str, Any], update_button: bool = False):
+    def display_cfg_link(self, parameters: Dict[str, Any], update_button: bool = False):
         from labmate.display import html_output
 
         links = []
@@ -593,7 +611,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
             links.append(link)
         return display.display_widgets_vertically(links, class_="labmate-params")
 
-    def update_config_params_on_disk(self, params: dict[str, Any]):
+    def update_config_params_on_disk(self, params: Dict[str, Any]):
         for file in self.config_files:
             file = self._config_files_names_to_path.get(file, file)
             utils.file_read.update_file_variable(file, params)
@@ -601,7 +619,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
 
     def connect_default_widget(
         self,
-        objs: "display_widget.WidgetProtocol" | list["display_widget.WidgetProtocol"],
+        objs: Union["display_widget.WidgetProtocol", List["display_widget.WidgetProtocol"]],
     ):
         if not isinstance(objs, (list, tuple)):
             objs = [objs]
@@ -610,7 +628,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self._connected_widgets.extend(objs)
 
 
-def get_current_cell(shell: Any) -> str | None:
+def get_current_cell(shell: Any) -> Optional[str]:
     if shell is None:
         return None
     return shell.get_parent()["content"]["code"]
