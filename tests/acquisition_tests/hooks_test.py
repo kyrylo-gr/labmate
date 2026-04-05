@@ -65,14 +65,15 @@ class LifecycleHooksTest(unittest.TestCase):
 
     def test_dispatch_analysis_data_loading_runs_in_order(self):
         paths = []
+        h5_path = str(DATA_DIR / "x.h5")
 
         def log_path(p: str, **_kwargs: Any) -> None:
             paths.append(p)
 
         self.hooks.add_analysis_data_loading(log_path)
         self.hooks.add_analysis_data_loading(lambda p, **_kw: paths.append(p + "_2"))
-        self.hooks.dispatch_analysis_data_loading("/tmp/x.h5")
-        self.assertEqual(paths, ["/tmp/x.h5", "/tmp/x.h5_2"])
+        self.hooks.dispatch_analysis_data_loading(h5_path)
+        self.assertEqual(paths, [h5_path, h5_path + "_2"])
 
     def test_dispatch_analysis_cell_ready(self):
         seen = []
