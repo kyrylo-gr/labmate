@@ -1,13 +1,5 @@
 import os
-from typing import (
-    Any,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 from dh5 import jsn
 from dh5.path import Path
@@ -16,6 +8,7 @@ from ..parsing.saving import append_values_from_modules_to_files
 from ..utils import get_timestamp
 from ..utils.file_read import read_file, read_files
 from .acquisition_data import NotebookAcquisitionData
+from .hooks import LifecycleHooks
 
 
 class AcquisitionTmpData(NamedTuple):
@@ -48,6 +41,8 @@ class AcquisitionManager:
 
     cell: Optional[str] = None
 
+    hooks: LifecycleHooks
+
     def __init__(
         self,
         data_directory: Optional[Union[str, Path, Any]] = None,
@@ -55,6 +50,7 @@ class AcquisitionManager:
         config_files: Optional[List[str]] = None,
         save_files: Optional[bool] = None,
         save_on_edit: Optional[bool] = None,
+        hooks: Optional[LifecycleHooks] = None,
     ):
         if save_files is not None:
             self._save_files = save_files
@@ -65,6 +61,8 @@ class AcquisitionManager:
         self._current_acquisition = None
         self._acquisition_tmp_data = None
         self._once_saved = False
+
+        self.hooks = hooks if hooks is not None else LifecycleHooks()
 
         self.config_files = []
         self.config_files_eval = {}
@@ -252,7 +250,7 @@ class AcquisitionManager:
         configs = configs if configs else None
         save_on_edit = save_on_edit if save_on_edit is not None else self._save_on_edit
 
-        return NotebookAcquisitionData(
+        acquisition = NotebookAcquisitionData(
             filepath=str(filepath),
             configs=configs,
             cell=cell or self.cell,
@@ -260,6 +258,9 @@ class AcquisitionManager:
             save_on_edit=save_on_edit,
             save_files=self._save_files,
         )
+        self.hooks.dispatch_acquisition_data_loaded(acquisition)
+
+        return acquisition
 
     @property
     def current_acquisition(self) -> NotebookAcquisitionData:
@@ -293,7 +294,7 @@ class AcquisitionManager:
 
         save_on_edit = save_on_edit if save_on_edit is not None else self._save_on_edit
 
-        return NotebookAcquisitionData(
+        acquisition = NotebookAcquisitionData(
             filepath=str(filepath),
             configs=configs,
             cell=cell,
@@ -302,6 +303,10 @@ class AcquisitionManager:
             save_files=self._save_files,
             experiment_name=acquisition_tmp_data.experiment_name,
         )
+
+        self.hooks.dispatch_acquisition_data_loaded(acquisition)
+
+        return acquisition
 
     def save_acquisition(self, update_: bool = True, /, **kwds) -> "AcquisitionManager":
         acq_data = self.current_acquisition
@@ -321,4 +326,8 @@ class AcquisitionManager:
         if acq_data.save_on_edit is False:
             acq_data.save()
         self._once_saved = True
+        self.hooks.dispatch_acquisition_saved(acq_data)
         return self
+
+    def close(self) -> None:
+        pass

@@ -6,7 +6,7 @@ import unittest
 
 # from dh5.path import Path
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 import numpy as np
 
@@ -91,8 +91,22 @@ class FunctionToRun:
         """Set self.function_run counter to 0."""
         self.function_run = 0
 
-    def func(self):
+    def func(self, **_kwargs: Any):
         """Increase self.function_run counter by 1."""
+        self.function_run += 1
+
+
+class FunctionToRunLegacy:
+    """Like ``FunctionToRun`` but with a no-``**kwargs`` hook signature.
+
+    Registering this on ``LifecycleHooks`` triggers ``FutureWarning``; dispatch still calls
+    the hook without forwarded keyword arguments.
+    """
+
+    def __init__(self):
+        self.function_run = 0
+
+    def func(self):
         self.function_run += 1
 
 
