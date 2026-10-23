@@ -1,3 +1,3 @@
 """This file contains all package constants."""
 
-__version__ = "0.10.9"
+__version__ = "0.10.10"

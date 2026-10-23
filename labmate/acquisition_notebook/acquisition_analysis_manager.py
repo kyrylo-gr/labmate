@@ -212,6 +212,8 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         if self.current_acquisition is not None:
             self.hooks.dispatch_figure_saved(self.current_acquisition)
 
+        self.hooks.dispatch_analysis_figure_saved(self.data)
+
         if self._connected_widgets:
             display_widget.display_widgets(
                 self._connected_widgets,
