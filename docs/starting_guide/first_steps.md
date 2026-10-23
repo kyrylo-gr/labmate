@@ -28,10 +28,10 @@ aqm = AcquisitionAnalysisManager("tmp_data")
 Acquisition cell is a notebook cell that performs the experiment and saves the results. It should start with `acquisition_cell` method.
 
 ```python
-aqm.acquisition_cell('test_example')
+aqm.acquisition_cell("test_example")
 
 # acquire data. Here is an example of simple sinusoidal data.
-x = np.linspace(0, 20*np.pi, 101)
+x = np.linspace(0, 20 * np.pi, 101)
 your_data = np.sin(x)
 
 # Save data to the file.
