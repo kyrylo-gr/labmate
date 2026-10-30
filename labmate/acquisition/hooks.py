@@ -46,8 +46,7 @@ class LifecycleHooks:
 
     def __init__(self) -> None:
         self._acquisition_saved: List[SaveAcquisitionCallback] = []
-        self._figure_saved: List[SaveAcquisitionCallback] = []
-        self._analysis_figure_saved: List[SaveAnalysisCallback] = []
+        self._figure_saved: List[SaveAnalysisCallback] = []
         self._acquisition_data_loaded: List[SaveAcquisitionCallback] = []
         self._analysis_data_loading: List[AnalysisCellBeforeLoadCallback] = []
         self._analysis_cell_ready: List[_CallableWithNoArgs] = []
@@ -92,26 +91,14 @@ class LifecycleHooks:
 
     # --- figure_saved ---
 
-    def add_figure_saved(self, callback: SaveAcquisitionCallback) -> None:
+    def add_figure_saved(self, callback: SaveAnalysisCallback) -> None:
         self._warn_if_hook_ignores_dispatch_kwargs(callback)
         self._figure_saved.append(callback)
 
-    def dispatch_figure_saved(self, acquisition: NotebookAcquisitionData, **kwargs: Any) -> None:
-        """Run callbacks after a figure is persisted (synchronously)."""
-
-        for cb in self._figure_saved:
-            self._invoke_hook(cb, (acquisition,), kwargs)
-
-    # --- analysis_figure_saved ---
-
-    def add_analysis_figure_saved(self, callback: SaveAnalysisCallback) -> None:
-        self._warn_if_hook_ignores_dispatch_kwargs(callback)
-        self._analysis_figure_saved.append(callback)
-
-    def dispatch_analysis_figure_saved(self, analysis: AnalysisData, **kwargs: Any) -> None:
+    def dispatch_figure_saved(self, analysis: AnalysisData, **kwargs: Any) -> None:
         """Run callbacks after a figure and its analysis cell are persisted (synchronously)."""
 
-        for cb in self._analysis_figure_saved:
+        for cb in self._figure_saved:
             self._invoke_hook(cb, (analysis,), kwargs)
 
     # --- acquisition_data_loaded ---

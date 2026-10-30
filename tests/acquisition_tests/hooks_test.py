@@ -4,7 +4,7 @@ import warnings
 from pathlib import Path
 from typing import Any
 
-from labmate.acquisition import AcquisitionManager, AnalysisData
+from labmate.acquisition import AcquisitionManager
 from labmate.acquisition.acquisition_data import NotebookAcquisitionData
 from labmate.acquisition.hooks import LifecycleHooks
 
@@ -62,45 +62,6 @@ class LifecycleHooksTest(unittest.TestCase):
         self.am.hooks.add_acquisition_saved(b)
         self.am.hooks.dispatch_acquisition_saved(self.am.current_acquisition)
         self.assertEqual(called, ["a", "b"])
-
-    def test_dispatch_analysis_figure_saved_no_listeners(self):
-        analysis = AnalysisData(self.am.current_filepath)
-        self.hooks.dispatch_analysis_figure_saved(analysis)
-
-    def test_dispatch_analysis_figure_saved_calls_listeners_in_order(self):
-        analysis = AnalysisData(self.am.current_filepath)
-        called = []
-
-        self.hooks.add_analysis_figure_saved(lambda data, **_kw: called.append(("a", data)))
-        self.hooks.add_analysis_figure_saved(lambda data, **_kw: called.append(("b", data)))
-        self.hooks.dispatch_analysis_figure_saved(analysis)
-
-        self.assertEqual([name for name, _ in called], ["a", "b"])
-        self.assertTrue(all(data is analysis for _, data in called))
-
-    def test_analysis_figure_saved_warns_without_var_keyword_and_forwards_kwargs(self):
-        analysis = AnalysisData(self.am.current_filepath)
-        called = []
-
-        def legacy(data: AnalysisData) -> None:
-            called.append((data, {}))
-
-        def modern(data: AnalysisData, **kwargs: Any) -> None:
-            called.append((data, kwargs))
-
-        with self.assertWarns(FutureWarning):
-            self.hooks.add_analysis_figure_saved(legacy)
-
-        self.hooks.add_analysis_figure_saved(modern)
-        self.hooks.dispatch_analysis_figure_saved(analysis, reason="figure")
-
-        self.assertEqual(called, [(analysis, {}), (analysis, {"reason": "figure"})])
-
-    def test_analysis_figure_saved_accepts_var_keyword_without_warning(self):
-        with warnings.catch_warnings(record=True) as recorded:
-            warnings.simplefilter("always")
-            self.hooks.add_analysis_figure_saved(lambda data, **kwargs: None)
-        self.assertEqual(recorded, [])
 
     def test_dispatch_analysis_data_loading_runs_in_order(self):
         paths = []

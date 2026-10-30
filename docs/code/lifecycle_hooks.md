@@ -9,8 +9,7 @@
 | Register with | Dispatched when | Callback shape |
 |---------------|-----------------|----------------|
 | `add_acquisition_saved` | After `save_acquisition` persists acquisition data | `(acquisition) -> None` |
-| `add_figure_saved` | After `save_fig` updates figures / analysis cell on disk, only for the current acquisition | `(acquisition) -> None` |
-| `add_analysis_figure_saved` | After `save_fig` updates figures / analysis cell on disk, for both current and previously saved acquisitions | `(analysis: AnalysisData) -> None` |
+| `add_figure_saved` | After `save_fig` updates figures / analysis cell on disk, for both current and previously saved acquisitions | `(analysis: AnalysisData) -> None` |
 | `add_acquisition_data_loaded` | After `get_acquisition` / `create_acquisition` build the in-memory acquisition | `(acquisition) -> None` |
 | `add_analysis_data_loading` | **Every** `analysis_cell` run, **before** opening the `.h5` — pass the full path | `(full_h5_path: str) -> None` (no-op if the file is already there) |
 | `add_analysis_cell_ready` / `set_analysis_cell_ready` | After analysis data is loaded and lint (if any), before your analysis code | `() -> None` |
@@ -18,19 +17,19 @@
 
 `set_analysis_cell_ready` and `set_acquisition_cell_ready` **replace** the list for that slot (same idea as the old global “prerun” setters on `AcquisitionAnalysisManager`).
 
-`add_analysis_figure_saved` receives the `AnalysisData` used to save the figure, including when `analysis_cell(filename=...)` opens a previously saved acquisition and `current_acquisition` is `None`. Existing `add_figure_saved` callbacks keep receiving `NotebookAcquisitionData` under the same conditions as before.
+`add_figure_saved` receives the `AnalysisData` used to save the figure, including when `analysis_cell(filename=...)` opens a previously saved acquisition and `current_acquisition` is `None`.
 
 For example, an integration can queue a snapshot of the analysis files:
 
 ```python
-def on_analysis_figure_saved(analysis, **kwargs):
+def on_figure_saved(analysis, **kwargs):
     queue_snapshot(analysis.filepath)  # Supplied by your integration; enqueue background work.
 
 
-aqm.hooks.add_analysis_figure_saved(on_analysis_figure_saved)
+aqm.hooks.add_figure_saved(on_figure_saved)
 ```
 
-Register a figure-upload callback on either `add_analysis_figure_saved` or `add_figure_saved`, not both, to avoid duplicate uploads for the current acquisition. Dispatch remains synchronous, so callbacks must schedule slow I/O themselves. The new hook runs after the figure and analysis cell are saved; it does not run if either save raises. A standalone `save_fig_only` call does not dispatch this hook.
+Dispatch remains synchronous, so callbacks must schedule slow I/O themselves. The hook runs after the figure and analysis cell are saved; it does not run if either save raises. A standalone `save_fig_only` call does not dispatch this hook.
 
 ## Mirror example
 
