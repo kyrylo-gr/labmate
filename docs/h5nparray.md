@@ -8,14 +8,15 @@ In `H5PY` `np.ndarray` can be saved as soon as modified. To do that there exists
 
 ```python
 from labmate.syncdata import SyncData
-sd = SyncData('tmp_data/test.h5', overwrite=True, save_on_edit=False)
+
+sd = SyncData("tmp_data/test.h5", overwrite=True, save_on_edit=False)
 ```
 
 2. Define new item as a h5nparray
 
 ```python
 shape = (100, 1000)
-sd['test_array'] = sd.h5nparray(np.zeros(shape))
+sd["test_array"] = sd.h5nparray(np.zeros(shape))
 ```
 
 `H5NpArray` takes the np.array as parameter to initialize the data inside the file.
@@ -24,14 +25,14 @@ sd['test_array'] = sd.h5nparray(np.zeros(shape))
 
 ```python
 for i in range(100):
-    sd['test_array'][i, :] = np.random.random(1000)
+    sd["test_array"][i, :] = np.random.random(1000)
 ```
 
 4. Check that data was saved
 
 ```python
-read = SyncData('tmp_data/test.h5')
-read['test_array']
+read = SyncData("tmp_data/test.h5")
+read["test_array"]
 ```
 
 ## Implementation

@@ -209,8 +209,7 @@ class AcquisitionAnalysisManager(AcquisitionManager):
         self.save_fig_only(fig=fig, name=name, **kwds)
         self.save_analysis_cell(name=name, cell=cell)
 
-        if self.current_acquisition is not None:
-            self.hooks.dispatch_figure_saved(self.current_acquisition)
+        self.hooks.dispatch_figure_saved(self.data)
 
         if self._connected_widgets:
             display_widget.display_widgets(

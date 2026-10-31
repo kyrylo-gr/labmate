@@ -36,7 +36,7 @@ Use [`LifecycleHooks`](../code/lifecycle_hooks.md) on `AcquisitionAnalysisManage
 
 **`MirrorDirectoryPlugin` below is example code** — it is not shipped with the `labmate` package. Copy it into your project or notebook (see also [`use_local_mirror_backend.ipynb`](../examples/more/use_local_mirror_backend.ipynb)).
 
-The plugin copies the HDF5 and any same-stem sidecar files into `mirror_root / <experiment_dir_name> /` after saves, and before each analysis load it may copy a missing `.h5` back from that mirror.
+The plugin copies the HDF5 and any same-stem sidecar files into `mirror_root / <experiment_dir_name> /` after saves (acquisitions and figures, including figures saved on previously saved acquisitions), and before each analysis load it may copy a missing `.h5` back from that mirror.
 
 ```python
 from __future__ import annotations
@@ -47,7 +47,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Union
 
-from labmate.acquisition import NotebookAcquisitionData, LifecycleHooks
+from labmate.acquisition import AnalysisData, NotebookAcquisitionData, LifecycleHooks
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,9 @@ class MirrorDirectoryPlugin:
         hooks.add_figure_saved(self._mirror_after_persist)
         hooks.add_analysis_data_loading(self._on_analysis_data_loading)
 
-    def _mirror_after_persist(self, acquisition: NotebookAcquisitionData, **kwargs: Any) -> None:
+    def _mirror_after_persist(
+        self, acquisition: Union[NotebookAcquisitionData, AnalysisData], **kwargs: Any
+    ) -> None:
         """Schedule mirror copy on a worker thread so the notebook thread is not blocked."""
 
         executor = ThreadPoolExecutor(max_workers=1)
@@ -77,7 +79,9 @@ class MirrorDirectoryPlugin:
         future = executor.submit(copy_job)
         future.add_done_callback(shutdown_executor)
 
-    def _mirror_copy_to_destination(self, acquisition: NotebookAcquisitionData) -> None:
+    def _mirror_copy_to_destination(
+        self, acquisition: Union[NotebookAcquisitionData, AnalysisData]
+    ) -> None:
         source_prefix = Path(acquisition.filepath)
         source_dir = source_prefix.parent
         prefix_name = source_prefix.name
