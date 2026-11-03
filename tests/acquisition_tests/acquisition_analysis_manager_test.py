@@ -119,6 +119,21 @@ class AcquisitionAnalysisManagerTest(unittest.TestCase):
         self.assertEqual(sd.get("analysis_cells", {}).get("default"), self.cell_text)
         self.assertTrue(fig.fig_saved)
 
+    def test_figure_saved_hook_without_current_acquisition(self):
+        self.create_acquisition_cell()
+        self.create_data_and_check()
+        filepath = self.aqm.current_filepath
+        self.setUp()
+        self.aqm.analysis_cell(filepath)
+        self.assertIsNone(self.aqm.current_acquisition)
+
+        called = []
+        self.aqm.hooks.add_figure_saved(lambda analysis, **_kwargs: called.append(analysis))
+        self.aqm.save_fig(LocalFig())
+
+        self.assertEqual(len(called), 1)
+        self.assertIs(called[0], self.aqm.data)
+
     def test_fig_only_saved(self):
         self.create_acquisition_cell()
         self.create_analysis_cell()

@@ -1,0 +1,6 @@
+#!/bin/sh
+# Reject commit messages containing "Claude-Session" or links to claude.ai / anthropic.com.
+if grep -qiE "Claude-Session|claude\.ai|anthropic\.com" "$1"; then
+    echo "commit-msg: message contains 'Claude-Session' or a claude.ai/anthropic.com link, remove it" >&2
+    exit 1
+fi

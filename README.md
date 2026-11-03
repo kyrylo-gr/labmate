@@ -35,6 +35,7 @@ Setup:
 
 ```python
 from labmate.acquisition_notebook import AcquisitionAnalysisManager
+
 aqm = AcquisitionAnalysisManager("path/to/database")
 ```
 
